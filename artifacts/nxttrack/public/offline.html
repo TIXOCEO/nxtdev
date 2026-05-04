@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Offline — NXTTRACK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#b6d83b" />
+    <style>
+      :root { color-scheme: light dark; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: linear-gradient(180deg, #f8faf2 0%, #eef3df 100%);
+        color: #1f2719;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+      }
+      .card {
+        max-width: 22rem;
+        background: #fff;
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        text-align: center;
+      }
+      .dot {
+        width: 3rem; height: 3rem; border-radius: 1rem;
+        background: #b6d83b; margin: 0 auto 1rem; display: grid; place-items: center;
+        font-size: 1.5rem;
+      }
+      h1 { font-size: 1.125rem; margin: 0 0 .5rem; }
+      p { margin: 0 0 1rem; color: #5b6557; font-size: .875rem; }
+      a {
+        display: inline-block; padding: .55rem 1rem; border-radius: .75rem;
+        background: #b6d83b; color: #1f2719; text-decoration: none; font-weight: 600;
+        font-size: .875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="dot">⚡</div>
+      <h1>Je bent offline</h1>
+      <p>NXTTRACK heeft geen internetverbinding. Probeer het opnieuw zodra je weer online bent.</p>
+      <a href="/" onclick="location.reload(); return false;">Opnieuw proberen</a>
+    </div>
+  </body>
+</html>

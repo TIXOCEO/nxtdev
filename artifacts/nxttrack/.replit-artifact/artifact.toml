@@ -1,0 +1,26 @@
+kind = "web"
+previewPath = "/"
+title = "NXTTRACK"
+version = "1.0.0"
+id = "artifacts/nxttrack"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23226
+
+[services.development]
+run = "pnpm --filter @workspace/nxttrack run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nxttrack", "run", "build" ]
+run = "pnpm --filter @workspace/nxttrack run start"
+
+[services.env]
+PORT = "23226"
+BASE_PATH = "/"

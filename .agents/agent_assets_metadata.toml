@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "kClfsVsiYC695ccXPLrZx"
+uri = "file://artifacts/nxttrack/docs/gdpr_phase1_audit.md"
+type = "text"
+title = "AVG/GDPR Phase 1 Audit Report — NXTTRACK"
+
+[[outputs]]
+id = "bRHpYC1VRzTXL5Qmx08vC"
+uri = "file://NXTTRACK-functionaliteiten.md"
+type = "text"
+title = "NXTTRACK — Overzicht functionaliteiten"
