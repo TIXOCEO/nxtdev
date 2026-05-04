@@ -41,7 +41,7 @@ sudo chown $USER:$USER /var/www/nxttrack
 cd /var/www/nxttrack
 
 # Clone via SSH deploy key (aanbevolen) — niet HTTPS-PAT
-git clone git@github.com:<jouw-user>/nxttrack.git .
+git clone git@github.com:TIXOCEO/nxtdev.git .
 ```
 
 ## 3. Environment file
