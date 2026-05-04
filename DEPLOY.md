@@ -5,7 +5,7 @@ End-to-end runbook to deploy this monorepo to a VPS via GitHub.
 > Production target: **nxttrack.nl** (apex) + **\*.nxttrack.nl** (tenant subdomains)
 > VPS arch: **x86_64** (Ubuntu 22.04/24.04 LTS)
 > Mailprovider: **SendGrid (API)**
-> Processes managed by: **PM2** on ports **6000** (web) and **6001** (api)
+> Processes managed by: **PM2** on ports **8080** (web) and **8081** (api)
 
 ---
 
@@ -113,9 +113,9 @@ server {
 
     client_max_body_size 25M;
 
-    # API → Express op 6001
+    # API → Express op 8081
     location /api/ {
-        proxy_pass http://127.0.0.1:6001;
+        proxy_pass http://127.0.0.1:8081;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -124,9 +124,9 @@ server {
         proxy_set_header X-Forwarded-Host $host;
     }
 
-    # Alles anders → Next.js op 6000
+    # Alles anders → Next.js op 8080
     location / {
-        proxy_pass http://127.0.0.1:6000;
+        proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";

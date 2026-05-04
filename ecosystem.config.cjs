@@ -2,8 +2,11 @@
  * PM2 ecosystem for NXTTRACK production VPS.
  *
  * Two processes (mockup-sandbox is dev-only and NOT deployed):
- *   nxttrack-web  → Next.js, port 6000
- *   nxttrack-api  → Express,  port 6001
+ *   nxttrack-web  → Next.js, port 8080
+ *   nxttrack-api  → Express,  port 8081
+ *
+ * NB: poorten 6000-6010 zijn door browsers/Next.js geblokkeerd (X11-range),
+ * vandaar 8080/8081.
  *
  * Env loading strategy:
  *   - Single `.env` at /var/www/nxttrack/.env (root of repo, gitignored)
@@ -21,13 +24,13 @@ module.exports = {
       name: "nxttrack-web",
       cwd: "/var/www/nxttrack/artifacts/nxttrack",
       script: "node_modules/next/dist/bin/next",
-      args: "start --port 6000 --hostname 127.0.0.1",
+      args: "start --port 8080 --hostname 127.0.0.1",
       instances: 1,
       autorestart: true,
       max_memory_restart: "1G",
       env: {
         NODE_ENV: "production",
-        PORT: "6000",
+        PORT: "8080",
       },
       error_file: "/var/www/nxttrack/logs/web-error.log",
       out_file: "/var/www/nxttrack/logs/web-out.log",
@@ -44,7 +47,7 @@ module.exports = {
       max_memory_restart: "512M",
       env: {
         NODE_ENV: "production",
-        PORT: "6001",
+        PORT: "8081",
       },
       error_file: "/var/www/nxttrack/logs/api-error.log",
       out_file: "/var/www/nxttrack/logs/api-out.log",
