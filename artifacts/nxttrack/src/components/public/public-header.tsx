@@ -8,6 +8,7 @@ import { MessagesBell } from "./messages-bell";
 import { ProfileMenu } from "./profile-menu";
 import { getUser } from "@/lib/auth/get-user";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess } from "@/lib/permissions";
 import { getMyNotifications } from "@/lib/db/notifications";
 
@@ -49,11 +50,12 @@ export async function PublicHeader({
   if (isAuthenticated) {
     user = await getUser();
     if (user) {
-      const [rows, memberships] = await Promise.all([
+      const [rows, memberships, adminRoleTenants] = await Promise.all([
         getMyNotifications(20),
         getMemberships(user.id),
+        getAdminRoleTenantIds(user.id),
       ]);
-      isAdmin = hasTenantAccess(memberships, tenant.id);
+      isAdmin = hasTenantAccess(memberships, tenant.id, adminRoleTenants);
       const tenantRows = rows.filter((r) => r.notification.tenant_id === tenant.id);
       if (unreadCount === undefined) {
         unread = tenantRows.filter((r) => !r.is_read).length;

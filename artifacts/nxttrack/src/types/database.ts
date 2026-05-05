@@ -158,6 +158,8 @@ export type MemberStatus =
 export type MemberRoleName = "parent" | "athlete" | "trainer" | "staff" | "volunteer";
 
 // Sprint 16 — Custom tenant roles
+export type TenantRoleScope = "admin" | "usershell";
+
 export interface TenantRole {
   id: string;
   tenant_id: string;
@@ -165,6 +167,10 @@ export interface TenantRole {
   description: string | null;
   is_system: boolean;
   sort_order: number;
+  /** Sprint 22 — 'admin' = backend (tenant admin shell), 'usershell' = frontend. */
+  scope: TenantRoleScope;
+  /** Sprint 22 — automatisch alle permissies, lock in UI. */
+  is_super_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -586,7 +592,7 @@ export interface ModuleCatalog {
   created_at: string;
 }
 
-export type ModuleSize = "1x1" | "1x2" | "2x1";
+export type ModuleSize = "1x1" | "1x2" | "2x1" | "2x2";
 export type ModuleVisibility = "public" | "logged_in";
 
 export interface TenantModule {
@@ -597,6 +603,12 @@ export interface TenantModule {
   size: ModuleSize | string;
   position: number;
   position_mobile: number | null;
+  /** Sprint 22 — 2D grid coordinates (admin/public renderer). x = 0|1, y >= 0. */
+  position_x: number;
+  position_y: number;
+  /** Sprint 22 — width in cols (1 of 2) en height in rows (1 of 2). */
+  w: number;
+  h: number;
   visible_for: ModuleVisibility | string;
   visible_mobile: boolean;
   config: Record<string, unknown>;

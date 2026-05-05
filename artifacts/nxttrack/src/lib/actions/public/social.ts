@@ -26,6 +26,7 @@ import { getUserTenantContext, isMinorAthlete } from "@/lib/auth/user-role-rules
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { hasTenantAccess } from "@/lib/permissions";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import type { Post } from "@/types/database";
 
 export type ActionResult<T = void> =
@@ -65,8 +66,11 @@ async function resolveContext(tenantId: string, userId: string) {
       .maybeSingle();
     isLinkedAsChild = !!link;
   }
-  const memberships = await getMemberships(userId);
-  const isAdmin = hasTenantAccess(memberships, tenantId);
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(userId),
+    getAdminRoleTenantIds(userId),
+  ]);
+  const isAdmin = hasTenantAccess(memberships, tenantId, adminRoleTenantIds);
   const isMinor = memberId
     ? isMinorAthlete({ id: memberId }, isLinkedAsChild, ctx.roles)
     : false;

@@ -1,58 +1,60 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { GripVertical, Plus, Trash2, Settings2, Eye, EyeOff, Smartphone, Monitor, ChevronDown, ChevronUp } from "lucide-react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import dynamic from "next/dynamic";
+import { Trash2, Settings2, Eye, EyeOff, Smartphone, Monitor, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import {
   addTenantModule,
   deleteTenantModule,
-  reorderTenantModules,
   updateTenantModule,
+  updateModuleLayout,
 } from "@/lib/actions/tenant/homepage";
-import type { ModuleCatalog, TenantModule } from "@/types/database";
+import type { ModuleCatalog, ModuleSize, TenantModule } from "@/types/database";
 import { ModuleConfigEditor, type PageOption } from "./module-config-editor";
+import { ModuleAddDialog, FULL_BLEED_KEYS } from "./module-add-dialog";
 
-const FULL_BLEED_KEYS = new Set(["hero_slider", "news_hero_slider"]);
+const GridLayout = dynamic(
+  () => import("react-grid-layout/legacy").then((m) => m.default),
+  { ssr: false },
+);
 
 interface Props {
   tenantId: string;
   initialModules: TenantModule[];
   catalog: ModuleCatalog[];
-  /** Tenant's enabled custom pages — used by CTA / hero slider link picker. */
   pages?: PageOption[];
 }
 
-/**
- * Bepaal de grid-span class op basis van module-key en formaat.
- * - Hero sliders zijn altijd full-bleed (col-span-2 op desktop).
- * - 2x1 = volle breedte, 1x2 = half x dubbele hoogte, 1x1 = half.
- * - In mobile-preview is alles single column.
- */
-function spanFor(
-  moduleKey: string,
-  size: string,
-  mobile: boolean,
-): string {
-  if (mobile) return "";
-  if (FULL_BLEED_KEYS.has(moduleKey)) return "sm:col-span-2";
-  if (size === "2x1") return "sm:col-span-2";
-  if (size === "1x2") return "sm:col-span-1 sm:row-span-2";
-  return "sm:col-span-1";
+interface LayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  static?: boolean;
+}
+
+const COLS = 2;
+const ROW_HEIGHT = 160;
+
+function moduleToLayoutItem(m: TenantModule): LayoutItem {
+  return {
+    i: m.id,
+    x: Math.max(0, Math.min(1, m.position_x ?? 0)),
+    y: Math.max(0, m.position_y ?? 0),
+    w: Math.max(1, Math.min(2, m.w ?? (m.size === "2x1" ? 2 : 1))),
+    h: Math.max(1, Math.min(2, m.h ?? (m.size === "1x2" ? 2 : 1))),
+  };
+}
+
+function whToSize(w: number, h: number): ModuleSize {
+  if (w >= 2 && h >= 2) return "2x2";
+  if (w >= 2) return "2x1";
+  if (h >= 2) return "1x2";
+  return "1x1";
 }
 
 export function HomepageBuilder({
@@ -65,35 +67,79 @@ export function HomepageBuilder({
   const [modules, setModules] = useState<TenantModule[]>(initialModules);
   const [adding, setAdding] = useState(false);
   const [previewMobile, setPreviewMobile] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const layout = useMemo<LayoutItem[]>(
+    () =>
+      modules.map((m) => {
+        const item = moduleToLayoutItem(m);
+        if (FULL_BLEED_KEYS.has(m.module_key)) {
+          item.x = 0;
+          item.w = 2;
+        }
+        return item;
+      }),
+    [modules],
+  );
 
-  function onDragEnd(e: DragEndEvent) {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const oldIdx = modules.findIndex((m) => m.id === active.id);
-    const newIdx = modules.findIndex((m) => m.id === over.id);
-    if (oldIdx === -1 || newIdx === -1) return;
-    const next = arrayMove(modules, oldIdx, newIdx).map((m, i) => ({
-      ...m,
-      position: i,
-    }));
-    setModules(next);
+  function handleLayoutChange(next: LayoutItem[]) {
+    if (next.length !== modules.length) return;
+    // Detecteer of er iets is veranderd; zo ja persist.
+    let changed = false;
+    const updated = modules.map((m) => {
+      const it = next.find((n) => n.i === m.id);
+      if (!it) return m;
+      const fb = FULL_BLEED_KEYS.has(m.module_key);
+      const nx = fb ? 0 : it.x;
+      const nw = fb ? 2 : it.w;
+      if (
+        m.position_x !== nx ||
+        m.position_y !== it.y ||
+        m.w !== nw ||
+        m.h !== it.h
+      ) {
+        changed = true;
+      }
+      return {
+        ...m,
+        position_x: nx,
+        position_y: it.y,
+        w: nw,
+        h: it.h,
+        size: whToSize(nw, it.h),
+      };
+    });
+    if (!changed) return;
+    setModules(updated);
     start(async () => {
-      const res = await reorderTenantModules({
+      const res = await updateModuleLayout({
         tenant_id: tenantId,
-        ordered_ids: next.map((m) => m.id),
+        items: updated.map((m) => ({
+          id: m.id,
+          x: m.position_x,
+          y: m.position_y,
+          w: m.w,
+          h: m.h,
+        })),
       });
-      if (!res.ok) setError(res.error);
+      if (!res.ok) {
+        setError(res.error);
+        // Revert door router refresh.
+        router.refresh();
+      }
     });
   }
 
-  function add(key: string) {
+  function add(moduleKey: string, size: ModuleSize) {
     setError(null);
     start(async () => {
-      const res = await addTenantModule({ tenant_id: tenantId, module_key: key });
+      const res = await addTenantModule({
+        tenant_id: tenantId,
+        module_key: moduleKey,
+        size,
+      });
       if (!res.ok) {
         setError(res.error);
         return;
@@ -111,6 +157,10 @@ export function HomepageBuilder({
       const res = await deleteTenantModule({ tenant_id: tenantId, module_id: id });
       if (!res.ok) setError(res.error);
     });
+  }
+
+  function patchModule(id: string, patch: Partial<TenantModule>) {
+    setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
   }
 
   return (
@@ -142,7 +192,7 @@ export function HomepageBuilder({
         </div>
         <button
           type="button"
-          onClick={() => setAdding((s) => !s)}
+          onClick={() => setAdding(true)}
           className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold"
           style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
         >
@@ -151,38 +201,17 @@ export function HomepageBuilder({
       </div>
 
       <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-        Sleep modules om te herschikken — de kaarten staan in dezelfde 2-koloms
-        opmaak als op de publieke homepage.
+        Sleep en resize modules vrij in het 2-koloms grid. Hero-sliders staan
+        altijd op volle breedte. Mobiel toont alles in 1 kolom.
       </p>
 
       {adding && (
-        <div
-          className="rounded-lg border p-3"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
-        >
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-            Kies een module
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {catalog.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                disabled={pending}
-                onClick={() => add(c.key)}
-                className="rounded-lg border bg-white px-3 py-2 text-left text-xs hover:bg-black/5 disabled:opacity-50"
-                style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
-              >
-                <p className="font-semibold">{c.name}</p>
-                {c.description && (
-                  <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-                    {c.description}
-                  </p>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ModuleAddDialog
+          catalog={catalog}
+          pending={pending}
+          onClose={() => setAdding(false)}
+          onAdd={add}
+        />
       )}
 
       {error && (
@@ -195,71 +224,88 @@ export function HomepageBuilder({
         <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
           Nog geen modules. Voeg de eerste module toe om je homepage te bouwen.
         </p>
+      ) : previewMobile ? (
+        <div className="mx-auto grid w-full max-w-sm grid-cols-1 gap-3">
+          {modules.map((m) => (
+            <ModuleCard
+              key={m.id}
+              module={m}
+              tenantId={tenantId}
+              previewMobile
+              pages={pages}
+              open={openId === m.id}
+              onToggleOpen={() => setOpenId((id) => (id === m.id ? null : m.id))}
+              onPatch={(p) => patchModule(m.id, p)}
+              onRemove={() => remove(m.id)}
+            />
+          ))}
+        </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={modules.map((m) => m.id)} strategy={rectSortingStrategy}>
-            <div
-              className={
-                previewMobile
-                  ? "mx-auto grid w-full max-w-sm grid-cols-1 gap-3"
-                  : "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-min"
-              }
-            >
-              {modules.map((m) => (
-                <SortableCard
-                  key={m.id}
+        <div
+          className="rounded-lg border p-2"
+          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+        >
+          <GridLayout
+            className="layout"
+            layout={layout}
+            cols={COLS}
+            rowHeight={ROW_HEIGHT}
+            width={typeof window !== "undefined" ? Math.min(window.innerWidth - 64, 960) : 720}
+            margin={[12, 12]}
+            isResizable
+            isDraggable
+            compactType="vertical"
+            preventCollision={false}
+            draggableHandle=".module-drag-handle"
+            onLayoutChange={(next) => handleLayoutChange(next as LayoutItem[])}
+          >
+            {modules.map((m) => (
+              <div key={m.id}>
+                <ModuleCard
                   module={m}
                   tenantId={tenantId}
-                  previewMobile={previewMobile}
+                  previewMobile={false}
                   pages={pages}
-                  spanClass={spanFor(m.module_key, m.size, previewMobile)}
+                  open={openId === m.id}
+                  onToggleOpen={() =>
+                    setOpenId((id) => (id === m.id ? null : m.id))
+                  }
+                  onPatch={(p) => patchModule(m.id, p)}
                   onRemove={() => remove(m.id)}
                 />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+              </div>
+            ))}
+          </GridLayout>
+        </div>
       )}
     </div>
   );
 }
 
-function SortableCard({
+function ModuleCard({
   module,
   tenantId,
   previewMobile,
   pages,
-  spanClass,
+  open,
+  onToggleOpen,
+  onPatch,
   onRemove,
 }: {
   module: TenantModule;
   tenantId: string;
   previewMobile: boolean;
   pages: PageOption[];
-  spanClass: string;
+  open: boolean;
+  onToggleOpen: () => void;
+  onPatch: (p: Partial<TenantModule>) => void;
   onRemove: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: module.id,
-  });
-  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const [size, setSize] = useState(module.size);
-  const [visibleFor, setVisibleFor] = useState(module.visible_for);
-  const [visibleMobile, setVisibleMobile] = useState(module.visible_mobile);
   const [title, setTitle] = useState(module.title ?? "");
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    backgroundColor: "var(--surface-main)",
-    borderColor: "var(--surface-border)",
-  };
 
   function persist(patch: {
     title?: string | null;
-    size?: "1x1" | "1x2" | "2x1";
     visible_for?: "public" | "logged_in";
     visible_mobile?: boolean;
   }) {
@@ -274,51 +320,49 @@ function SortableCard({
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex h-full min-h-[140px] flex-col overflow-hidden rounded-lg border ${spanClass}`}
+      className="flex h-full flex-col overflow-hidden rounded-lg border"
+      style={{
+        backgroundColor: "var(--surface-main)",
+        borderColor: "var(--surface-border)",
+      }}
     >
       <div
-        className="flex items-center gap-2 border-b px-3 py-2"
+        className="module-drag-handle flex cursor-grab items-center gap-2 border-b px-3 py-2"
         style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
       >
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          className="cursor-grab"
-          aria-label="Sleep"
-        >
-          <GripVertical className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
-        </button>
-
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             {title || module.module_key}
           </p>
           <p className="truncate text-[11px]" style={{ color: "var(--text-secondary)" }}>
-            {module.module_key} • {size} • {visibleFor === "logged_in" ? "Ingelogd" : "Publiek"}
-            {previewMobile && !visibleMobile ? " • verborgen op mobiel" : ""}
+            {module.module_key} • {module.w}×{module.h}
+            {previewMobile && !module.visible_mobile ? " • verborgen op mobiel" : ""}
           </p>
         </div>
 
         <button
           type="button"
-          onClick={() => {
-            const v = !visibleMobile;
-            setVisibleMobile(v);
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            const v = !module.visible_mobile;
+            onPatch({ visible_mobile: v });
             persist({ visible_mobile: v });
           }}
           title="Mobiel zichtbaar"
           className="rounded p-1.5"
-          style={{ color: visibleMobile ? "var(--text-primary)" : "var(--text-secondary)" }}
+          style={{ color: module.visible_mobile ? "var(--text-primary)" : "var(--text-secondary)" }}
         >
-          {visibleMobile ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          {module.visible_mobile ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
 
         <button
           type="button"
-          onClick={() => setOpen((s) => !s)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleOpen();
+          }}
           className="rounded p-1.5"
           aria-label="Open editor"
         >
@@ -331,7 +375,11 @@ function SortableCard({
 
         <button
           type="button"
-          onClick={onRemove}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
           className="rounded p-1.5"
           aria-label="Verwijder"
         >
@@ -344,18 +392,14 @@ function SortableCard({
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             {FULL_BLEED_KEYS.has(module.module_key)
               ? "Volle breedte"
-              : size === "2x1"
-                ? "2 kolommen breed"
-                : size === "1x2"
-                  ? "1 kolom, dubbele hoogte"
-                  : "1 kolom"}
+              : `${module.w} kolom × ${module.h} rij`}
           </p>
         </div>
       )}
 
       {open && (
         <div className="space-y-3 px-3 py-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
                 Titel
@@ -370,33 +414,13 @@ function SortableCard({
             </label>
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                Formaat
-              </span>
-              <select
-                value={size}
-                onChange={(e) => {
-                  const v = e.target.value as "1x1" | "1x2" | "2x1";
-                  setSize(v);
-                  persist({ size: v });
-                }}
-                disabled={FULL_BLEED_KEYS.has(module.module_key)}
-                className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none disabled:opacity-50"
-                style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
-              >
-                <option value="1x1">1x1 (halve breedte)</option>
-                <option value="1x2">1x2 (halve breedte, dubbele hoogte)</option>
-                <option value="2x1">2x1 (volle breedte)</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
                 Zichtbaar voor
               </span>
               <select
-                value={visibleFor}
+                value={module.visible_for}
                 onChange={(e) => {
                   const v = e.target.value as "public" | "logged_in";
-                  setVisibleFor(v);
+                  onPatch({ visible_for: v });
                   persist({ visible_for: v });
                 }}
                 disabled={module.module_key === "personal_dashboard"}

@@ -81,7 +81,7 @@ registerModule({
   name: "Nieuws",
   description: "Toon de laatste nieuwsberichten.",
   defaultSize: "1x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { limit: 3, highlight_latest: true, category_id: null },
 });
 
@@ -90,7 +90,7 @@ registerModule({
   name: "Eigen content",
   description: "Vrije tekstblok via de rich-text editor.",
   defaultSize: "1x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { content_html: "" },
 });
 
@@ -99,7 +99,7 @@ registerModule({
   name: "Video",
   description: "YouTube of Vimeo video embed.",
   defaultSize: "1x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { provider: "youtube", video_url: "", shortcode: "" },
 });
 
@@ -108,7 +108,7 @@ registerModule({
   name: "Call to action",
   description: "Knopblok dat verwijst naar een interne of externe pagina.",
   defaultSize: "1x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { text: "", button_label: "", button_url: "" },
 });
 
@@ -117,7 +117,7 @@ registerModule({
   name: "Sponsoren",
   description: "Toon sponsorlogo's in een raster of carrousel.",
   defaultSize: "2x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { display_mode: "grid", limit: 12 },
 });
 
@@ -126,7 +126,7 @@ registerModule({
   name: "Evenementen & trainingen",
   description: "Aankomende trainingen en events.",
   defaultSize: "1x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { limit: 5, show_attendance_status: false },
 });
 
@@ -135,7 +135,7 @@ registerModule({
   name: "Media Wall",
   description: "Beeld en video wand.",
   defaultSize: "2x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { display_mode: "grid", limit: 9 },
 });
 
@@ -144,7 +144,7 @@ registerModule({
   name: "Persoonlijk dashboard",
   description: "Persoonlijk overzicht voor ingelogde gebruikers.",
   defaultSize: "1x2",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: {
     show_next_training: true,
     show_latest_notifications: true,
@@ -158,7 +158,7 @@ registerModule({
   name: "Alerts & aankondigingen",
   description: "Toon actieve alerts en aankondigingen.",
   defaultSize: "2x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { show_alerts: true, show_announcements: true },
 });
 
@@ -167,7 +167,7 @@ registerModule({
   name: "Trainers",
   description: "Toon trainers met publieke bio.",
   defaultSize: "2x1",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { limit: 8, show_bio: true },
 });
 
@@ -177,7 +177,7 @@ registerModule({
   name: "Social feed",
   description: "Toon recente community posts op de homepage.",
   defaultSize: "1x2",
-  allowedSizes: ["1x1", "1x2", "2x1"],
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
   defaultConfig: { limit: 5, filter: "all" },
 });
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getTenantBySlug } from "@/lib/db/tenants";
 import { getUser } from "@/lib/auth/get-user";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess } from "@/lib/permissions";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import {
@@ -30,8 +31,11 @@ export default async function ConversationPage({ params }: Props) {
   const me = await getMyMember(tenant.id, user.id);
   if (!me) redirect(`/t/${slug}`);
 
-  const memberships = await getMemberships(user.id);
-  const isAdmin = hasTenantAccess(memberships, tenant.id);
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
+  const isAdmin = hasTenantAccess(memberships, tenant.id, adminRoleTenantIds);
 
   const detail = await getConversationDetail(id, tenant.id);
   if (!detail) notFound();

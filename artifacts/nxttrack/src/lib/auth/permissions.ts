@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireAuth } from "./require-auth";
 import { getMemberships } from "./get-memberships";
+import { getAdminRoleTenantIds } from "./get-admin-role-tenants";
 import { hasTenantAccess } from "@/lib/permissions";
 import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
 
@@ -13,8 +14,11 @@ export async function userHasPermission(
   userId: string,
   permission: string,
 ): Promise<boolean> {
-  const memberships = await getMemberships(userId);
-  if (hasTenantAccess(memberships, tenantId)) return true;
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(userId),
+    getAdminRoleTenantIds(userId),
+  ]);
+  if (hasTenantAccess(memberships, tenantId, adminRoleTenantIds)) return true;
   const perms = await getUserPermissionsInTenant(tenantId, userId);
   return perms.includes(permission);
 }

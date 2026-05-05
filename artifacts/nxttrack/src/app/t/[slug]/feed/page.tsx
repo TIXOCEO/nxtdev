@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth/user-role-rules";
 import { hasTenantAccess } from "@/lib/permissions";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import {
   canPostToSocial,
   canCoachBroadcast,
@@ -41,8 +42,11 @@ export default async function FeedPage({ params }: Props) {
   const settings = await getSocialSettings(tenant.id);
 
   const ctx = await getUserTenantContext(tenant.id, user.id);
-  const memberships = await getMemberships(user.id);
-  const isAdmin = hasTenantAccess(memberships, tenant.id);
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
+  const isAdmin = hasTenantAccess(memberships, tenant.id, adminRoleTenantIds);
   const memberId = ctx.members[0]?.id ?? null;
 
   let isLinkedAsChild = false;

@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/custom-pages";
 import { getUser } from "@/lib/auth/get-user";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { composeMetadata } from "@/lib/seo/build-metadata";
@@ -53,8 +54,11 @@ export default async function PublicCustomPage({ params }: PageProps) {
     const user = await getUser();
     if (!user) redirect(`/t/${slug}/login?next=/t/${slug}/p/${r.path}`);
     // Must be a member of THIS tenant (admin or member row), not just any logged-in user.
-    const memberships = await getMemberships(user.id);
-    let allowed = hasTenantAccess(memberships, r.tenant.id);
+    const [memberships, adminRoleTenantIds] = await Promise.all([
+      getMemberships(user.id),
+      getAdminRoleTenantIds(user.id),
+    ]);
+    let allowed = hasTenantAccess(memberships, r.tenant.id, adminRoleTenantIds);
     if (!allowed) {
       const admin = createAdminClient();
       const { data: m } = await admin

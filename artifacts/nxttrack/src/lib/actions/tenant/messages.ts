@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -33,8 +34,11 @@ export async function createConversation(
   if (!parsed.success) return { ok: false, error: "Ongeldige invoer" };
 
   const user = await requireAuth();
-  const memberships = await getMemberships(user.id);
-  const isAdmin = hasTenantAccess(memberships, parsed.data.tenant_id);
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
+  const isAdmin = hasTenantAccess(memberships, parsed.data.tenant_id, adminRoleTenantIds);
 
   const me = await getMyMember(parsed.data.tenant_id, user.id);
   if (!me) return { ok: false, error: "Geen lidprofiel binnen deze tenant" };
@@ -166,8 +170,11 @@ export async function replyToConversation(
   const me = await getMyMember(parsed.data.tenant_id, user.id);
   if (!me) return { ok: false, error: "Geen lidprofiel binnen deze tenant" };
 
-  const memberships = await getMemberships(user.id);
-  const isAdmin = hasTenantAccess(memberships, parsed.data.tenant_id);
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
+  const isAdmin = hasTenantAccess(memberships, parsed.data.tenant_id, adminRoleTenantIds);
   const part = await isParticipant(parsed.data.conversation_id, me.id);
   if (!part && !isAdmin) {
     return { ok: false, error: "Geen toegang tot dit gesprek" };

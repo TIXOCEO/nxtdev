@@ -13,12 +13,20 @@ interface ModuleGridProps {
   mobile?: boolean;
 }
 
+interface RenderedItem {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  fullBleed: boolean;
+  node: ReactNode;
+}
+
 /**
- * Lays out modules in a 2-column row-based grid on desktop and 1-col on mobile.
- *   - 1x1 → 1 col, 1 row
- *   - 1x2 → 1 col, 2 rows tall (or just full-width row container)
- *   - 2x1 → 2 cols (full width)
- * For simplicity we use CSS grid with col-span; row-span ignored on mobile.
+ * Sprint 22 — render via 2D x/y/w/h coördinaten op een 2-koloms CSS-grid.
+ * Hero-sliders forceren w=2 (volle breedte). Op mobiel wordt alles in 1 kolom
+ * gerenderd, gesorteerd op (y, x).
  */
 export async function ModuleGrid({
   tenant,
@@ -26,52 +34,53 @@ export async function ModuleGrid({
   userId,
   mobile = false,
 }: ModuleGridProps) {
-  const visibleMobile = mobile ? modules.filter((m) => m.visible_mobile) : modules;
-  if (visibleMobile.length === 0) return null;
+  const visible = mobile ? modules.filter((m) => m.visible_mobile) : modules;
+  if (visible.length === 0) return null;
 
-  const rendered: Array<{
-    id: string;
-    size: string;
-    fullBleed: boolean;
-    node: ReactNode;
-  }> = [];
-  for (const m of visibleMobile) {
+  const rendered: RenderedItem[] = [];
+  for (const m of visible) {
+    const fullBleed = FULL_BLEED_KEYS.has(m.module_key);
+    const w = fullBleed ? 2 : Math.max(1, Math.min(2, m.w ?? (m.size === "2x1" ? 2 : 1)));
+    const h = Math.max(1, Math.min(2, m.h ?? (m.size === "1x2" ? 2 : 1)));
+    const x = fullBleed ? 0 : Math.max(0, Math.min(1, m.position_x ?? 0));
+    const y = Math.max(0, m.position_y ?? 0);
     rendered.push({
       id: m.id,
-      size: m.size,
-      fullBleed: FULL_BLEED_KEYS.has(m.module_key),
+      x,
+      y,
+      w,
+      h,
+      fullBleed,
       node: await renderModule(tenant, m, userId),
     });
   }
 
+  // Sorteer op (y, x) voor stabiele render-volgorde / mobiele view.
+  rendered.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+
+  if (mobile) {
+    return (
+      <div className="grid grid-cols-1 gap-4">
+        {rendered.map((r) => (
+          <div key={r.id}>{r.node}</div>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={
-        mobile
-          ? "grid grid-cols-1 gap-4"
-          : "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:auto-rows-min"
-      }
-    >
-      {rendered.map((r) => {
-        // Full-bleed modules (hero sliders) krijgen altijd de volle breedte
-        // en geen dwingende container-hoogte.
-        const span = r.fullBleed
-          ? mobile
-            ? ""
-            : "sm:col-span-2"
-          : mobile
-            ? ""
-            : r.size === "2x1"
-              ? "sm:col-span-2"
-              : r.size === "1x2"
-                ? "sm:col-span-1 sm:row-span-2"
-                : "sm:col-span-1";
-        return (
-          <div key={r.id} className={span}>
-            {r.node}
-          </div>
-        );
-      })}
+    <div className="grid grid-cols-2 gap-4 sm:auto-rows-min">
+      {rendered.map((r) => (
+        <div
+          key={r.id}
+          style={{
+            gridColumn: `${r.x + 1} / span ${r.w}`,
+            gridRow: `${r.y + 1} / span ${r.h}`,
+          }}
+        >
+          {r.node}
+        </div>
+      ))}
     </div>
   );
 }

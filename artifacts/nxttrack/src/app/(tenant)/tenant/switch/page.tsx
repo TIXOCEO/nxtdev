@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess } from "@/lib/permissions";
 import { ACTIVE_TENANT_COOKIE } from "@/lib/auth/active-tenant-cookie";
 
@@ -27,8 +28,11 @@ export default async function TenantSwitchPage({ searchParams }: PageProps) {
   }
 
   const user = await requireAuth();
-  const memberships = await getMemberships(user.id);
-  if (!hasTenantAccess(memberships, tenantId)) {
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
+  if (!hasTenantAccess(memberships, tenantId, adminRoleTenantIds)) {
     redirect("/");
   }
 

@@ -1,5 +1,6 @@
 import { requireAuth } from "./require-auth";
 import { getMemberships } from "./get-memberships";
+import { getAdminRoleTenantIds } from "./get-admin-role-tenants";
 import { isPlatformAdmin, hasTenantAccess } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { Tenant, TenantMembership } from "@/types/database";
@@ -38,13 +39,16 @@ export async function getActiveTenant(
   requestedTenantId?: string | null,
 ): Promise<ActiveTenantResult> {
   const user = await requireAuth();
-  const memberships = await getMemberships(user.id);
+  const [memberships, adminRoleTenantIds] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
   const supabase = await createClient();
 
   const platformAdmin = isPlatformAdmin(memberships);
 
   // Honor explicit tenant request if provided and user has access.
-  if (requestedTenantId && hasTenantAccess(memberships, requestedTenantId)) {
+  if (requestedTenantId && hasTenantAccess(memberships, requestedTenantId, adminRoleTenantIds)) {
     const { data: tenant } = await supabase
       .from("tenants")
       .select("*")

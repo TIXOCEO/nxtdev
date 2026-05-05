@@ -17,6 +17,7 @@ import {
   upsertTenantRole,
   deleteTenantRole,
 } from "@/lib/actions/tenant/roles";
+import type { TenantRoleScope } from "@/types/database";
 
 interface RoleVM {
   id: string;
@@ -26,7 +27,8 @@ interface RoleVM {
   sort_order: number;
   permissions: string[];
   member_count: number;
-  /** True voor de "Beheerder" super-admin systeemrol. */
+  scope: TenantRoleScope;
+  /** True voor de super-admin systeemrol. */
   is_super_admin: boolean;
 }
 
@@ -36,10 +38,19 @@ interface Editor {
   description: string;
   permissions: Set<string>;
   sort_order: number;
+  scope: TenantRoleScope;
+  is_super_admin: boolean;
 }
 
-function blank(): Editor {
-  return { name: "", description: "", permissions: new Set(), sort_order: 0 };
+function blank(scope: TenantRoleScope): Editor {
+  return {
+    name: "",
+    description: "",
+    permissions: new Set(),
+    sort_order: 100,
+    scope,
+    is_super_admin: false,
+  };
 }
 
 interface Props {
@@ -47,15 +58,26 @@ interface Props {
   roles: RoleVM[];
 }
 
+const SCOPE_LABEL: Record<TenantRoleScope, string> = {
+  admin: "Beheerders (backend)",
+  usershell: "Frontend (gebruikers)",
+};
+
 export function RolesManager({ tenantId, roles: initialRoles }: Props) {
   const [roles, setRoles] = useState<RoleVM[]>(initialRoles);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TenantRoleScope>("admin");
   const [pending, start] = useTransition();
+
+  const visibleRoles = useMemo(
+    () => roles.filter((r) => r.scope === activeTab),
+    [roles, activeTab],
+  );
 
   function openNew() {
     setMsg(null);
-    setEditor(blank());
+    setEditor(blank(activeTab));
   }
 
   function openEdit(r: RoleVM) {
@@ -66,6 +88,8 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
       description: r.description ?? "",
       permissions: new Set(r.permissions),
       sort_order: r.sort_order,
+      scope: r.scope,
+      is_super_admin: r.is_super_admin,
     });
   }
 
@@ -80,21 +104,23 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
         description: editor.description.trim() || null,
         permissions: Array.from(editor.permissions),
         sort_order: editor.sort_order,
+        scope: editor.scope,
+        is_super_admin: editor.is_super_admin,
       });
       if (!res.ok) return setMsg(res.error);
-      // Optimistic refresh
       const existing = editor.id ? roles.find((r) => r.id === editor.id) : null;
       const newRow: RoleVM = {
         id: res.data.id,
-        name: existing?.is_super_admin ? "Beheerder" : editor.name.trim(),
+        name: existing?.is_super_admin ? existing.name : editor.name.trim(),
         description: editor.description.trim() || null,
         is_system: existing?.is_system ?? false,
-        sort_order: existing?.is_super_admin ? 0 : editor.sort_order,
+        sort_order: existing?.is_super_admin ? existing.sort_order : editor.sort_order,
         permissions: existing?.is_super_admin
           ? existing.permissions
           : Array.from(editor.permissions),
         member_count: existing?.member_count ?? 0,
-        is_super_admin: existing?.is_super_admin ?? false,
+        scope: existing?.scope ?? editor.scope,
+        is_super_admin: existing?.is_super_admin ?? editor.is_super_admin,
       };
       setRoles((prev) =>
         editor.id
@@ -135,9 +161,30 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
         </div>
       )}
 
+      <div
+        className="inline-flex rounded-lg border p-1"
+        style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+      >
+        {(["admin", "usershell"] as TenantRoleScope[]).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setActiveTab(s)}
+            className="rounded-md px-3 py-1.5 text-xs font-semibold"
+            style={{
+              backgroundColor: activeTab === s ? "var(--accent)" : "transparent",
+              color: "var(--text-primary)",
+            }}
+          >
+            {SCOPE_LABEL[s]}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center justify-between">
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          {roles.length} {roles.length === 1 ? "rol" : "rollen"}
+          {visibleRoles.length} {visibleRoles.length === 1 ? "rol" : "rollen"} in{" "}
+          {SCOPE_LABEL[activeTab].toLowerCase()}
         </p>
         <button
           type="button"
@@ -150,7 +197,7 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
       </div>
 
       <ul className="grid gap-2">
-        {roles.map((r) => (
+        {visibleRoles.map((r) => (
           <li
             key={r.id}
             className="flex items-start gap-3 rounded-2xl border p-4 transition-colors hover:bg-black/[0.02]"
@@ -162,17 +209,29 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
             <div
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
               style={{
-                backgroundColor: r.is_system ? "var(--accent)" : "var(--surface-soft)",
+                backgroundColor: r.is_super_admin
+                  ? "var(--accent)"
+                  : r.is_system
+                    ? "var(--surface-soft)"
+                    : "var(--surface-soft)",
                 color: "var(--text-primary)",
               }}
             >
-              {r.is_system ? <ShieldCheck className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
+              {r.is_super_admin ? <ShieldCheck className="h-5 w-5" /> : <Shield className="h-5 w-5" />}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   {r.name}
                 </p>
+                {r.is_super_admin && (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+                  >
+                    super admin
+                  </span>
+                )}
                 {r.is_system && (
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -219,6 +278,14 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
             </div>
           </li>
         ))}
+        {visibleRoles.length === 0 && (
+          <li
+            className="rounded-2xl border p-6 text-center text-xs"
+            style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+          >
+            Nog geen rollen in deze categorie.
+          </li>
+        )}
       </ul>
 
       {editor && (() => {
@@ -227,7 +294,8 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
           <RoleEditor
             editor={editor}
             isSystem={cur?.is_system ?? false}
-            isSuperAdmin={cur?.is_super_admin ?? false}
+            isSuperAdmin={cur?.is_super_admin ?? editor.is_super_admin}
+            isNew={!editor.id}
             onChange={setEditor}
             onSave={save}
             onClose={() => setEditor(null)}
@@ -243,6 +311,7 @@ function RoleEditor({
   editor,
   isSystem,
   isSuperAdmin,
+  isNew,
   onChange,
   onSave,
   onClose,
@@ -251,6 +320,7 @@ function RoleEditor({
   editor: Editor;
   isSystem: boolean;
   isSuperAdmin: boolean;
+  isNew: boolean;
   onChange: (e: Editor) => void;
   onSave: () => void;
   onClose: () => void;
@@ -267,8 +337,10 @@ function RoleEditor({
     () => PERMISSION_CATALOG.reduce((acc, g) => acc + g.permissions.length, 0),
     [],
   );
+  const permsLocked = isSuperAdmin;
 
   function togglePerm(key: string) {
+    if (permsLocked) return;
     const next = new Set(editor.permissions);
     if (next.has(key)) next.delete(key);
     else next.add(key);
@@ -276,6 +348,7 @@ function RoleEditor({
   }
 
   function toggleGroup(groupId: string, allKeys: string[]) {
+    if (permsLocked) return;
     const allOn = allKeys.every((k) => editor.permissions.has(k));
     const next = new Set(editor.permissions);
     if (allOn) {
@@ -312,7 +385,7 @@ function RoleEditor({
               )}
             </p>
             <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-              {isSuperAdmin
+              {permsLocked
                 ? `Alle ${totalAvail} permissies zijn altijd actief.`
                 : `${totalSelected} van ${totalAvail} permissies geselecteerd`}
             </p>
@@ -366,6 +439,62 @@ function RoleEditor({
               />
             </div>
           </div>
+
+          {isNew && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                  Categorie
+                </label>
+                <select
+                  value={editor.scope}
+                  onChange={(e) => {
+                    const next = e.target.value as TenantRoleScope;
+                    onChange({
+                      ...editor,
+                      scope: next,
+                      is_super_admin: next === "admin" ? editor.is_super_admin : false,
+                    });
+                  }}
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                  style={{
+                    backgroundColor: "var(--surface-soft)",
+                    borderColor: "var(--surface-border)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  <option value="admin">Beheerders (toegang tot tenant admin)</option>
+                  <option value="usershell">Frontend (alleen gebruikersshell)</option>
+                </select>
+              </div>
+              {editor.scope === "admin" && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                    Super admin
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
+                    style={{
+                      backgroundColor: "var(--surface-soft)",
+                      borderColor: "var(--surface-border)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={editor.is_super_admin}
+                      onChange={(e) =>
+                        onChange({ ...editor, is_super_admin: e.target.checked })
+                      }
+                      className="h-3.5 w-3.5"
+                    />
+                    Geef automatisch alle permissies (vergrendeld)
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
               Omschrijving
@@ -397,7 +526,7 @@ function RoleEditor({
               <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
                 Permissies
               </p>
-              {!isSuperAdmin && (
+              {!permsLocked && (
                 <button
                   type="button"
                   onClick={() => {
@@ -421,7 +550,7 @@ function RoleEditor({
             <div className="space-y-1 px-2 py-2">
               {PERMISSION_CATALOG.map((g) => {
                 const groupKeys = g.permissions.map((p) => p.key);
-                const selectedInGroup = isSuperAdmin
+                const selectedInGroup = permsLocked
                   ? groupKeys.length
                   : groupKeys.filter((k) => editor.permissions.has(k)).length;
                 const allOn = selectedInGroup === groupKeys.length;
@@ -456,7 +585,7 @@ function RoleEditor({
                       <button
                         type="button"
                         onClick={() => toggleGroup(g.id, groupKeys)}
-                        disabled={isSuperAdmin}
+                        disabled={permsLocked}
                         className="rounded-md px-2 py-1 text-[10px] font-semibold disabled:opacity-50"
                         style={{
                           backgroundColor: allOn ? "var(--accent)" : "var(--surface-soft)",
@@ -470,12 +599,12 @@ function RoleEditor({
                       <div className="grid grid-cols-1 gap-1 border-t px-3 py-2 sm:grid-cols-2"
                         style={{ borderColor: "var(--surface-border)" }}>
                         {g.permissions.map((p) => {
-                          const checked = isSuperAdmin || editor.permissions.has(p.key);
+                          const checked = permsLocked || editor.permissions.has(p.key);
                           return (
                             <label
                               key={p.key}
                               className={
-                                isSuperAdmin
+                                permsLocked
                                   ? "flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs opacity-80"
                                   : "flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-black/5"
                               }
@@ -484,7 +613,7 @@ function RoleEditor({
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                disabled={isSuperAdmin}
+                                disabled={permsLocked}
                                 onChange={() => togglePerm(p.key)}
                                 className="mt-0.5 h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
                               />

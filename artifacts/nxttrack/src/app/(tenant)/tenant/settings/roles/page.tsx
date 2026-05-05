@@ -5,9 +5,9 @@ import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
 import { listTenantRolesWithPerms } from "@/lib/db/tenant-roles";
 import {
   seedDefaultRolesIfEmpty,
-  ensureBeheerderHasAllPermissions,
-  isSuperAdminRole,
+  ensureSuperAdminHasAllPermissions,
 } from "@/lib/actions/tenant/roles";
+import { isSuperAdminRole } from "@/lib/roles/is-super-admin";
 import { RolesManager } from "./_manager";
 
 export const dynamic = "force-dynamic";
@@ -27,11 +27,11 @@ export default async function TenantRolesPage() {
   } catch (err) {
     console.error("seedDefaultRolesIfEmpty failed:", err);
   }
-  // Re-sync: nieuwe permissies in de catalog automatisch aan Beheerder geven.
+  // Re-sync: nieuwe permissies in de catalog automatisch aan super admin geven.
   try {
-    await ensureBeheerderHasAllPermissions({ tenant_id: tenantId });
+    await ensureSuperAdminHasAllPermissions({ tenant_id: tenantId });
   } catch (err) {
-    console.error("ensureBeheerderHasAllPermissions failed:", err);
+    console.error("ensureSuperAdminHasAllPermissions failed:", err);
   }
 
   const roles = await listTenantRolesWithPerms(tenantId).catch((err) => {
@@ -55,11 +55,8 @@ export default async function TenantRolesPage() {
           sort_order: r.sort_order,
           permissions: r.permissions,
           member_count: r.member_count,
-          is_super_admin: isSuperAdminRole({
-            name: r.name,
-            is_system: r.is_system,
-            sort_order: r.sort_order,
-          }),
+          scope: r.scope,
+          is_super_admin: isSuperAdminRole({ is_super_admin: r.is_super_admin }),
         }))}
       />
     </>

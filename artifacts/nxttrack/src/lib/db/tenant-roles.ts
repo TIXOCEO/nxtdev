@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { TenantRoleScope } from "@/types/database";
 
 export interface TenantRoleRow {
   id: string;
@@ -8,6 +9,8 @@ export interface TenantRoleRow {
   description: string | null;
   is_system: boolean;
   sort_order: number;
+  scope: TenantRoleScope;
+  is_super_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +33,7 @@ export async function listTenantRoles(tenantId: string): Promise<TenantRoleRow[]
     .from("tenant_roles")
     .select("*")
     .eq("tenant_id", tenantId)
+    .order("scope", { ascending: true })
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   return (data ?? []) as TenantRoleRow[];
@@ -44,6 +48,7 @@ export async function listTenantRolesWithPerms(
       .from("tenant_roles")
       .select("*")
       .eq("tenant_id", tenantId)
+      .order("scope", { ascending: true })
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
     admin
@@ -114,4 +119,50 @@ export async function getUserPermissionsInTenant(
   return Array.from(
     new Set(((perms ?? []) as Array<{ permission: string }>).map((p) => p.permission)),
   );
+}
+
+/**
+ * Sprint 22 — Lijst van tenant_ids waar deze user een tenant_role met
+ * scope='admin' heeft via tenant_member_roles. Een user is admin van een
+ * tenant als hij òf platform_admin is, òf een tenant_admin enum-rol heeft,
+ * òf in deze lijst voorkomt.
+ */
+export async function getAdminRoleTenantIds(userId: string): Promise<string[]> {
+  const admin = createAdminClient();
+  const { data: members } = await admin
+    .from("members")
+    .select("id, tenant_id")
+    .eq("user_id", userId);
+  const memberRows = (members ?? []) as Array<{ id: string; tenant_id: string }>;
+  if (memberRows.length === 0) return [];
+
+  const memberIds = memberRows.map((m) => m.id);
+  const { data: assigns } = await admin
+    .from("tenant_member_roles")
+    .select("role_id, tenant_id, member_id")
+    .in("member_id", memberIds);
+  const assignRows = (assigns ?? []) as Array<{
+    role_id: string;
+    tenant_id: string;
+    member_id: string;
+  }>;
+  if (assignRows.length === 0) return [];
+
+  const roleIds = Array.from(new Set(assignRows.map((a) => a.role_id)));
+  const { data: roles } = await admin
+    .from("tenant_roles")
+    .select("id, scope, tenant_id")
+    .in("id", roleIds);
+  const adminRoleIds = new Set(
+    ((roles ?? []) as Array<{ id: string; scope: string; tenant_id: string }>)
+      .filter((r) => r.scope === "admin")
+      .map((r) => r.id),
+  );
+  if (adminRoleIds.size === 0) return [];
+
+  const tenantSet = new Set<string>();
+  for (const a of assignRows) {
+    if (adminRoleIds.has(a.role_id)) tenantSet.add(a.tenant_id);
+  }
+  return Array.from(tenantSet);
 }
