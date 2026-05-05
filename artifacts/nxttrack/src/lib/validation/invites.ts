@@ -85,14 +85,37 @@ export const inviteIdSchema = z.object({
   invite_id: z.string().uuid(),
 });
 
+// Strong-password rules — duplicated minimaal hier omdat we anders een
+// nieuw lib-bestand zouden importeren in een schema dat ook door Edge/
+// client gebruikt wordt. In sync houden met `src/lib/validation/password.ts`.
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 72;
+
 export const acceptAdultInviteSchema = z
   .object({
     token: z.string().min(8).max(200),
     password: z
       .string()
-      .min(8, "Minimaal 8 tekens.")
-      .max(72, "Maximaal 72 tekens."),
+      .min(PASSWORD_MIN, `Minimaal ${PASSWORD_MIN} tekens.`)
+      .max(PASSWORD_MAX, `Maximaal ${PASSWORD_MAX} tekens.`)
+      .refine((v) => /[a-z]/.test(v), "Voeg een kleine letter toe.")
+      .refine((v) => /[A-Z]/.test(v), "Voeg een hoofdletter toe.")
+      .refine((v) => /[0-9]/.test(v), "Voeg een cijfer toe.")
+      .refine(
+        (v) => /[^A-Za-z0-9]/.test(v),
+        "Voeg een speciaal teken toe (bv. !, @, #).",
+      ),
+    password_confirm: z.string().min(1, "Bevestig je wachtwoord."),
     full_name: z.string().trim().min(2, "Naam is verplicht").max(120),
+  })
+  .superRefine((v, ctx) => {
+    if (v.password !== v.password_confirm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["password_confirm"],
+        message: "Wachtwoorden komen niet overeen.",
+      });
+    }
   });
 
 export type AcceptAdultInviteInput = z.infer<typeof acceptAdultInviteSchema>;

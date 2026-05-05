@@ -10,6 +10,56 @@ import {
   type PublicRegistrationInput,
   type PublicTryoutInput,
 } from "@/lib/validation/public-registration";
+import { notifyPlatformOfRegistration } from "@/lib/email/platform-notify";
+
+async function fetchTenantNameAndSlug(
+  tenantId: string,
+): Promise<{ name: string; slug: string }> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("tenants")
+    .select("name, slug")
+    .eq("id", tenantId)
+    .maybeSingle();
+  return {
+    name: (data?.name as string | undefined) ?? "(onbekende tenant)",
+    slug: (data?.slug as string | undefined) ?? "",
+  };
+}
+
+/**
+ * Stuur fire-and-forget een notificatie naar de platform admins.
+ * Faalt stilletjes — de gebruiker van het formulier mag hier nooit
+ * door geblokkeerd worden.
+ */
+async function dispatchPlatformNotice(
+  tenantId: string,
+  registrationId: string,
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const [{ name, slug }, { data: reg }] = await Promise.all([
+      fetchTenantNameAndSlug(tenantId),
+      admin
+        .from("registrations")
+        .select(
+          "id, type, registration_target, parent_name, parent_email, parent_phone, child_name, date_of_birth, player_type, address, postal_code, city, extra_details, athletes_json",
+        )
+        .eq("id", registrationId)
+        .maybeSingle(),
+    ]);
+    if (!reg) return;
+    await notifyPlatformOfRegistration({
+      tenantName: name,
+      tenantSlug: slug,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      registration: reg as any,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[registrations] platform notify failed:", err);
+  }
+}
 
 export type PublicActionResult<T = void> =
   | { ok: true; data: T }
@@ -90,6 +140,8 @@ export async function submitTryoutRegistration(
         "Aanmelding kon niet worden verwerkt. Probeer het opnieuw.",
     );
   }
+  // Fire-and-forget notificatie naar platform admins.
+  void dispatchPlatformNotice(tenantId, created.id);
   return { ok: true, data: { id: created.id } };
 }
 
@@ -144,6 +196,7 @@ export async function submitMembershipRegistration(
         "Inschrijving kon niet worden verwerkt. Probeer het opnieuw.",
     );
   }
+  void dispatchPlatformNotice(tenantId, created.id);
   return { ok: true, data: { id: created.id } };
 }
 
@@ -186,5 +239,6 @@ export async function submitPublicRegistration(
   if (insErr || !created) {
     return fail(insErr?.message ?? "Aanmelding mislukt. Probeer het opnieuw.");
   }
+  void dispatchPlatformNotice(tenantId, created.id);
   return { ok: true, data: { id: created.id } };
 }

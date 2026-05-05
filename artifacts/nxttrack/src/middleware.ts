@@ -14,7 +14,33 @@ import type { NextRequest } from "next/server";
  *
  * Reserved subdomeinen worden behandeld als root (geen tenant-rewrite).
  */
-const APEX_DOMAIN = "nxttrack.nl";
+const APEX_DOMAIN = process.env.APEX_DOMAIN || "nxttrack.nl";
+
+/**
+ * Statische mapping van custom domeinen naar tenant-slugs.
+ *
+ * Formaat (env var `CUSTOM_DOMAIN_MAP`):
+ *   "voetbalschool-houtrust.nl=voetbalschool-houtrust,clubX.nl=club-x"
+ *
+ * Bewust geen DB-lookup hier: middleware draait op de Edge runtime en
+ * een sync map uit env is veruit het snelst en betrouwbaarst voor
+ * productie. Een tenant met custom domain vereist sowieso een redeploy
+ * (nginx server-block + cert), dus dit env-var meebewerken is geen
+ * grote operationele kost.
+ */
+const CUSTOM_DOMAIN_MAP: Map<string, string> = (() => {
+  const raw = process.env.CUSTOM_DOMAIN_MAP ?? "";
+  const m = new Map<string, string>();
+  for (const pair of raw.split(",")) {
+    const [domain, slug] = pair.split("=").map((s) => s?.trim().toLowerCase());
+    if (domain && slug) m.set(domain, slug);
+    // www-variant ook accepteren.
+    if (domain && slug && !domain.startsWith("www.")) {
+      m.set(`www.${domain}`, slug);
+    }
+  }
+  return m;
+})();
 
 const RESERVED_SUBDOMAINS = new Set<string>([
   "www",
@@ -57,6 +83,27 @@ export function middleware(req: NextRequest) {
   // Apex en www → marketing-site (root) of /platform; geen rewrite.
   if (host === APEX_DOMAIN || host === `www.${APEX_DOMAIN}`) {
     return NextResponse.next();
+  }
+
+  // Custom domein → vooraf gemapped naar een slug.
+  const customSlug = CUSTOM_DOMAIN_MAP.get(host);
+  if (customSlug) {
+    if (
+      url.pathname === `/t/${customSlug}` ||
+      url.pathname.startsWith(`/t/${customSlug}/`)
+    ) {
+      return NextResponse.next();
+    }
+    const newPath = `/t/${customSlug}${url.pathname === "/" ? "" : url.pathname}`;
+    const proto =
+      req.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+      url.protocol.replace(":", "") ||
+      "https";
+    const rewriteTarget = new URL(
+      `${newPath}${url.search}`,
+      `${proto}://${host}`,
+    );
+    return NextResponse.rewrite(rewriteTarget);
   }
 
   // Subdomein onder onze apex?

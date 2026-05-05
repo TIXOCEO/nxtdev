@@ -44,6 +44,14 @@ interface NavGroup {
   defaultOpen?: boolean;
 }
 
+// Logischer indeling per "what would a club admin actually do today":
+//   1. Overzicht (snelle blik)
+//   2. Leden & groepen (wie zit er in mijn club)
+//   3. Inschrijvingen (binnenkomende aanvragen)
+//   4. Trainingen & lidmaatschappen (planning + commercie)
+//   5. Communicatie (alle uitgaande berichten)
+//   6. Content (publieke website / pagina's / media)
+//   7. Instellingen (configuratie, helemaal onderaan)
 const NAV_GROUPS: NavGroup[] = [
   {
     id: "main",
@@ -52,14 +60,27 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: "club",
-    label: "Club",
+    id: "members",
+    label: "Leden & groepen",
     items: [
-      { label: "Leden",          icon: Users,         href: "/tenant/members" },
-      { label: "Uitnodigingen",  icon: MailPlus,      href: "/tenant/invites" },
-      { label: "Groepen",        icon: UsersRound,    href: "/tenant/groups" },
-      { label: "Trainingen",     icon: CalendarDays,  href: "/tenant/trainings" },
-      { label: "Lidmaatschappen", icon: CreditCard,   href: "/tenant/memberships" },
+      { label: "Leden",           icon: Users,        href: "/tenant/members" },
+      { label: "Uitnodigingen",   icon: MailPlus,     href: "/tenant/invites" },
+      { label: "Groepen",         icon: UsersRound,   href: "/tenant/groups" },
+    ],
+  },
+  {
+    id: "intake",
+    label: "Inschrijvingen",
+    items: [
+      { label: "Aanmeldingen",    icon: ClipboardList, href: "/tenant/registrations" },
+    ],
+  },
+  {
+    id: "planning",
+    label: "Planning & lidmaatschap",
+    items: [
+      { label: "Trainingen",      icon: CalendarDays,  href: "/tenant/trainings" },
+      { label: "Lidmaatschappen", icon: CreditCard,    href: "/tenant/memberships" },
     ],
   },
   {
@@ -67,34 +88,33 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Communicatie",
     items: [
       { label: "Communicatie hub", icon: Mail,         href: "/tenant/communication" },
-      { label: "Nieuws",          icon: Newspaper,    href: "/tenant/news" },
-      { label: "Alerts",          icon: AlertTriangle, href: "/tenant/communication/alerts" },
-      { label: "Inschrijvingen",  icon: ClipboardList, href: "/tenant/registrations" },
-      { label: "Meldingen",       icon: Bell,         href: "/tenant/notifications" },
-      { label: "E-mail templates", icon: Mail,        href: "/tenant/email-templates" },
-      { label: "Nieuwsbrieven",   icon: Send,         href: "/tenant/newsletters" },
+      { label: "Nieuws",           icon: Newspaper,    href: "/tenant/news" },
+      { label: "Nieuwsbrieven",    icon: Send,         href: "/tenant/newsletters" },
+      { label: "Alerts",           icon: AlertTriangle, href: "/tenant/communication/alerts" },
+      { label: "Meldingen",        icon: Bell,         href: "/tenant/notifications" },
+      { label: "E-mail templates", icon: Mail,         href: "/tenant/email-templates" },
       { label: "Social moderatie", icon: ShieldCheck,  href: "/tenant/social-moderation" },
     ],
   },
   {
-    id: "cms",
-    label: "CMS",
+    id: "content",
+    label: "Website & content",
     icon: FileText,
     items: [
-      { label: "Homepage",        icon: Home,         href: "/tenant/homepage" },
-      { label: "Pagina's",        icon: Files,        href: "/tenant/pages" },
-      { label: "Menu volgorde",   icon: ListOrdered,  href: "/tenant/pages/menu" },
-      { label: "Media Wall",      icon: ImagePlay,    href: "/tenant/media-wall" },
-      { label: "Sponsoren",       icon: Star,         href: "/tenant/sponsors" },
+      { label: "Homepage",         icon: Home,         href: "/tenant/homepage" },
+      { label: "Pagina's",         icon: Files,        href: "/tenant/pages" },
+      { label: "Menu volgorde",    icon: ListOrdered,  href: "/tenant/pages/menu" },
+      { label: "Media Wall",       icon: ImagePlay,    href: "/tenant/media-wall" },
+      { label: "Sponsoren",        icon: Star,         href: "/tenant/sponsors" },
     ],
   },
   {
     id: "config",
-    label: "Configuratie",
+    label: "Instellingen",
     items: [
-      { label: "Tenant profiel",  icon: Building2,    href: "/tenant/profile" },
-      { label: "Rollen",          icon: ShieldCheck,  href: "/tenant/settings/roles" },
-      { label: "Instellingen",    icon: Settings,     href: "/tenant/settings" },
+      { label: "Clubprofiel",      icon: Building2,    href: "/tenant/profile" },
+      { label: "Algemeen",         icon: Settings,     href: "/tenant/settings" },
+      { label: "Rollen & rechten", icon: ShieldCheck,  href: "/tenant/settings/roles" },
     ],
   },
 ];

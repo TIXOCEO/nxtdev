@@ -38,6 +38,8 @@ import type {
   Registration,
   RegistrationAthleteEntry,
 } from "@/types/database";
+import { tenantUrl, type TenantHostInfo } from "@/lib/url";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // NOTE: per the Sprint-7 lesson, only async functions are exported here.
 // Constants/types live in ./invite-statuses.ts and validation/invites.ts.
@@ -101,25 +103,34 @@ async function assertMemberInTenant(
   return { ok: true };
 }
 
-function publicBaseUrl(): string {
-  // Self-hosted production: explicit base URL (e.g. https://nxttrack.nl).
-  const explicit =
-    process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-  if (explicit) return explicit.replace(/\/+$/, "");
-  // Replit production HTTPS domains (legacy fallback).
-  const replitDomains = process.env.REPLIT_DOMAINS;
-  if (replitDomains) {
-    const first = replitDomains.split(",")[0]?.trim();
-    if (first) return `https://${first}`;
+/**
+ * Pageinated lookup van een Supabase auth-user op email-adres.
+ * Supabase admin API biedt geen direct getUserByEmail, dus we paginene
+ * door listUsers tot we de gebruiker vinden of de pagina's op zijn.
+ */
+async function findAuthUserByEmail(
+  admin: SupabaseClient,
+  email: string,
+): Promise<{ id: string; email: string } | null> {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 25; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error || !data) return null;
+    const found = data.users.find(
+      (u) => (u.email ?? "").toLowerCase() === target,
+    );
+    if (found) return { id: found.id, email: found.email ?? target };
+    if (data.users.length < perPage) return null;
   }
-  // Replit development preview.
-  const dev = process.env.REPLIT_DEV_DOMAIN;
-  if (dev) return `https://${dev}`;
-  return "http://localhost";
+  return null;
 }
 
-function inviteLink(slug: string, token: string): string {
-  return `${publicBaseUrl()}/t/${slug}/invite/${token}`;
+function inviteLink(tenant: TenantHostInfo, token: string): string {
+  // Tenant-aware: gebruikt custom domain als dat is ingesteld, anders
+  // het subdomein onder onze apex. In dev/local valt het terug op een
+  // pad-gebaseerde URL onder /t/<slug>/...
+  return tenantUrl(tenant, `/invite/${token}`);
 }
 
 async function dispatchInvite(
@@ -130,12 +141,15 @@ async function dispatchInvite(
   const admin = createAdminClient();
   const { data: tenant } = await admin
     .from("tenants")
-    .select("name, slug, contact_email")
+    .select("name, slug, domain, contact_email")
     .eq("id", tenantId)
     .maybeSingle();
   if (!tenant) return { ok: false, error: "Tenant niet gevonden." };
 
-  const link = inviteLink((tenant.slug as string), invite.token);
+  const link = inviteLink(
+    { slug: tenant.slug as string, domain: tenant.domain as string | null },
+    invite.token,
+  );
   const expiry = new Date(invite.expires_at).toLocaleDateString("nl-NL");
 
   const variables: Record<string, string> = {
@@ -490,30 +504,20 @@ export async function acceptAdultInvite(
     return fail("Dit uitnodigingstype kan niet via dit formulier worden afgerond.");
   }
 
-  // Create or fetch the auth user.
+  // Find-or-create de auth-user.
+  //
+  // Voorheen probeerden we eerst `createUser` en herkenden we een bestaande
+  // user via een regex op de error-message. Newer Supabase versies geven
+  // andere errors (`User already registered`, `email_exists`, of zelfs een
+  // generieke 422), waardoor de fallback faalde en de eindgebruiker
+  // "email bestaat al" zag. Robuuster: doe ALTIJD eerst een lookup en
+  // beslis dan of we maken of bijwerken.
+  const targetEmail = invite.email.toLowerCase();
   let userId: string | null = null;
-  const { data: created, error: userErr } = await admin.auth.admin.createUser({
-    email: invite.email,
-    password: parsed.data.password,
-    email_confirm: true,
-    user_metadata: { full_name: parsed.data.full_name },
-  });
-  if (created?.user) {
-    userId = created.user.id;
-  } else if (
-    userErr &&
-    /already (registered|exists)|duplicate/i.test(userErr.message)
-  ) {
-    // Existing user — look it up and update its password.
-    const { data: list } = await admin.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
-    const found = list?.users.find(
-      (u) => (u.email ?? "").toLowerCase() === invite.email.toLowerCase(),
-    );
-    if (!found) return fail("Bestaand account kon niet worden geladen.");
-    userId = found.id;
+
+  const existing = await findAuthUserByEmail(admin, targetEmail);
+  if (existing) {
+    userId = existing.id;
     const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
       password: parsed.data.password,
       user_metadata: { full_name: parsed.data.full_name },
@@ -521,7 +525,35 @@ export async function acceptAdultInvite(
     });
     if (updErr) return fail(updErr.message);
   } else {
-    return fail(userErr?.message ?? "Kon account niet aanmaken.");
+    const { data: created, error: userErr } =
+      await admin.auth.admin.createUser({
+        email: targetEmail,
+        password: parsed.data.password,
+        email_confirm: true,
+        user_metadata: { full_name: parsed.data.full_name },
+      });
+    if (created?.user) {
+      userId = created.user.id;
+    } else if (
+      userErr &&
+      /already (registered|exists)|duplicate|email[_ ]exists/i.test(
+        userErr.message,
+      )
+    ) {
+      // Race-conditie: tussen lookup en create is de user toch aangemaakt.
+      // Probeer opnieuw te vinden en dan bij te werken.
+      const retry = await findAuthUserByEmail(admin, targetEmail);
+      if (!retry) return fail("Bestaand account kon niet worden geladen.");
+      userId = retry.id;
+      const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+        password: parsed.data.password,
+        user_metadata: { full_name: parsed.data.full_name },
+        email_confirm: true,
+      });
+      if (updErr) return fail(updErr.message);
+    } else {
+      return fail(userErr?.message ?? "Kon account niet aanmaken.");
+    }
   }
 
   // Ensure profile row.

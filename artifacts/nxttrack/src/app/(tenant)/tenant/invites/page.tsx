@@ -11,6 +11,7 @@ import {
   type InviteTypeLiteral,
 } from "@/lib/actions/tenant/invite-statuses";
 import { InviteRowActions } from "./_invite-actions";
+import { tenantUrl } from "@/lib/url";
 
 export const dynamic = "force-dynamic";
 
@@ -31,29 +32,16 @@ function fmt(iso: string): string {
   });
 }
 
-function publicBase(): string {
-  if (typeof window !== "undefined") return window.location.origin;
-  const explicit =
-    process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-  if (explicit) return explicit.replace(/\/+$/, "");
-  const replitDomains = process.env.REPLIT_DOMAINS;
-  if (replitDomains) {
-    const first = replitDomains.split(",")[0]?.trim();
-    if (first) return `https://${first}`;
-  }
-  const dev = process.env.REPLIT_DEV_DOMAIN;
-  if (dev) return `https://${dev}`;
-  return "";
-}
-
 export default async function TenantInvitesPage() {
   const requested = await readActiveTenantCookie();
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
   const invites = await getInvitesByTenant(result.tenant.id);
-  const slug = result.tenant.slug;
-  const base = publicBase();
+  const tenantHost = {
+    slug: result.tenant.slug,
+    domain: (result.tenant as { domain?: string | null }).domain ?? null,
+  };
 
   return (
     <>
@@ -71,7 +59,7 @@ export default async function TenantInvitesPage() {
       ) : (
         <ul className="space-y-3">
           {invites.map((inv) => {
-            const acceptUrl = `${base}/t/${slug}/invite/${inv.token}`;
+            const acceptUrl = tenantUrl(tenantHost, `/invite/${inv.token}`);
             const expired = new Date(inv.expires_at).getTime() < Date.now();
             const displayStatus = expired && inv.status !== "accepted" && inv.status !== "revoked"
               ? "expired"
