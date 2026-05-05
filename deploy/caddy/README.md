@@ -24,7 +24,7 @@ sudo cp deploy/caddy/Caddyfile /etc/caddy/Caddyfile
 
 # Environment voor caddy.service:
 sudo tee /etc/default/caddy >/dev/null <<'EOF'
-ACME_EMAIL=jouw@email.nl
+ACME_EMAIL=info@nxttrack.nl
 APEX_DOMAIN=nxttrack.nl
 APP_PORT=8080
 API_PORT=8081

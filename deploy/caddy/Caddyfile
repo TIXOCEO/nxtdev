@@ -33,12 +33,10 @@
         on_demand_tls {
                 # Localhost ipv apex om circulaire dependency te vermijden:
                 # als het apex-cert verlopen is moet Caddy nog steeds nieuwe
-                # certs kunnen valideren.
+                # certs kunnen valideren. De ask-endpoint MOET 200 of 4xx
+                # teruggeven; dat is de enige bescherming tegen misbruik van
+                # ons cert-quotum (Caddy v2.7+ verwijderde interval/burst).
                 ask http://localhost:{$APP_PORT:8080}/api/tls-check
-                # Maximum nieuwe certs per dag voor onbekende hosts.
-                # Verlaag dit als je misbruik vermoedt.
-                interval 1m
-                burst    5
         }
 }
 
