@@ -46,7 +46,17 @@ export function MobileNavTrigger({ children, label = "Menu", className }: Mobile
         <SheetHeader className="sr-only">
           <SheetTitle>{label}</SheetTitle>
         </SheetHeader>
-        <div className="h-full" onClick={() => setOpen(false)}>
+        <div
+          className="h-full"
+          onClick={(e) => {
+            // Sluit het drawer alleen wanneer de gebruiker daadwerkelijk
+            // navigeert (klik op een <a>). Klikken op interne buttons
+            // (zoals dropdown-toggles voor groepen) mogen het drawer
+            // NIET sluiten — anders kan men submenu's niet openen.
+            const target = e.target as HTMLElement | null;
+            if (target?.closest("a")) setOpen(false);
+          }}
+        >
           {children}
         </div>
       </SheetContent>

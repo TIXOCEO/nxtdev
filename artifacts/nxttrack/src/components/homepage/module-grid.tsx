@@ -58,6 +58,7 @@ export async function ModuleGrid({
   // Sorteer op (y, x) voor stabiele render-volgorde / mobiele view.
   rendered.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
 
+  // Mobile preview mode (gebruikt door de homepage builder) → forceer 1 kolom.
   if (mobile) {
     return (
       <div className="grid grid-cols-1 gap-4">
@@ -68,19 +69,34 @@ export async function ModuleGrid({
     );
   }
 
+  // Op echte mobiele viewports: 1 kolom gestapeld op (y, x) volgorde.
+  // Op md+: 2-koloms grid met de geconfigureerde x/y/w/h posities.
+  const mobileVisible = rendered.filter((r) => {
+    const m = visible.find((v) => v.id === r.id);
+    return !m || m.visible_mobile !== false;
+  });
+
   return (
-    <div className="grid grid-cols-2 gap-4 sm:auto-rows-min">
-      {rendered.map((r) => (
-        <div
-          key={r.id}
-          style={{
-            gridColumn: `${r.x + 1} / span ${r.w}`,
-            gridRow: `${r.y + 1} / span ${r.h}`,
-          }}
-        >
-          {r.node}
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {mobileVisible.map((r) => (
+          <div key={`m-${r.id}`}>{r.node}</div>
+        ))}
+      </div>
+
+      <div className="hidden grid-cols-2 gap-4 sm:auto-rows-min md:grid">
+        {rendered.map((r) => (
+          <div
+            key={`d-${r.id}`}
+            style={{
+              gridColumn: `${r.x + 1} / span ${r.w}`,
+              gridRow: `${r.y + 1} / span ${r.h}`,
+            }}
+          >
+            {r.node}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Home,
@@ -213,6 +214,10 @@ export function PublicSidebar({
     customPages,
   );
   const initials = initialsFor(tenant.name);
+  // Wanneer tenant.logo_url een 404 of broken image teruggeeft, vallen we
+  // visueel terug op de initialen i.p.v. een kapot afbeelding-icoontje.
+  const [logoFailed, setLogoFailed] = useState(false);
+  const showLogo = !!tenant.logo_url && !logoFailed;
 
   async function onLogout() {
     onNavigate?.();
@@ -235,12 +240,13 @@ export function PublicSidebar({
             backgroundColor: "var(--surface-main)",
           }}
         >
-          {tenant.logo_url ? (
+          {showLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={tenant.logo_url}
+              src={tenant.logo_url!}
               alt={tenant.name}
               className="h-full w-full object-contain"
+              onError={() => setLogoFailed(true)}
             />
           ) : (
             <span
