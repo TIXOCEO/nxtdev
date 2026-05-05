@@ -31,6 +31,9 @@ export const PERMISSION_CATALOG: PermissionGroup[] = [
       { key: "members.create", label: "Leden uitnodigen / toevoegen" },
       { key: "members.edit", label: "Leden bewerken" },
       { key: "members.remove", label: "Leden verwijderen / deactiveren" },
+      // Sprint E — financiële gegevens (IBAN / payment method) bekijken/bewerken.
+      { key: "members.financial.view", label: "Financiële gegevens bekijken (IBAN)" },
+      { key: "members.financial.manage", label: "Financiële gegevens bewerken" },
       { key: "groups.manage", label: "Groepen beheren" },
       { key: "memberships.manage", label: "Lidmaatschappen beheren" },
     ],

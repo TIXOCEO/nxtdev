@@ -1,12 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { UserRound, Layers, Bell, Smartphone } from "lucide-react";
-import { FamilySection } from "./_family-section";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { getUserTenantContext } from "@/lib/auth/user-role-rules";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { ProfileClientStatus } from "./_status";
+import { ProfileShell } from "./_profile-shell";
+import { getMemberFinancialDetails } from "@/lib/db/financial-details";
+import { getActivePaymentMethods } from "@/lib/db/payment-methods";
+import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
+import { getMemberships } from "@/lib/auth/get-memberships";
+import { isPlatformAdmin, isTenantAdmin } from "@/lib/permissions";
+import { maskIban } from "@/lib/iban";
 import type { MemberProfilePicture } from "@/types/database";
 
 interface PageProps {
@@ -19,6 +25,8 @@ const ROLE_LABEL: Record<string, string> = {
   parent: "Ouder",
   athlete: "Atleet",
   trainer: "Trainer",
+  staff: "Staf",
+  volunteer: "Vrijwilliger",
 };
 
 export default async function PublicProfilePage({ params }: PageProps) {
@@ -30,6 +38,26 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   const ctx = await getUserTenantContext(tenant.id, user.id);
   const admin = createAdminClient();
+
+  const primary = ctx.members[0] ?? null;
+  if (!primary) {
+    // User is logged in but heeft geen member in deze tenant — render een
+    // minimale variant met enkel status-info zodat de pagina niet faalt.
+    return (
+      <PublicTenantShell tenant={tenant} pageTitle="Mijn profiel" active="profile">
+        <p
+          className="rounded-2xl border p-4 text-sm"
+          style={{
+            backgroundColor: "var(--surface-main)",
+            borderColor: "var(--surface-border)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          Je hebt nog geen ledenprofiel bij deze vereniging.
+        </p>
+      </PublicTenantShell>
+    );
+  }
 
   // Groups for own member rows.
   const memberIds = ctx.members.map((m) => m.id);
@@ -53,16 +81,54 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   // Profile picture (first own member only — typical case).
   let profilePicId: string | null = null;
-  if (ctx.members.length > 0) {
-    const { data: pic } = await admin
-      .from("member_profile_pictures")
-      .select("template_id")
-      .eq("member_id", ctx.members[0].id)
-      .maybeSingle();
-    profilePicId = (pic as Pick<MemberProfilePicture, "template_id"> | null)?.template_id ?? null;
+  const { data: pic } = await admin
+    .from("member_profile_pictures")
+    .select("template_id")
+    .eq("member_id", primary.id)
+    .maybeSingle();
+  profilePicId = (pic as Pick<MemberProfilePicture, "template_id"> | null)?.template_id ?? null;
+
+  // Financial + payment methods + permissions.
+  const [memberships, perms, financialRow, paymentMethods] = await Promise.all([
+    getMemberships(user.id),
+    getUserPermissionsInTenant(tenant.id, user.id),
+    getMemberFinancialDetails(primary.id, tenant.id),
+    getActivePaymentMethods(tenant.id),
+  ]);
+
+  const platformOrTenantAdmin =
+    isPlatformAdmin(memberships) || isTenantAdmin(memberships, tenant.id);
+  const ownsMember = primary.user_id === user.id;
+  const canViewIban =
+    ownsMember || platformOrTenantAdmin || perms.includes("members.financial.view");
+  const canManageIban =
+    ownsMember || platformOrTenantAdmin || perms.includes("members.financial.manage");
+
+  const isParentRole =
+    ctx.roles.includes("parent") || ctx.children.length > 0 || primary.account_type === "parent";
+  const isAthleteOrTrainer =
+    ctx.roles.includes("athlete") ||
+    ctx.roles.includes("trainer") ||
+    primary.account_type === "adult_athlete" ||
+    primary.account_type === "trainer";
+
+  // Derived athlete code (geen kolom op members; UUID-prefix als korte
+  // identifier zodat trainers/admins een lid snel terug kunnen vinden).
+  const athleteCodeDisplay = isAthleteOrTrainer
+    ? `ATH-${primary.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+    : null;
+
+  // Children with player_type voor mooiere lijst.
+  let childrenVM: { id: string; full_name: string; player_type: string | null }[] = [];
+  if (ctx.children.length > 0) {
+    childrenVM = ctx.children.map((c) => ({
+      id: c.id,
+      full_name: c.full_name,
+      player_type: c.player_type ?? null,
+    }));
   }
 
-  const primaryName = ctx.members[0]?.full_name ?? user.email ?? "Lid";
+  const primaryName = primary.full_name ?? user.email ?? "Lid";
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Mijn profiel" active="profile">
@@ -114,9 +180,43 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </div>
         </header>
 
-        <FamilySection
+        <ProfileShell
           tenantId={tenant.id}
-          children={ctx.children.map((c) => ({ id: c.id, full_name: c.full_name }))}
+          primaryMember={{
+            id: primary.id,
+            first_name: primary.first_name,
+            last_name: primary.last_name,
+            phone: primary.phone,
+            birth_date: primary.birth_date,
+            gender: primary.gender,
+            street: primary.street,
+            house_number: primary.house_number,
+            postal_code: primary.postal_code,
+            city: primary.city,
+            email: primary.email,
+          }}
+          sportMember={
+            isAthleteOrTrainer
+              ? { id: primary.id, player_type: primary.player_type }
+              : null
+          }
+          financial={
+            financialRow
+              ? {
+                  has_iban: !!financialRow.iban,
+                  iban_masked: financialRow.iban ? maskIban(financialRow.iban) : null,
+                  account_holder_name: financialRow.account_holder_name,
+                  payment_method_id: financialRow.payment_method_id,
+                }
+              : null
+          }
+          paymentMethods={paymentMethods}
+          isParent={isParentRole}
+          isAthleteOrTrainer={isAthleteOrTrainer}
+          canViewIban={canViewIban}
+          canManageIban={canManageIban}
+          children={childrenVM}
+          athleteCodeDisplay={athleteCodeDisplay}
         />
 
         {groupNames.length > 0 && (
