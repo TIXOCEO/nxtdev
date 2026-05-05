@@ -220,6 +220,124 @@ async function dispatchInvite(
   return { ok: true };
 }
 
+/**
+ * Smart dispatcher voor de "ouder koppel kind via code"-flow.
+ * - Heeft de ouder al een auth-account? → mail met code + login-link
+ *   (template: parent_link_with_code, event: parent_link_existing_account)
+ * - Nog geen account? → maak ook een account_invite voor de ouder en
+ *   stuur een gecombineerde mail met registratie-link + code
+ *   (template: parent_register_then_link, event: parent_link_no_account)
+ */
+async function dispatchParentLinkCode(params: {
+  tenantId: string;
+  invite: MemberInvite;
+  parentEmail: string;
+  parentName: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  const admin = createAdminClient();
+
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("name, slug, domain, contact_email")
+    .eq("id", params.tenantId)
+    .maybeSingle();
+  if (!tenant) return { ok: false, error: "Tenant niet gevonden." };
+
+  const tenantHost = {
+    slug: tenant.slug as string,
+    domain: tenant.domain as string | null,
+  };
+
+  let athleteName = "";
+  if (params.invite.child_member_id) {
+    const { data: child } = await admin
+      .from("members")
+      .select("full_name")
+      .eq("id", params.invite.child_member_id)
+      .maybeSingle();
+    athleteName = (child?.full_name as string | null) ?? "";
+  }
+
+  const expiry = new Date(params.invite.expires_at).toLocaleDateString("nl-NL");
+  const loginLink = tenantUrl(tenantHost, `/login?next=/t/${tenant.slug}/profile`);
+
+  const existingAuth = await findAuthUserByEmail(admin, params.parentEmail);
+
+  if (existingAuth) {
+    // Ouder heeft al een account → simpele mail met code + login-link.
+    const variables: Record<string, string> = {
+      tenant_name: tenant.name as string,
+      tenant_contact_email: (tenant.contact_email as string | null) ?? "",
+      parent_name: params.parentName ?? params.parentEmail,
+      member_name: params.parentName ?? params.parentEmail,
+      athlete_name: athleteName,
+      invite_code: params.invite.invite_code,
+      login_link: loginLink,
+      expiry_date: expiry,
+    };
+    await ensureTenantTemplate(params.tenantId, "parent_link_with_code");
+    const res = await sendEmail({
+      tenantId: params.tenantId,
+      templateKey: "parent_link_with_code",
+      to: params.invite.email,
+      variables,
+      triggerSource: "parent_link_existing_account",
+    });
+    if (res.ok) {
+      await admin
+        .from("member_invites")
+        .update({ status: "sent", last_sent_at: new Date().toISOString() })
+        .eq("id", params.invite.id);
+    }
+    return res.ok ? { ok: true } : { ok: false, error: res.error };
+  }
+
+  // Ouder heeft nog geen account → maak een account_invite zodat er een
+  // registratie-link bestaat. We hergebruiken `insertInvite` + de bestaande
+  // /invite/<token>-flow voor wachtwoord-set en account-aanmaak.
+  const settings = await loadInviteSettings(params.tenantId);
+  const accountInviteRes = await insertInvite({
+    tenantId: params.tenantId,
+    memberId: null,
+    inviteType: "parent_account",
+    email: params.parentEmail,
+    fullName: params.parentName,
+    createdBy: params.invite.created_by,
+    settings,
+  });
+  if ("error" in accountInviteRes) {
+    return { ok: false, error: accountInviteRes.error };
+  }
+  const registerLink = inviteLink(tenantHost, accountInviteRes.invite.token);
+
+  const variables: Record<string, string> = {
+    tenant_name: tenant.name as string,
+    tenant_contact_email: (tenant.contact_email as string | null) ?? "",
+    parent_name: params.parentName ?? params.parentEmail,
+    member_name: params.parentName ?? params.parentEmail,
+    athlete_name: athleteName,
+    invite_code: params.invite.invite_code,
+    register_link: registerLink,
+    login_link: loginLink,
+    expiry_date: expiry,
+  };
+  await ensureTenantTemplate(params.tenantId, "parent_register_then_link");
+  const res = await sendEmail({
+    tenantId: params.tenantId,
+    templateKey: "parent_register_then_link",
+    to: params.invite.email,
+    variables,
+    triggerSource: "parent_link_no_account",
+  });
+  if (res.ok) {
+    await admin
+      .from("member_invites")
+      .update({ status: "sent", last_sent_at: new Date().toISOString() })
+      .eq("id", params.invite.id);
+  }
+  return res.ok ? { ok: true } : { ok: false, error: res.error };
+}
+
 async function insertInvite(params: {
   tenantId: string;
   memberId: string | null;
@@ -919,9 +1037,15 @@ export async function generateMinorLinkCode(
   });
   if ("error" in ins) return fail(ins.error);
 
-  // Best-effort send so the parent has both code + link. Failure here
-  // does NOT block returning the code (admin may show it on screen).
-  await dispatchInvite(parsed.data.tenant_id, ins.invite, "minor_code_generated");
+  // Best-effort send: stuur de juiste mail afhankelijk van of de ouder
+  // al een auth-account heeft. Failure blokkeert NIET het teruggeven van
+  // de code (admin kan deze ook handmatig delen).
+  await dispatchParentLinkCode({
+    tenantId: parsed.data.tenant_id,
+    invite: ins.invite,
+    parentEmail: parent.email as string,
+    parentName: (parent.full_name as string | null) ?? null,
+  });
 
   revalidatePath(`/tenant/members/${parsed.data.parent_member_id}`);
   revalidatePath(`/tenant/members/${parsed.data.child_member_id}`);

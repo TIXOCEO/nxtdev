@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { UserRound, Users, Layers, Bell, Smartphone } from "lucide-react";
+import { UserRound, Layers, Bell, Smartphone } from "lucide-react";
+import { FamilySection } from "./_family-section";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { getUserTenantContext } from "@/lib/auth/user-role-rules";
@@ -113,24 +114,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </div>
         </header>
 
-        {ctx.children.length > 0 && (
-          <Section icon={Users} title="Mijn kinderen">
-            <ul className="grid gap-1">
-              {ctx.children.map((c) => (
-                <li
-                  key={c.id}
-                  className="rounded-lg border px-3 py-2 text-sm"
-                  style={{
-                    borderColor: "var(--surface-border)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {c.full_name}
-                </li>
-              ))}
-            </ul>
-          </Section>
-        )}
+        <FamilySection
+          tenantId={tenant.id}
+          children={ctx.children.map((c) => ({ id: c.id, full_name: c.full_name }))}
+        />
 
         {groupNames.length > 0 && (
           <Section icon={Layers} title="Mijn groepen">

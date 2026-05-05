@@ -20,6 +20,8 @@ import {
 import {
   upsertTriggerSchema,
   type UpsertTriggerInput,
+  TRIGGER_EVENTS,
+  DEFAULT_TRIGGER_TEMPLATE_MAP,
 } from "@/lib/validation/email-triggers";
 import { sendEmail } from "@/lib/email/send-email";
 import { DEFAULT_TEMPLATES } from "@/lib/email/default-templates";
@@ -66,14 +68,58 @@ export async function seedDefaultEmailTemplates(
     is_enabled: true,
   }));
 
-  if (toInsert.length === 0) {
-    return { ok: true, data: { inserted: 0 } };
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from("email_templates").insert(toInsert);
+    if (error) return fail(error.message);
   }
 
-  const { error } = await supabase.from("email_templates").insert(toInsert);
-  if (error) return fail(error.message);
+  // Ook default-triggers seeden zodat alle events meteen actief gekoppeld zijn
+  // aan de natuurlijke template. Tenant admin kan dit later overschrijven.
+  await seedDefaultEmailTriggers({ tenant_id: parsed.data.tenant_id });
 
   revalidatePath("/tenant/email-templates");
+  revalidatePath("/tenant/settings/email");
+  return { ok: true, data: { inserted: toInsert.length } };
+}
+
+/**
+ * Voor elke TRIGGER_EVENT: zorg dat er een rij in `email_triggers` staat met
+ * de default template-key + enabled=true. Bestaande rijen worden NIET
+ * overschreven (admin-keuzes blijven behouden).
+ */
+export async function seedDefaultEmailTriggers(
+  input: { tenant_id: string },
+): Promise<ActionResult<{ inserted: number }>> {
+  const parsed = seedTemplatesSchema.safeParse(input);
+  if (!parsed.success) return fail("Invalid input", parsed.error.flatten().fieldErrors);
+
+  await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+
+  const { data: existing, error: existingErr } = await supabase
+    .from("email_triggers")
+    .select("event_key")
+    .eq("tenant_id", parsed.data.tenant_id);
+  if (existingErr) return fail(existingErr.message);
+
+  const have = new Set(
+    (existing ?? []).map((r: { event_key: string }) => r.event_key),
+  );
+  const toInsert = TRIGGER_EVENTS
+    .filter((evt) => !have.has(evt))
+    .map((evt) => ({
+      tenant_id: parsed.data.tenant_id,
+      event_key: evt,
+      template_key: DEFAULT_TRIGGER_TEMPLATE_MAP[evt],
+      enabled: true,
+    }));
+
+  if (toInsert.length === 0) return { ok: true, data: { inserted: 0 } };
+
+  const { error } = await supabase.from("email_triggers").insert(toInsert);
+  if (error) return fail(error.message);
+
+  revalidatePath("/tenant/settings/email");
   return { ok: true, data: { inserted: toInsert.length } };
 }
 

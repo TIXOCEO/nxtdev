@@ -189,6 +189,46 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
       "Beste {{member_name}},\n\nJe aanmelding is omgezet naar een volwaardig lidmaatschap.\n\n— {{tenant_name}}",
   },
   {
+    key: "parent_register_then_link",
+    name: "Ouder — registreer eerst, koppel daarna kind",
+    subject: "Maak een account aan om {{athlete_name}} te koppelen",
+    content_html: wrap(
+      "Maak eerst je account aan",
+      '<p>Beste {{parent_name}},</p>' +
+      '<p>Voor <strong>{{athlete_name}}</strong> is een persoonlijke koppelcode aangemaakt bij <strong>{{tenant_name}}</strong>. ' +
+      'Je hebt nog geen account bij ons. Maak eerst je account aan via onderstaande knop:</p>' +
+      '<p><a href="{{register_link}}" style="display:inline-block;padding:10px 16px;background:#b6d83b;color:#111;border-radius:8px;text-decoration:none;">Account aanmaken</a></p>' +
+      '<p>Zodra je account klaar is, ga je naar <strong>Mijn profiel → Mijn gezin</strong> en voer je deze koppelcode in:</p>' +
+      '<p style="font-size:18px;letter-spacing:2px;font-weight:bold;">{{invite_code}}</p>' +
+      '<p>Daarmee koppel je {{athlete_name}} aan je account zodat je alles voor je kind kunt regelen.</p>' +
+      '<p>De code vervalt op {{expiry_date}}.</p>',
+    ),
+    content_text:
+      "Beste {{parent_name}},\n\n" +
+      "Voor {{athlete_name}} is een koppelcode aangemaakt bij {{tenant_name}}. Je hebt nog geen account.\n\n" +
+      "1. Maak eerst je account aan: {{register_link}}\n" +
+      "2. Ga daarna naar Mijn profiel > Mijn gezin en voer deze code in:\n\n   {{invite_code}}\n\n" +
+      "De code vervalt op {{expiry_date}}.\n\n— {{tenant_name}}",
+  },
+  {
+    key: "parent_link_with_code",
+    name: "Ouder — koppel kind met code (bestaand account)",
+    subject: "Koppel {{athlete_name}} aan je {{tenant_name}}-account",
+    content_html: wrap(
+      "Koppel {{athlete_name}} aan je account",
+      '<p>Beste {{parent_name}},</p>' +
+      '<p>Voor <strong>{{athlete_name}}</strong> is een koppelcode aangemaakt. Log in op je account en ga naar <strong>Mijn profiel → Mijn gezin</strong> om {{athlete_name}} toe te voegen met de onderstaande code:</p>' +
+      '<p style="font-size:18px;letter-spacing:2px;font-weight:bold;">{{invite_code}}</p>' +
+      '<p><a href="{{login_link}}" style="display:inline-block;padding:10px 16px;background:#b6d83b;color:#111;border-radius:8px;text-decoration:none;">Inloggen</a></p>' +
+      '<p>De code vervalt op {{expiry_date}}.</p>',
+    ),
+    content_text:
+      "Beste {{parent_name}},\n\n" +
+      "Voor {{athlete_name}} is een koppelcode aangemaakt. Log in op je account ({{login_link}}) en ga naar Mijn profiel > Mijn gezin. Voer daar deze code in:\n\n" +
+      "   {{invite_code}}\n\n" +
+      "De code vervalt op {{expiry_date}}.\n\n— {{tenant_name}}",
+  },
+  {
     key: "group_announcement",
     name: "Groep — mededeling",
     subject: "Mededeling voor {{group_name}}",

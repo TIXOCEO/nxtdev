@@ -54,8 +54,9 @@ export default async function TenantEmailSettingsPage() {
           E-mail triggers
         </h2>
         <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-          Koppel platform-events aan templates. (Configuratie alleen — automatische
-          verzending volgt in een latere sprint.)
+          Elk platform-event is standaard gekoppeld aan zijn natuurlijke template
+          en staat aan. Pas hier de template aan of zet een event uit als je
+          die mail niet wilt versturen.
         </p>
         <div className="mt-4">
           <TriggerMatrix

@@ -19,6 +19,9 @@ const EVENT_LABELS: Record<string, string> = {
   account_invite_expired: "Uitnodiging verlopen",
   group_announcement_posted: "Groep mededeling",
   news_published: "Nieuwsbericht gepubliceerd",
+  parent_link_no_account: "Ouder koppelt kind — ouder zonder account",
+  parent_link_existing_account: "Ouder koppelt kind — ouder met account",
+  minor_added_to_parent: "Kind toegevoegd aan ouder",
 };
 
 export interface TriggerMatrixProps {
