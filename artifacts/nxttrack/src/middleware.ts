@@ -168,15 +168,23 @@ export async function middleware(req: NextRequest) {
     response = NextResponse.next({ request: req });
   }
 
+  // Debug-header zodat we kunnen zien dat middleware echt draaide en wat
+  // hij heeft gedaan. Verwijder zodra we zeker weten dat alles werkt.
+  response.headers.set(
+    "x-nxt-mw",
+    `host=${host} slug=${slug ?? "-"} path=${url.pathname}`,
+  );
+
   // Refresh Supabase sessie op dezelfde response zodat cookies meegaan.
   return refreshSupabaseSession(req, response);
 }
 
 export const config = {
-  // Sla statische bestanden, _next/internals en api-routes over (api-routes
-  // moeten direct werken zonder rewrite, en hebben geen sessie-refresh
-  // nodig — Server Actions gebruiken hun eigen Supabase-client).
+  // Sla statische bestanden, _next/internals en api-routes over.
+  // Belangrijk: pattern moet ook `/` matchen — sommige `(?!...).*` patronen
+  // doen dat niet betrouwbaar in path-to-regexp. We voegen `/` los toe.
   matcher: [
-    "/((?!_next/|api/|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
+    "/",
+    "/((?!_next/|api/|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)",
   ],
 };
