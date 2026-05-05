@@ -135,7 +135,7 @@ function inviteLink(tenant: TenantHostInfo, token: string): string {
   return tenantUrl(tenant, `/invite/${token}`);
 }
 
-async function dispatchInvite(
+export async function dispatchInvite(
   tenantId: string,
   invite: MemberInvite,
   triggerSource: string,

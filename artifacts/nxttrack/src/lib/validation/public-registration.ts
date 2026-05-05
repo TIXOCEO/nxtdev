@@ -228,3 +228,139 @@ export const publicRegistrationSchema = z.object({
 });
 
 export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 23 / Sprint C — Publieke onboarding-wizard
+// ──────────────────────────────────────────────────────────────────
+
+export const PUBLIC_ACCOUNT_TYPES = [
+  "parent",
+  "adult_athlete",
+  "trainer",
+  "staff",
+] as const;
+export type PublicAccountType = (typeof PUBLIC_ACCOUNT_TYPES)[number];
+
+const firstName = z
+  .string()
+  .trim()
+  .min(1, "Voornaam is verplicht")
+  .max(80, "Maximaal 80 tekens");
+const lastName = z
+  .string()
+  .trim()
+  .min(1, "Achternaam is verplicht")
+  .max(120, "Maximaal 120 tekens");
+
+const koppelCode = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z0-9-]{4,32}$/, "Vul een geldige koppelcode in");
+
+export const publicChildEntrySchema = z
+  .object({
+    mode: z.enum(["new", "link"]),
+    first_name: z.string().optional().default(""),
+    last_name: z.string().optional().default(""),
+    birth_date: z.string().optional().default(""),
+    player_type: z
+      .union([z.enum(["player", "goalkeeper"]), z.literal("")])
+      .optional(),
+    koppel_code: z.string().optional().default(""),
+  })
+  .superRefine((v, ctx) => {
+    if (v.mode === "new") {
+      const fn = firstName.safeParse(v.first_name);
+      if (!fn.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["first_name"],
+          message: fn.error.issues[0]?.message ?? "Voornaam is verplicht",
+        });
+      }
+      const ln = lastName.safeParse(v.last_name);
+      if (!ln.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["last_name"],
+          message: ln.error.issues[0]?.message ?? "Achternaam is verplicht",
+        });
+      }
+      const dob = isoDate.safeParse(v.birth_date);
+      if (!dob.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birth_date"],
+          message: "Geboortedatum is verplicht",
+        });
+      }
+      if (v.player_type !== "player" && v.player_type !== "goalkeeper") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["player_type"],
+          message: "Maak een keuze",
+        });
+      }
+    } else {
+      const cc = koppelCode.safeParse(v.koppel_code ?? "");
+      if (!cc.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["koppel_code"],
+          message: cc.error.issues[0]?.message ?? "Vul een geldige koppelcode in",
+        });
+      }
+    }
+  });
+
+export type PublicChildEntryInput = z.infer<typeof publicChildEntrySchema>;
+
+export const publicOnboardingSchema = z
+  .object({
+    tenant_slug: tenantSlug,
+    account_type: z.enum(PUBLIC_ACCOUNT_TYPES, { message: "Maak een keuze" }),
+    first_name: firstName,
+    last_name: lastName,
+    email,
+    phone,
+    // Adult-athlete only — loose at object level, validated below.
+    birth_date: z.string().optional().default(""),
+    player_type: z
+      .union([z.enum(["player", "goalkeeper"]), z.literal("")])
+      .optional(),
+    // Parent only.
+    children: z.array(publicChildEntrySchema).default([]),
+    extra_details: extraDetails,
+    agreed_terms: agreedTerms,
+  })
+  .superRefine((v, ctx) => {
+    if (v.account_type === "adult_athlete") {
+      const dob = isoDate.safeParse(v.birth_date);
+      if (!dob.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["birth_date"],
+          message: "Geboortedatum is verplicht",
+        });
+      }
+      if (v.player_type !== "player" && v.player_type !== "goalkeeper") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["player_type"],
+          message: "Maak een keuze",
+        });
+      }
+    }
+    if (v.account_type === "parent") {
+      if (!v.children || v.children.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["children"],
+          message: "Voeg minimaal één kind toe",
+        });
+      }
+    }
+  });
+
+export type PublicOnboardingInput = z.infer<typeof publicOnboardingSchema>;

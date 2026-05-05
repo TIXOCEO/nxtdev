@@ -4,7 +4,7 @@ import { ClipboardList } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
-import { MembershipRegistrationForm } from "@/components/public/forms/membership-registration-form";
+import { RegistrationWizard } from "@/components/public/forms/registration-wizard";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -49,7 +49,16 @@ export default async function InschrijvenPage({ params }: PageProps) {
         </div>
       </PublicCard>
 
-      <MembershipRegistrationForm tenantSlug={tenant.slug} />
+      <RegistrationWizard
+        tenantSlug={tenant.slug}
+        tenantName={tenant.name}
+        accentColor={tenant.primary_color}
+        allowStaffRegistration={
+          (tenant.settings_json as Record<string, unknown> | null)?.[
+            "public_staff_registration_enabled"
+          ] === true
+        }
+      />
     </PublicTenantShell>
   );
 }
