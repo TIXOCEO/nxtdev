@@ -11,7 +11,7 @@ type State = "idle" | "loading" | "error";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const next = searchParams.get("next") || "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,14 +37,14 @@ export function LoginForm() {
       return;
     }
 
-    const sync = await ensureProfileForCurrentUser();
+    const sync = await ensureProfileForCurrentUser(next || undefined);
     if (!sync.ok) {
       setState("error");
       setErrorMessage(sync.error ?? "Failed to sync profile.");
       return;
     }
 
-    router.push(next);
+    router.push(sync.destination ?? next ?? "/");
     router.refresh();
   }
 
