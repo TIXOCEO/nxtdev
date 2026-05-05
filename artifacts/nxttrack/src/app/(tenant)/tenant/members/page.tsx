@@ -32,13 +32,13 @@ export default async function TenantMembersPage() {
 
   // Sprint D: gate "Voeg toe" achter members.create permission. Tenant
   // admins en platform-admins hebben dit standaard.
-  const canAdd =
-    result.isPlatformAdmin ||
-    (await userHasPermission(
-      result.tenant.id,
-      result.user.id,
-      "members.create",
-    ));
+  // Accept either `members.create` (catalog key) of het door de spec
+  // benoemde `members.write`-alias, naast platform-admin.
+  const [hasCreate, hasWrite] = await Promise.all([
+    userHasPermission(result.tenant.id, result.user.id, "members.create"),
+    userHasPermission(result.tenant.id, result.user.id, "members.write"),
+  ]);
+  const canAdd = result.isPlatformAdmin || hasCreate || hasWrite;
 
   // Optionele subscription-keuze tijdens aanmaken: alleen tonen als
   // de tenant lidmaatschapsplannen heeft.

@@ -276,10 +276,15 @@ export function AddMemberWizard({
       return null;
     }
     if (idx === 2) {
-      if (!state.full_name.trim() || state.full_name.trim().length < 2) {
-        return isMinor ? "Naam van het kind is verplicht." : "Naam is verplicht.";
+      const inviteMode = !isMinor && state.adult_method === "invite";
+      // Voor invite-mode is naam optioneel (uitgenodigde vult zelf
+      // first/last in). Voor manual + minor blijft naam verplicht.
+      if (!inviteMode) {
+        if (!state.full_name.trim() || state.full_name.trim().length < 2) {
+          return isMinor ? "Naam van het kind is verplicht." : "Naam is verplicht.";
+        }
       }
-      if (!isMinor && state.adult_method === "invite") {
+      if (inviteMode) {
         const v = state.email.trim();
         if (!v) return "E-mail is verplicht voor uitnodigingen.";
         if (!/.+@.+\..+/.test(v)) return "Ongeldig e-mailadres.";

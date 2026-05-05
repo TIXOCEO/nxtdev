@@ -431,27 +431,39 @@ export async function createMemberWithInvite(
 
   // Sprint D — leid account_type af zodat de bestaande Sprint 23
   // `sync_staff_trainer_role`-trigger trainer/staf systeemrol koppelt
-  // zodra de invite wordt geaccepteerd.
-  const accountType: string | null = v.roles.includes("trainer")
-    ? "trainer"
-    : v.roles.includes("staff")
-      ? "staff"
-      : v.roles.includes("parent")
-        ? "parent"
-        : v.roles.includes("athlete")
-          ? "athlete"
-          : null;
+  // zodra de invite wordt geaccepteerd. Minor-flow forceert
+  // `minor_athlete` los van de roles-array (die alleen 'athlete' bevat).
+  const accountType: string | null =
+    v.mode === "minor"
+      ? "minor_athlete"
+      : v.roles.includes("trainer")
+        ? "trainer"
+        : v.roles.includes("staff")
+          ? "staff"
+          : v.roles.includes("parent")
+            ? "parent"
+            : v.roles.includes("athlete")
+              ? "athlete"
+              : null;
 
-  // Insert member. `notes`/`member_since` kolommen vereisen Sprint 24
-  // SQL — we includeren ze altijd; als de migratie nog niet is gedraaid
-  // krijgt de admin een duidelijke foutmelding bij toevoegen.
+  // Sprint D: voor invite-mode is naam optioneel — gebruik dan e-mail
+  // local-part als placeholder zodat NOT NULL niet faalt en de
+  // uitgenodigde later zelf voor- en achternaam zet.
+  const rawName = (v.full_name ?? "").trim();
+  const fullName =
+    rawName ||
+    (email ? email.split("@")[0] : "Nieuw lid");
   const memberSince = (v.member_since ?? "").trim() || null;
   const internalNotes = (v.internal_notes ?? "").trim() || null;
+  const firstName = (v.first_name ?? "").trim() || null;
+  const lastName = (v.last_name ?? "").trim() || null;
   const { data: created, error: memberErr } = await supabase
     .from("members")
     .insert({
       tenant_id: v.tenant_id,
-      full_name: v.full_name,
+      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName,
       email: email || null,
       phone: v.phone,
       member_status: memberStatus,
@@ -567,7 +579,7 @@ export async function createMemberWithInvite(
       memberId: created.id,
       inviteType: v.invite_type,
       email,
-      fullName: v.full_name,
+      fullName: fullName,
       createdBy: user.id,
       settings,
     });

@@ -26,7 +26,11 @@ export const newMemberWithInviteSchema = z
     tenant_id: z.string().uuid(),
     mode: z.enum(["manual", "invite", "minor"]),
     invite_type: z.enum(INVITE_TYPES).optional(),
-    full_name: z.string().trim().min(2, "Naam is verplicht").max(120),
+    // Sprint D: voor invite-mode is `full_name` optioneel; voor manual/
+    // minor checken we het in superRefine.
+    full_name: z.string().trim().max(120).optional().or(z.literal("")),
+    first_name: z.string().trim().max(80).optional().or(z.literal("")),
+    last_name: z.string().trim().max(80).optional().or(z.literal("")),
     email: z
       .string()
       .trim()
@@ -68,6 +72,15 @@ export const newMemberWithInviteSchema = z
     new_parent_phone: optionalText,
   })
   .superRefine((v, ctx) => {
+    // Naam-vereisten per modus.
+    const nameLen = (v.full_name ?? "").trim().length;
+    if (v.mode !== "invite" && nameLen < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["full_name"],
+        message: "Naam is verplicht.",
+      });
+    }
     if (v.mode === "invite") {
       if (!v.email) {
         ctx.addIssue({
