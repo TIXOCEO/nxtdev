@@ -1,0 +1,80 @@
+# NXTTRACK — Caddy reverse proxy met automatische TLS voor custom domeinen.
+#
+# Vervangt nginx + certbot. Caddy haalt automatisch Let's Encrypt
+# certificaten op, ook voor on-demand custom domeinen, zonder dat je
+# per tenant een server-block hoeft toe te voegen.
+#
+# === Hoe het werkt ===
+#
+# 1. Bezoeker komt aan op `voetbalschool-houtrust.nl`.
+# 2. Caddy heeft (nog) geen cert voor die host, maar de catch-all-block
+#    heeft `tls { on_demand }` aanstaan.
+# 3. Voor cert-issuance vraagt Caddy eerst aan onze app:
+#    `GET https://nxttrack.nl/api/tls-check?domain=voetbalschool-houtrust.nl`
+# 4. App antwoordt 200 (= bekende tenant) of 404 (= afwijzen).
+# 5. Bij 200 vraagt Caddy direct een Let's Encrypt cert aan en proxyt
+#    de request door naar Next.js op localhost:8080.
+# 6. Cert wordt gecached + auto-renewed; geen handmatige actie ooit.
+#
+# === Wat je éénmalig in environment moet zetten ===
+#
+# - APP_PORT       (default 8080)        — poort van Next.js
+# - API_PORT       (default 8081)        — poort van API server
+# - APEX_DOMAIN    (default nxttrack.nl) — apex van het platform
+# - ACME_EMAIL     (verplicht)           — emailadres voor Let's Encrypt
+
+{
+        # Globale opties
+        email {$ACME_EMAIL}
+
+        # On-demand TLS: Caddy belt onze API om te checken of een onbekend
+        # domein gecertificeerd mag worden. Dit MOET aan staan, anders kan
+        # iedereen ons cert-quotum opvreten.
+        on_demand_tls {
+                # Localhost ipv apex om circulaire dependency te vermijden:
+                # als het apex-cert verlopen is moet Caddy nog steeds nieuwe
+                # certs kunnen valideren.
+                ask http://localhost:{$APP_PORT:8080}/api/tls-check
+                # Maximum nieuwe certs per dag voor onbekende hosts.
+                # Verlaag dit als je misbruik vermoedt.
+                interval 1m
+                burst    5
+        }
+}
+
+# ── Apex + alle subdomeinen onder onze eigen apex ──────────────────────
+# Voor *.nxttrack.nl regelt Caddy DNS-of-HTTP-validatie automatisch.
+# Wildcard heeft DNS-validatie nodig (zie README); zonder DNS-plugin
+# valt dit terug op individuele certs per subdomein wat ook prima werkt.
+
+{$APEX_DOMAIN:nxttrack.nl}, www.{$APEX_DOMAIN:nxttrack.nl} {
+        encode zstd gzip
+        reverse_proxy localhost:{$APP_PORT:8080}
+}
+
+# Alle subdomeinen van onze apex worden automatisch afgehandeld door
+# Caddy met on-demand. We hoeven hier niet elk subdomein expliciet te
+# noemen — de catch-all-block hieronder vangt ze op.
+
+# ── API server (op api.nxttrack.nl) ────────────────────────────────────
+api.{$APEX_DOMAIN:nxttrack.nl} {
+        encode zstd gzip
+        reverse_proxy localhost:{$API_PORT:8081}
+}
+
+# ── Catch-all voor ALLE andere hosts (custom domeinen + subdomeinen) ──
+# Dit is de magie: elke nieuwe tenant met custom domein wordt direct
+# bediend zodra DNS naar deze server wijst en de tls-check 200 geeft.
+:443 {
+        encode zstd gzip
+        tls {
+                on_demand
+        }
+        reverse_proxy localhost:{$APP_PORT:8080}
+}
+
+# HTTP → HTTPS redirect voor catch-all (Caddy doet dit automatisch voor
+# named hosts maar niet voor :443).
+:80 {
+        redir https://{host}{uri} permanent
+}

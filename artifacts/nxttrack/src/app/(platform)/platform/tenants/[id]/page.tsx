@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { getTenantWithMemberships } from "@/lib/db/platform-tenants";
 import { TenantForm } from "../_tenant-form";
 import { MasterAdminCard } from "./_master-admin-card";
+import { CustomDomainCard } from "./_custom-domain-card";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,13 @@ export default async function EditTenantPage({ params }: Params) {
           <TenantForm mode="edit" initial={tenant} />
         </div>
       </section>
+
+      <CustomDomainCard
+        tenantSlug={tenant.slug}
+        currentDomain={tenant.domain}
+        apexDomain={process.env.APEX_DOMAIN || "nxttrack.nl"}
+        vpsIp={process.env.VPS_PUBLIC_IP || "178.251.232.12"}
+      />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>

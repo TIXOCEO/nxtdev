@@ -47,13 +47,40 @@ const optionalText = z
   .or(z.literal(""))
   .transform((v) => (v ? v : null));
 
+/**
+ * Custom domein voor een tenant (bv. "voetbalschool-houtrust.nl").
+ * Accepteert lowercase hostnames met punten en streepjes, geen protocol,
+ * geen pad, geen poort. Wordt automatisch genormaliseerd.
+ */
+const HOSTNAME_RE = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
+const PLATFORM_APEX = (process.env.APEX_DOMAIN || "nxttrack.nl").toLowerCase();
+const optionalDomain = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .nullish()
+  .or(z.literal(""))
+  .transform((v) => (v ? v.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim() : null))
+  .refine(
+    (v) => v === null || HOSTNAME_RE.test(v),
+    "Ongeldig domein. Gebruik formaat zoals 'voorbeeld.nl' (zonder https:// of pad).",
+  )
+  .refine(
+    (v) =>
+      v === null ||
+      (v !== PLATFORM_APEX &&
+        v !== `www.${PLATFORM_APEX}` &&
+        !v.endsWith(`.${PLATFORM_APEX}`)),
+    `Subdomeinen van ${PLATFORM_APEX} kunnen niet als custom domein. Gebruik de tenant-slug.`,
+  );
+
 export const createTenantSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
   slug: slugSchema,
   logo_url: optionalUrl,
   primary_color: colorSchema.default("#b6d83b"),
   contact_email: optionalEmail,
-  domain: optionalText,
+  domain: optionalDomain,
   status: statusSchema.default("active"),
 });
 
