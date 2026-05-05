@@ -36,3 +36,9 @@ id = "FiUidqnC75adTUUscKSX-"
 uri = "file://.local/docs/permissies-overzicht.md"
 type = "text"
 title = "Permissie-overzicht (usershell + adminshell)"
+
+[[outputs]]
+id = "u-gck8_HsBeQGfJ5HylOr"
+uri = "file://.local/docs/voetbalschool-houtrust-functies-overzicht.md"
+type = "text"
+title = "Voetbalschool Houtrust — Functie-overzicht"
