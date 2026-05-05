@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/tenant/invite-statuses";
 import { AcceptAdultInviteForm } from "./_accept-adult-form";
 import { AcceptMinorLinkForm } from "./_accept-minor-form";
+import { AcceptMinorDirectForm } from "./_accept-minor-direct-form";
 
 export const dynamic = "force-dynamic";
 
@@ -86,11 +87,23 @@ export default async function InviteAcceptancePage({ params }: PageProps) {
             <AcceptAdultInviteForm
               token={invite.token}
               email={invite.email}
-              defaultName={invite.full_name ?? ""}
+              defaultName={prefillName(invite.full_name, invite.prefill_data)}
+              tenantSlug={slug}
+              accentColor={accent}
+            />
+          ) : invite.invite_type === "minor_parent_link" &&
+            invite.child_member_id ? (
+            // Sprint 23 (B): direct pad — naam+wachtwoord, automatische koppeling.
+            <AcceptMinorDirectForm
+              token={invite.token}
+              email={invite.email}
+              defaultName={prefillName(invite.full_name, invite.prefill_data)}
+              childName={invite.child_full_name}
               tenantSlug={slug}
               accentColor={accent}
             />
           ) : invite.invite_type === "minor_parent_link" ? (
+            // Fallback (legacy invites zonder child_member_id): login + klik.
             <AcceptMinorLinkForm
               token={invite.token}
               tenantSlug={slug}
@@ -117,6 +130,33 @@ export default async function InviteAcceptancePage({ params }: PageProps) {
       </div>
     </div>
   );
+}
+
+/**
+ * Sprint 23 (A+B) — geef voorrang aan naam-defaults uit
+ * `member_invites.prefill_data` (gevuld door admin-wizards) en val
+ * terug op de oudere `full_name`-kolom + lege string.
+ */
+function prefillName(
+  full: string | null,
+  prefill: Record<string, unknown> | null,
+): string {
+  if (prefill && typeof prefill === "object") {
+    const fn = prefill["first_name"];
+    const ln = prefill["last_name"];
+    const combined = [
+      typeof fn === "string" ? fn.trim() : "",
+      typeof ln === "string" ? ln.trim() : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    if (combined) return combined;
+    const fullPrefill = prefill["full_name"];
+    if (typeof fullPrefill === "string" && fullPrefill.trim()) {
+      return fullPrefill.trim();
+    }
+  }
+  return full ?? "";
 }
 
 function Status({

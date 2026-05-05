@@ -125,6 +125,42 @@ export const acceptMinorLinkSchema = z.object({
 });
 export type AcceptMinorLinkInput = z.infer<typeof acceptMinorLinkSchema>;
 
+/**
+ * Sprint 23 (B) — Combineer parent-account-creatie + auto-link
+ * voor `minor_parent_link` invites die een `child_member_id` dragen.
+ *
+ * Form-shape spiegelt {@link acceptAdultInviteSchema} bewust: de
+ * eindgebruiker doorloopt exact dezelfde naam+wachtwoord-stap.
+ */
+export const acceptMinorParentSchema = z
+  .object({
+    token: z.string().min(8).max(200),
+    password: z
+      .string()
+      .min(PASSWORD_MIN, `Minimaal ${PASSWORD_MIN} tekens.`)
+      .max(PASSWORD_MAX, `Maximaal ${PASSWORD_MAX} tekens.`)
+      .refine((v) => /[a-z]/.test(v), "Voeg een kleine letter toe.")
+      .refine((v) => /[A-Z]/.test(v), "Voeg een hoofdletter toe.")
+      .refine((v) => /[0-9]/.test(v), "Voeg een cijfer toe.")
+      .refine(
+        (v) => /[^A-Za-z0-9]/.test(v),
+        "Voeg een speciaal teken toe (bv. !, @, #).",
+      ),
+    password_confirm: z.string().min(1, "Bevestig je wachtwoord."),
+    full_name: z.string().trim().min(2, "Naam is verplicht").max(120),
+  })
+  .superRefine((v, ctx) => {
+    if (v.password !== v.password_confirm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["password_confirm"],
+        message: "Wachtwoorden komen niet overeen.",
+      });
+    }
+  });
+
+export type AcceptMinorParentInput = z.infer<typeof acceptMinorParentSchema>;
+
 export const linkMinorByCodeSchema = z.object({
   tenant_id: z.string().uuid(),
   invite_code: z

@@ -10,12 +10,14 @@ import {
   inviteIdSchema,
   acceptAdultInviteSchema,
   acceptMinorLinkSchema,
+  acceptMinorParentSchema,
   linkMinorByCodeSchema,
   convertRegistrationSchema,
   generateMinorCodeSchema,
   type NewMemberWithInviteInput,
   type AcceptAdultInviteInput,
   type AcceptMinorLinkInput,
+  type AcceptMinorParentInput,
   type LinkMinorByCodeInput,
   type ConvertRegistrationInput,
   type GenerateMinorCodeInput,
@@ -934,6 +936,193 @@ async function ensureParentMember(params: {
     );
 
   return memberId;
+}
+
+// ── 5b. Accept minor-parent invite — direct (no separate login step)
+//
+// Sprint 23 (B): wanneer een `minor_parent_link`-invite een
+// `child_member_id` draagt, mag de ouder direct via naam+wachtwoord
+// een account aanmaken EN gelijk gekoppeld worden aan het kind.
+// De fallback uit `acceptMinorLinkInvite` (login → klik) blijft
+// bestaan voor invites zonder child_member_id of voor ouders die
+// al ingelogd zijn.
+
+export async function acceptMinorParentInvite(
+  input: AcceptMinorParentInput,
+): Promise<
+  ActionResult<{
+    tenant_slug: string;
+    email: string;
+    child_member_id: string;
+    child_full_name: string | null;
+  }>
+> {
+  const parsed = acceptMinorParentSchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
+
+  const admin = createAdminClient();
+  const { data: invRow } = await admin
+    .from("member_invites")
+    .select("*, tenants(slug)")
+    .eq("token", parsed.data.token)
+    .maybeSingle();
+  if (!invRow) return fail("Uitnodiging niet gevonden.");
+  const invite = invRow as MemberInvite & { tenants: { slug: string } | null };
+
+  if (invite.invite_type !== "minor_parent_link") {
+    return fail("Dit uitnodigingstype kan niet via dit formulier worden afgerond.");
+  }
+  if (invite.status === "accepted") return fail("Deze uitnodiging is al geaccepteerd.");
+  if (invite.status === "revoked") return fail("Deze uitnodiging is ingetrokken.");
+  if (new Date(invite.expires_at).getTime() < Date.now()) {
+    await admin
+      .from("member_invites")
+      .update({ status: "expired" })
+      .eq("id", invite.id);
+    return fail("Deze uitnodiging is verlopen.");
+  }
+  if (!invite.child_member_id) {
+    return fail("Geen kind aan deze uitnodiging gekoppeld.");
+  }
+
+  // Belt-and-braces: het kind moet bij dezelfde tenant horen voordat
+  // we de link aanmaken (sluit cross-tenant misbruik via geknoeide
+  // invite-rijen uit, mocht RLS/admin-pad ooit lekken).
+  const childCheck = await assertMemberInTenant(invite.child_member_id, invite.tenant_id);
+  if (!childCheck.ok) return fail(childCheck.error);
+
+  // Find-or-create de auth-user — zelfde robuuste flow als acceptAdultInvite.
+  const targetEmail = invite.email.toLowerCase();
+  let userId: string | null = null;
+  const existing = await findAuthUserByEmail(admin, targetEmail);
+  if (existing) {
+    userId = existing.id;
+    const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+      password: parsed.data.password,
+      user_metadata: { full_name: parsed.data.full_name },
+      email_confirm: true,
+    });
+    if (updErr) return fail(updErr.message);
+  } else {
+    const { data: created, error: userErr } = await admin.auth.admin.createUser({
+      email: targetEmail,
+      password: parsed.data.password,
+      email_confirm: true,
+      user_metadata: { full_name: parsed.data.full_name },
+    });
+    if (created?.user) {
+      userId = created.user.id;
+    } else if (
+      userErr &&
+      /already (registered|exists)|duplicate|email[_ ]exists/i.test(userErr.message)
+    ) {
+      const retry = await findAuthUserByEmail(admin, targetEmail);
+      if (!retry) return fail("Bestaand account kon niet worden geladen.");
+      userId = retry.id;
+      const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+        password: parsed.data.password,
+        user_metadata: { full_name: parsed.data.full_name },
+        email_confirm: true,
+      });
+      if (updErr) return fail(updErr.message);
+    } else {
+      return fail(userErr?.message ?? "Kon account niet aanmaken.");
+    }
+  }
+
+  await admin
+    .from("profiles")
+    .upsert(
+      { id: userId, email: targetEmail, full_name: parsed.data.full_name },
+      { onConflict: "id" },
+    );
+
+  // Upsert ouder-lid in deze tenant en koppel aan auth-user.
+  const parentMemberId = await ensureParentMember({
+    tenantId: invite.tenant_id,
+    userId,
+    email: targetEmail,
+  });
+  if (!parentMemberId) return fail("Kon ouder-lid niet aanmaken.");
+
+  // Sla de door de gebruiker opgegeven naam op (ensureParentMember
+  // genereert anders een placeholder uit het email-prefix).
+  await admin
+    .from("members")
+    .update({ full_name: parsed.data.full_name, member_status: "active" })
+    .eq("id", parentMemberId)
+    .eq("tenant_id", invite.tenant_id);
+
+  // Auto-link parent → child (idempotent: 23505 unique-violation negeren).
+  const { error: linkErr } = await admin.from("member_links").insert({
+    tenant_id: invite.tenant_id,
+    parent_member_id: parentMemberId,
+    child_member_id: invite.child_member_id,
+  });
+  if (linkErr && linkErr.code !== "23505") return fail(linkErr.message);
+
+  await admin
+    .from("member_invites")
+    .update({
+      status: "accepted",
+      accepted_at: new Date().toISOString(),
+      accepted_user_id: userId,
+    })
+    .eq("id", invite.id);
+
+  // Haal kindnaam op voor bevestigingstekst + email-variabele.
+  const { data: childRow } = await admin
+    .from("members")
+    .select("full_name")
+    .eq("id", invite.child_member_id)
+    .maybeSingle();
+  const childName = (childRow?.full_name as string | null) ?? null;
+
+  // Best-effort confirmatie-email naar de ouder.
+  await sendEmail({
+    tenantId: invite.tenant_id,
+    templateKey: "minor_added",
+    to: invite.email,
+    variables: {
+      parent_name: parsed.data.full_name,
+      member_name: parsed.data.full_name,
+      athlete_name: childName ?? "",
+    },
+    triggerSource: "minor_parent_accepted",
+  });
+
+  // Tenant-admin notificatie (best-effort, mirror van acceptAdultInvite).
+  try {
+    const { getNotificationEvent } = await import("@/lib/db/notifications");
+    const { sendNotification } = await import("@/lib/notifications/send-notification");
+    const evt = await getNotificationEvent(invite.tenant_id, "invite_accepted");
+    if (!evt || evt.template_enabled) {
+      await sendNotification({
+        tenantId: invite.tenant_id,
+        title: `Ouder gekoppeld: ${parsed.data.full_name}`,
+        contentText: `${parsed.data.full_name} (${invite.email}) heeft het account geactiveerd${
+          childName ? ` en is gekoppeld aan ${childName}` : ""
+        }.`,
+        targets: [{ target_type: "role", target_id: "admin" }],
+        sendEmail: evt?.email_enabled ?? false,
+        source: "invite_accepted",
+        sourceRef: invite.id,
+      });
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[invites:invite_accepted minor-parent] notification failed:", err);
+  }
+
+  return {
+    ok: true,
+    data: {
+      tenant_slug: invite.tenants?.slug ?? "",
+      email: invite.email,
+      child_member_id: invite.child_member_id,
+      child_full_name: childName,
+    },
+  };
 }
 
 // ── 6. Link minor by code (authenticated parent) ──────────
