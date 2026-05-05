@@ -6,7 +6,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getMembersByTenant } from "@/lib/db/members";
 import { MemberCard } from "@/components/tenant/member-card";
-import { NewMemberForm } from "./_new-member-form";
+import { AddMemberWizard } from "./_add-member-wizard";
 
 export const dynamic = "force-dynamic";
 
@@ -33,38 +33,19 @@ export default async function TenantMembersPage() {
       <PageHeading
         title="Leden"
         description="Beheer ouders, sporters, trainers en staf van deze vereniging."
-      />
-
-      <div
-        className="rounded-2xl border p-4 sm:p-6"
-        style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-        }}
-      >
-        <h2
-          className="text-sm font-semibold"
-          style={{ color: "var(--text-primary)" }}
-        >
-          Nieuw lid toevoegen
-        </h2>
-        <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-          Maak handmatig een lid aan. Aanmeldingen kun je later automatisch
-          omzetten naar leden.
-        </p>
-        <div className="mt-4">
-          <NewMemberForm
+        actions={
+          <AddMemberWizard
             tenantId={result.tenant.id}
             existingParents={existingParents}
           />
-        </div>
-      </div>
+        }
+      />
 
       {members.length === 0 ? (
         <EmptyState
           icon={Users}
           title="Nog geen leden"
-          description="Voeg het eerste lid toe via het formulier hierboven."
+          description="Klik rechtsboven op 'Voeg toe' om het eerste lid aan te maken."
         />
       ) : (
         <>
