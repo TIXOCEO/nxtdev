@@ -3,6 +3,8 @@ import type { TenantModule } from "@/types/database";
 import { renderModule } from "./modules";
 import type { Tenant } from "@/types/database";
 
+const FULL_BLEED_KEYS = new Set(["hero_slider", "news_hero_slider"]);
+
 interface ModuleGridProps {
   tenant: Tenant;
   modules: TenantModule[];
@@ -27,9 +29,19 @@ export async function ModuleGrid({
   const visibleMobile = mobile ? modules.filter((m) => m.visible_mobile) : modules;
   if (visibleMobile.length === 0) return null;
 
-  const rendered: Array<{ id: string; size: string; node: ReactNode }> = [];
+  const rendered: Array<{
+    id: string;
+    size: string;
+    fullBleed: boolean;
+    node: ReactNode;
+  }> = [];
   for (const m of visibleMobile) {
-    rendered.push({ id: m.id, size: m.size, node: await renderModule(tenant, m, userId) });
+    rendered.push({
+      id: m.id,
+      size: m.size,
+      fullBleed: FULL_BLEED_KEYS.has(m.module_key),
+      node: await renderModule(tenant, m, userId),
+    });
   }
 
   return (
@@ -40,22 +52,26 @@ export async function ModuleGrid({
           : "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:auto-rows-min"
       }
     >
-      {rendered.map((r) => (
-        <div
-          key={r.id}
-          className={
-            mobile
-              ? ""
-              : r.size === "2x1"
-                ? "sm:col-span-2"
-                : r.size === "1x2"
-                  ? "sm:col-span-1 sm:row-span-2"
-                  : "sm:col-span-1"
-          }
-        >
-          {r.node}
-        </div>
-      ))}
+      {rendered.map((r) => {
+        // Full-bleed modules (hero sliders) krijgen altijd de volle breedte
+        // en geen dwingende container-hoogte.
+        const span = r.fullBleed
+          ? mobile
+            ? ""
+            : "sm:col-span-2"
+          : mobile
+            ? ""
+            : r.size === "2x1"
+              ? "sm:col-span-2"
+              : r.size === "1x2"
+                ? "sm:col-span-1 sm:row-span-2"
+                : "sm:col-span-1";
+        return (
+          <div key={r.id} className={span}>
+            {r.node}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -37,7 +37,7 @@ async function getTenantSlug(tenantId: string): Promise<string | undefined> {
 
 export async function addTenantModule(
   input: z.infer<typeof addTenantModuleSchema>,
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<{ id: string; module: TenantModule }>> {
   const parsed = addTenantModuleSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige invoer" };
   await assertTenantAccess(parsed.data.tenant_id);
@@ -76,12 +76,13 @@ export async function addTenantModule(
       visible_mobile: true,
       config: def.defaultConfig,
     })
-    .select("id")
+    .select("*")
     .single();
   if (error || !ins) return { ok: false, error: error?.message ?? "Insert mislukt" };
 
   revalidateAll(await getTenantSlug(parsed.data.tenant_id));
-  return { ok: true, data: { id: (ins as { id: string }).id } };
+  const row = ins as TenantModule;
+  return { ok: true, data: { id: row.id, module: row } };
 }
 
 export async function updateTenantModule(

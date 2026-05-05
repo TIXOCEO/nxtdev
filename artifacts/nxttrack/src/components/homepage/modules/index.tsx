@@ -38,28 +38,52 @@ function tag<T = unknown>(cfg: Record<string, unknown>, key: string, fb: T): T {
 }
 
 // ──────────────── Hero Slider ────────────────
+// Render direct PublicHeroSlider zonder ModuleContainer-wrapper:
+// de slider heeft zijn eigen border + radius en moet niet dubbel geframed worden.
 export function HeroSliderModule({ tenant, module }: BaseProps) {
-  const slidesCfg = tag<Array<Partial<HeroSlide & { media_url?: string; media_type?: string; cta_label?: string; cta_url?: string; subtitle?: string }>>>(
-    module.config,
-    "slides",
-    [],
-  );
-  const slides: HeroSlide[] = slidesCfg.length
-    ? slidesCfg.map((s) => ({
-        eyebrow: s.subtitle ?? s.eyebrow ?? "",
-        title: s.title ?? "",
-        body: s.body ?? "",
-        ctaLabel: s.cta_label ?? s.ctaLabel,
-        ctaHref: s.cta_url ?? s.ctaHref,
-      }))
-    : [];
+  const slidesCfg = tag<
+    Array<
+      Partial<
+        HeroSlide & {
+          media_url?: string;
+          media_type?: string;
+          cta_label?: string;
+          cta_url?: string;
+          subtitle?: string;
+          background_image_url?: string;
+        }
+      >
+    >
+  >(module.config, "slides", []);
+  const slides: HeroSlide[] = slidesCfg.map((s) => ({
+    eyebrow: s.subtitle ?? s.eyebrow ?? "",
+    title: s.title ?? "",
+    body: s.body ?? "",
+    ctaLabel: s.cta_label ?? s.ctaLabel,
+    ctaHref: s.cta_url ?? s.ctaHref,
+    backgroundImageUrl: s.background_image_url,
+  }));
   return (
-    <ModuleContainer title={module.title || null} padded={false}>
-      <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-        <PublicHeroSlider tenantName={tenant.name} slides={slides.length ? slides : undefined} />
-      </div>
-    </ModuleContainer>
+    <PublicHeroSlider tenantName={tenant.name} slides={slides.length ? slides : undefined} />
   );
+}
+
+// ──────────────── News Hero Slider ────────────────
+// Toont de laatste nieuwsberichten als slides; cover_image_url wordt
+// als achtergrondfoto gebruikt zodat het er full-bleed editorial uit ziet.
+export async function NewsHeroSliderModule({ tenant, module }: BaseProps) {
+  const limit = tag<number>(module.config, "limit", 5);
+  const posts = await getPublicNewsPosts(tenant.id, { limit });
+  const slides: HeroSlide[] = posts.map((p) => ({
+    eyebrow: "Nieuws",
+    title: p.title,
+    body: p.excerpt ?? "",
+    ctaLabel: "Lees meer",
+    ctaHref: `/t/${tenant.slug}/nieuws/${p.slug}`,
+    backgroundImageUrl: p.cover_image_url ?? undefined,
+  }));
+  if (slides.length === 0) return null;
+  return <PublicHeroSlider tenantName={tenant.name} slides={slides} />;
 }
 
 // ──────────────── News ────────────────
@@ -633,6 +657,8 @@ export async function renderModule(
   switch (module.module_key) {
     case "hero_slider":
       return <HeroSliderModule tenant={tenant} module={module} />;
+    case "news_hero_slider":
+      return <NewsHeroSliderModule tenant={tenant} module={module} />;
     case "news":
       return <NewsModule tenant={tenant} module={module} />;
     case "custom_content":

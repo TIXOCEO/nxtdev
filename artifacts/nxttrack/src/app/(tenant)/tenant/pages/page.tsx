@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { PageHeading } from "@/components/ui/page-heading";
-import { requireAuth } from "@/lib/auth/require-auth";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
+import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
 import { listCustomPagesForAdmin } from "@/lib/db/custom-pages";
 import { CustomPagesManager } from "./_manager";
@@ -9,9 +8,10 @@ import { CustomPagesManager } from "./_manager";
 export const dynamic = "force-dynamic";
 
 export default async function TenantCustomPagesPage() {
-  await requireAuth();
-  const tenantId = await readActiveTenantCookie();
-  if (!tenantId) redirect("/");
+  const requested = await readActiveTenantCookie();
+  const result = await getActiveTenant(requested);
+  if (result.kind !== "ok") return null;
+  const tenantId = result.tenant.id;
   await requireTenantAdmin(tenantId);
 
   const pages = await listCustomPagesForAdmin(tenantId);

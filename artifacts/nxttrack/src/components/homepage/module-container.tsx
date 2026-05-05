@@ -24,7 +24,9 @@ export function ModuleContainer({
 }: ModuleContainerProps) {
   return (
     <section
-      className={`flex h-full flex-col rounded-[var(--radius-nxt-lg)] border ${className ?? ""}`}
+      // Min-height op mobile zorgt dat alle modules ongeveer dezelfde hoogte
+      // hebben als de hero slider (220px), zodat de pagina visueel rustig is.
+      className={`flex h-full min-h-[220px] flex-col rounded-[var(--radius-nxt-lg)] border sm:min-h-[260px] ${className ?? ""}`}
       style={{
         backgroundColor: "var(--surface-main)",
         borderColor: "var(--surface-border)",

@@ -28,12 +28,51 @@ export function getAllModuleDefs(): ModuleDef[] {
 registerModule({
   key: "hero_slider",
   name: "Hero slider",
-  description: "Diavoorstelling met titel, tekst en CTA.",
+  description: "Diavoorstelling met titel, tekst, CTA en achtergrondafbeelding.",
   defaultSize: "2x1",
   allowedSizes: ["2x1"],
   defaultConfig: {
     autoplay: true,
-    slides: [],
+    // Drie standaard slides die de tenant zelf kan aanpassen of verwijderen.
+    slides: [
+      {
+        subtitle: "Welkom",
+        title: "Welkom bij onze club",
+        body: "Blijf op de hoogte van het laatste nieuws, evenementen en teamupdates.",
+        cta_label: "",
+        cta_url: "",
+        background_image_url: "",
+      },
+      {
+        subtitle: "Nieuws",
+        title: "Lees wat er speelt",
+        body: "Toernooien, trainingsupdates en verhalen van achter de schermen.",
+        cta_label: "Bekijk nieuws",
+        cta_url: "nieuws",
+        background_image_url: "",
+      },
+      {
+        subtitle: "Doe mee",
+        title: "Schrijf je in voor een proefles",
+        body: "Probeer een training en laat de academie je verder helpen.",
+        cta_label: "Proefles aanvragen",
+        cta_url: "proefles",
+        background_image_url: "",
+      },
+    ],
+  },
+});
+
+registerModule({
+  key: "news_hero_slider",
+  name: "Nieuws hero slider",
+  description: "Hero-slider met de laatste nieuwsberichten als slides.",
+  defaultSize: "2x1",
+  allowedSizes: ["2x1"],
+  defaultConfig: {
+    autoplay: true,
+    limit: 5,
+    category_id: null,
   },
 });
 

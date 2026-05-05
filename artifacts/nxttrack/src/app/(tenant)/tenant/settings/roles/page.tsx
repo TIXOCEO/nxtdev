@@ -16,9 +16,18 @@ export default async function TenantRolesPage() {
   await requireTenantAdmin(tenantId);
 
   // First-visit: ensure system roles exist (Beheerder, Lid).
-  await seedDefaultRolesIfEmpty({ tenant_id: tenantId });
+  // Defensief: een fout in de seed (bv. ontbrekende permissie-key in catalog,
+  // RLS policy issue) mag de hele rollenpagina niet blokkeren.
+  try {
+    await seedDefaultRolesIfEmpty({ tenant_id: tenantId });
+  } catch (err) {
+    console.error("seedDefaultRolesIfEmpty failed:", err);
+  }
 
-  const roles = await listTenantRolesWithPerms(tenantId);
+  const roles = await listTenantRolesWithPerms(tenantId).catch((err) => {
+    console.error("listTenantRolesWithPerms failed:", err);
+    return [] as Awaited<ReturnType<typeof listTenantRolesWithPerms>>;
+  });
 
   return (
     <>

@@ -25,15 +25,22 @@ import {
   updateTenantModule,
 } from "@/lib/actions/tenant/homepage";
 import type { ModuleCatalog, TenantModule } from "@/types/database";
-import { ModuleConfigEditor } from "./module-config-editor";
+import { ModuleConfigEditor, type PageOption } from "./module-config-editor";
 
 interface Props {
   tenantId: string;
   initialModules: TenantModule[];
   catalog: ModuleCatalog[];
+  /** Tenant's enabled custom pages — used by CTA / hero slider link picker. */
+  pages?: PageOption[];
 }
 
-export function HomepageBuilder({ tenantId, initialModules, catalog }: Props) {
+export function HomepageBuilder({
+  tenantId,
+  initialModules,
+  catalog,
+  pages = [],
+}: Props) {
   const router = useRouter();
   const [modules, setModules] = useState<TenantModule[]>(initialModules);
   const [adding, setAdding] = useState(false);
@@ -71,6 +78,10 @@ export function HomepageBuilder({ tenantId, initialModules, catalog }: Props) {
         setError(res.error);
         return;
       }
+      // Direct in lokale state pushen zodat de nieuwe module meteen
+      // verschijnt; daarna nog een server-refresh om in sync te blijven
+      // (config kan revalidated zijn).
+      setModules((prev) => [...prev, res.data.module]);
       setAdding(false);
       router.refresh();
     });
@@ -172,6 +183,7 @@ export function HomepageBuilder({ tenantId, initialModules, catalog }: Props) {
                   module={m}
                   tenantId={tenantId}
                   previewMobile={previewMobile}
+                  pages={pages}
                   onRemove={() => remove(m.id)}
                 />
               ))}
@@ -187,11 +199,13 @@ function SortableRow({
   module,
   tenantId,
   previewMobile,
+  pages,
   onRemove,
 }: {
   module: TenantModule;
   tenantId: string;
   previewMobile: boolean;
+  pages: PageOption[];
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -351,7 +365,7 @@ function SortableRow({
             <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
               <Settings2 className="h-3 w-3" /> Configuratie
             </p>
-            <ModuleConfigEditor tenantId={tenantId} module={module} />
+            <ModuleConfigEditor tenantId={tenantId} module={module} pages={pages} />
           </div>
 
           {pending && (
