@@ -148,14 +148,35 @@ export interface ParentAthleteLink {
 // ── Sprint 8: Member Management ──────────────────────────────
 
 export type MemberStatus =
+  // Legacy (sprint 8/9) — blijven geldig in DB-check
   | "prospect"
-  | "aspirant"
-  | "active"
+  | "new"
+  | "contacted"
+  | "accepted"
+  | "rejected"
   | "paused"
   | "cancelled"
+  // Sprint 23 canonieke set
+  | "invited"
+  | "aspirant"
+  | "pending"
+  | "active"
+  | "inactive"
   | "archived";
 
 export type MemberRoleName = "parent" | "athlete" | "trainer" | "staff" | "volunteer";
+
+// Sprint 23 — accounttype bepaalt onboarding-flow + admin/usershell rechten.
+export type AccountType =
+  | "athlete"
+  | "minor_athlete"
+  | "parent"
+  | "trainer"
+  | "staff";
+
+export type Gender = "male" | "female" | "other";
+// PlayerType al gedefinieerd bij Sprint 12 (registrations).
+export type PaymentMethodType = "contant" | "rekening" | "incasso" | "overig";
 
 // Sprint 16 — Custom tenant roles
 export type TenantRoleScope = "admin" | "usershell";
@@ -236,6 +257,45 @@ export interface Member {
   public_bio: string | null;
   /** Sprint 18: opt-in for the public Trainers homepage module. */
   show_in_public: boolean;
+  // Sprint 23 — gestructureerde persoons-/adresvelden + accounttype.
+  first_name: string | null;
+  last_name: string | null;
+  birth_date: string | null;
+  gender: Gender | string | null;
+  player_type: PlayerType | string | null;
+  account_type: AccountType | string | null;
+  street: string | null;
+  house_number: string | null;
+  postal_code: string | null;
+  city: string | null;
+  archived_at: string | null;
+  archived_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Sprint 23 — financiële gegevens per member (1:1).
+export interface MemberFinancialDetails {
+  member_id: string;
+  tenant_id: string;
+  iban: string | null;
+  account_holder_name: string | null;
+  payment_method_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Sprint 23 — beheersbare betaalmethoden per tenant.
+export interface PaymentMethod {
+  id: string;
+  tenant_id: string;
+  name: string;
+  type: PaymentMethodType | string;
+  description: string | null;
+  iban: string | null;
+  sort_order: number;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -389,6 +449,8 @@ export interface MemberInvite {
   accepted_at: string | null;
   accepted_user_id: string | null;
   created_by: string | null;
+  /** Sprint 23 — JSON met geprefilde waarden voor de complete-registration wizard. */
+  prefill_data: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
