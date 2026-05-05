@@ -5,6 +5,7 @@ import { getEmailConfig } from "@/lib/config/email";
 import { platformSender } from "./resolve-sender";
 import { listPlatformAdmins } from "@/lib/db/platform-admins";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { appBaseUrl } from "@/lib/url";
 
 /**
  * Stuur een notificatie-mail naar ALLE platform admins.
@@ -160,6 +161,7 @@ export async function notifyPlatformOfRegistration(params: {
     );
   }
 
+  const adminLink = `${appBaseUrl()}/tenant/registrations`;
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
       <h2 style="font-size:18px;color:#111827;margin:0 0 4px;">Nieuwe ${escape(kind)} — ${escape(params.tenantName)}</h2>
@@ -167,7 +169,7 @@ export async function notifyPlatformOfRegistration(params: {
       <table style="border-collapse:collapse;width:100%;">
         ${rows.join("")}
       </table>
-      <p style="color:#9ca3af;font-size:11px;margin-top:24px;">Bekijken in admin: <a href="https://nxttrack.nl/tenant/registrations">/tenant/registrations</a> · Registratie-ID: ${escape(r.id)}</p>
+      <p style="color:#9ca3af;font-size:11px;margin-top:24px;">Bekijken in admin: <a href="${escape(adminLink)}">${escape(adminLink)}</a> · Registratie-ID: ${escape(r.id)}</p>
     </div>
   `.trim();
 
