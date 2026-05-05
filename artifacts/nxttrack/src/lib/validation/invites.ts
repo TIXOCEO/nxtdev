@@ -81,6 +81,19 @@ export const newMemberWithInviteSchema = z
         message: "Naam is verplicht.",
       });
     }
+    // Sprint D: trainer/staff invites moeten altijd via e-mail —
+    // 'manual' (zonder uitnodiging) is niet toegestaan voor deze types.
+    if (
+      v.mode === "manual" &&
+      (v.invite_type === "trainer_account" || v.invite_type === "staff_account")
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["mode"],
+        message:
+          "Trainer/staf-leden moeten altijd via uitnodiging worden aangemaakt.",
+      });
+    }
     if (v.mode === "invite") {
       if (!v.email) {
         ctx.addIssue({

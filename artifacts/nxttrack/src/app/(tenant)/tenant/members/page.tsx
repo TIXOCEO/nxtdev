@@ -8,7 +8,7 @@ import { getMembersByTenant } from "@/lib/db/members";
 import { MemberCard } from "@/components/tenant/member-card";
 import { AddMemberWizard } from "./_add-member-wizard";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
-import { userHasPermission } from "@/lib/auth/permissions";
+import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -30,15 +30,20 @@ export default async function TenantMembersPage() {
     .filter((m) => m.roles.includes("parent"))
     .map((m) => ({ id: m.id, full_name: m.full_name }));
 
-  // Sprint D: gate "Voeg toe" achter members.create permission. Tenant
-  // admins en platform-admins hebben dit standaard.
-  // Accept either `members.create` (catalog key) of het door de spec
-  // benoemde `members.write`-alias, naast platform-admin.
-  const [hasCreate, hasWrite] = await Promise.all([
-    userHasPermission(result.tenant.id, result.user.id, "members.create"),
-    userHasPermission(result.tenant.id, result.user.id, "members.write"),
-  ]);
-  const canAdd = result.isPlatformAdmin || hasCreate || hasWrite;
+  // Sprint D: gate "Voeg toe". Alleen platform_admin, tenant_admin
+  // (enum-membership) of een gebruiker met expliciete
+  // `members.create` / `members.write` permissie krijgt de knop te zien.
+  // Een generieke admin-scope tenant-rol zonder expliciete rechten
+  // mag deze module dus NIET zien (zero-permission staff/trainer).
+  const isTenantAdminEnum = result.membership?.role === "tenant_admin";
+  const explicitPerms = result.isPlatformAdmin || isTenantAdminEnum
+    ? []
+    : await getUserPermissionsInTenant(result.tenant.id, result.user.id);
+  const canAdd =
+    result.isPlatformAdmin ||
+    isTenantAdminEnum ||
+    explicitPerms.includes("members.create") ||
+    explicitPerms.includes("members.write");
 
   // Optionele subscription-keuze tijdens aanmaken: alleen tonen als
   // de tenant lidmaatschapsplannen heeft.

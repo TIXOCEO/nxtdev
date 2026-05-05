@@ -419,7 +419,19 @@ export function AddMemberWizard({
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => update("account_type", opt.value)}
+                  onClick={() => {
+                    setState((s) => ({
+                      ...s,
+                      account_type: opt.value,
+                      // Sprint D: trainer/staf moeten via uitnodiging —
+                      // forceer methode op invite zodra het type wisselt.
+                      adult_method:
+                        opt.value === "trainer" || opt.value === "staff"
+                          ? "invite"
+                          : s.adult_method,
+                      member_status: defaultStatusFor(opt.value),
+                    }));
+                  }}
                   className="flex items-start gap-3 rounded-xl border p-3 text-left transition-colors"
                   style={{
                     borderColor: active ? accentColor : "var(--surface-border)",
@@ -603,12 +615,23 @@ export function AddMemberWizard({
                 title="Direct uitnodigen via e-mail"
                 description="Het lid ontvangt meteen een mail om een account aan te maken."
               />
+              {/* Voor trainer/staf is een login verplicht — manual is
+                  uitgeschakeld zodat je geen account zonder e-mail kunt
+                  aanmaken. */}
               <MethodOption
                 selected={state.adult_method === "manual"}
-                onSelect={() => update("adult_method", "manual")}
+                onSelect={() => {
+                  if (state.account_type === "trainer" || state.account_type === "staff") return;
+                  update("adult_method", "manual");
+                }}
+                disabled={state.account_type === "trainer" || state.account_type === "staff"}
                 Icon={UserCheck}
                 title="Alleen aanmaken (geen mail)"
-                description="Maak het profiel aan; je kunt later alsnog een uitnodiging sturen."
+                description={
+                  state.account_type === "trainer" || state.account_type === "staff"
+                    ? "Niet beschikbaar voor trainer/staf — een uitnodiging is verplicht."
+                    : "Maak het profiel aan; je kunt later alsnog een uitnodiging sturen."
+                }
               />
             </div>
           )}
