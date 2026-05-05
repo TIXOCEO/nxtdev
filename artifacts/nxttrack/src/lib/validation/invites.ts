@@ -49,6 +49,12 @@ export const newMemberWithInviteSchema = z
     confirm_duplicate: z.boolean().optional().default(false),
     /** Sprint D: optional admin-step overrides. */
     member_status: z.enum(MEMBER_STATUSES).optional(),
+    member_since: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Gebruik formaat YYYY-MM-DD")
+      .optional()
+      .or(z.literal("")),
+    internal_notes: z.string().trim().max(2000).optional().or(z.literal("")),
     assign_membership_plan_id: z.string().uuid().optional().or(z.literal("")),
     /** Sprint D: minor flow — create a brand-new parent without an invite. */
     new_parent_full_name: z.string().trim().min(2).max(120).optional().or(z.literal("")),

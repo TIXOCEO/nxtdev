@@ -2,9 +2,12 @@ import { z } from "zod";
 
 export const MEMBER_STATUSES = [
   "prospect",
+  "invited",
   "aspirant",
+  "pending",
   "active",
   "paused",
+  "inactive",
   "cancelled",
   "archived",
 ] as const;

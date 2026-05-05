@@ -417,11 +417,36 @@ export async function createMemberWithInvite(
   }
 
   // Resolve member_status: respect explicit admin override, otherwise
-  // pick a sane default based on the flow type.
-  const defaultStatus = v.mode === "manual" ? "prospect" : "aspirant";
+  // pick een sane default. Trainer/staff → 'pending', overige invite/
+  // minor → 'aspirant', manual → 'prospect'.
+  const isStaffOrTrainer =
+    v.roles.includes("trainer") || v.roles.includes("staff");
+  const defaultStatus =
+    v.mode === "manual"
+      ? "prospect"
+      : isStaffOrTrainer
+        ? "pending"
+        : "aspirant";
   const memberStatus = v.member_status ?? defaultStatus;
 
-  // Insert member.
+  // Sprint D — leid account_type af zodat de bestaande Sprint 23
+  // `sync_staff_trainer_role`-trigger trainer/staf systeemrol koppelt
+  // zodra de invite wordt geaccepteerd.
+  const accountType: string | null = v.roles.includes("trainer")
+    ? "trainer"
+    : v.roles.includes("staff")
+      ? "staff"
+      : v.roles.includes("parent")
+        ? "parent"
+        : v.roles.includes("athlete")
+          ? "athlete"
+          : null;
+
+  // Insert member. `notes`/`member_since` kolommen vereisen Sprint 24
+  // SQL — we includeren ze altijd; als de migratie nog niet is gedraaid
+  // krijgt de admin een duidelijke foutmelding bij toevoegen.
+  const memberSince = (v.member_since ?? "").trim() || null;
+  const internalNotes = (v.internal_notes ?? "").trim() || null;
   const { data: created, error: memberErr } = await supabase
     .from("members")
     .insert({
@@ -430,6 +455,9 @@ export async function createMemberWithInvite(
       email: email || null,
       phone: v.phone,
       member_status: memberStatus,
+      account_type: accountType,
+      member_since: memberSince,
+      notes: internalNotes,
     })
     .select("id")
     .single();
@@ -446,18 +474,26 @@ export async function createMemberWithInvite(
   // Optionele directe lidmaatschap-toewijzing (Sprint D admin-step).
   const planId = v.assign_membership_plan_id?.trim();
   if (planId) {
+    // Verifieer expliciet dat het plan bij dezelfde tenant hoort —
+    // anders kunnen forged UUIDs cross-tenant koppelingen maken.
+    const { data: planRow, error: planLookupErr } = await supabase
+      .from("membership_plans")
+      .select("id")
+      .eq("id", planId)
+      .eq("tenant_id", v.tenant_id)
+      .maybeSingle();
+    if (planLookupErr) return fail(planLookupErr.message);
+    if (!planRow) return fail("Lidmaatschap niet gevonden in deze club.");
+
     const { error: planErr } = await supabase
       .from("member_memberships")
       .insert({
         member_id: created.id,
         membership_plan_id: planId,
         status: "active",
-        start_date: new Date().toISOString().slice(0, 10),
+        start_date: memberSince ?? new Date().toISOString().slice(0, 10),
       });
-    // Niet-fataal: als de tabel iets anders heet of een kolom mist,
-    // willen we de member-creatie niet blokkeren.
     if (planErr && planErr.code !== "23505") {
-      // Log via console — admin kan plan handmatig nog koppelen.
       console.warn("assign_membership_plan_id failed:", planErr.message);
     }
   }

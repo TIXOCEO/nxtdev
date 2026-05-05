@@ -93,12 +93,13 @@ const ACCOUNT_TYPE_LABEL: Record<AccountType, string> = ACCOUNT_TYPES.reduce(
 
 const STATUS_LABEL: Record<string, string> = {
   prospect: "Prospect",
+  invited: "Uitgenodigd",
   aspirant: "Aspirant-lid",
   pending: "Wachtend",
   active: "Actief",
   paused: "Gepauzeerd",
-  cancelled: "Opgezegd",
   inactive: "Inactief",
+  cancelled: "Opgezegd",
   archived: "Gearchiveerd",
 };
 
@@ -137,6 +138,10 @@ function defaultStatusFor(t: AccountType): string {
   return "aspirant";
 }
 
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 interface FormState {
   account_type: AccountType | null;
   adult_method: AdultMethod;
@@ -152,6 +157,8 @@ interface FormState {
   new_parent_phone: string;
   // Sprint D: admin-stap.
   member_status: string;
+  member_since: string;
+  internal_notes: string;
   membership_plan_id: string;
   confirm_duplicate: boolean;
 }
@@ -170,6 +177,8 @@ function initialState(): FormState {
     new_parent_email: "",
     new_parent_phone: "",
     member_status: "aspirant",
+    member_since: todayIso(),
+    internal_notes: "",
     membership_plan_id: "",
     confirm_duplicate: false,
   };
@@ -354,6 +363,8 @@ export function AddMemberWizard({
         parent_email: parentEmail || "",
         confirm_duplicate: state.confirm_duplicate,
         member_status: state.member_status as (typeof MEMBER_STATUSES)[number],
+        member_since: state.member_since || "",
+        internal_notes: state.internal_notes.trim() || "",
         assign_membership_plan_id: state.membership_plan_id || "",
         new_parent_full_name: newParentFullName || "",
         new_parent_email: newParentEmail || "",
@@ -699,8 +710,24 @@ export function AddMemberWizard({
               </p>
             </div>
 
+            <div>
+              <label
+                className="mb-1 block text-xs font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Lid sinds
+              </label>
+              <input
+                type="date"
+                className={inputCls}
+                style={inputStyle}
+                value={state.member_since}
+                onChange={(e) => update("member_since", e.target.value)}
+              />
+            </div>
+
             {hasPlans && (
-              <div>
+              <div className="sm:col-span-2">
                 <label
                   className="mb-1 block text-xs font-medium"
                   style={{ color: "var(--text-secondary)" }}
@@ -722,6 +749,22 @@ export function AddMemberWizard({
                 </select>
               </div>
             )}
+
+            <div className="sm:col-span-2">
+              <label
+                className="mb-1 block text-xs font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Interne notities (alleen zichtbaar voor admins)
+              </label>
+              <textarea
+                className="min-h-[72px] w-full rounded-xl border bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50"
+                style={inputStyle}
+                value={state.internal_notes}
+                onChange={(e) => update("internal_notes", e.target.value)}
+                maxLength={2000}
+              />
+            </div>
           </div>
         </WizardStep>
       )}
@@ -764,6 +807,9 @@ export function AddMemberWizard({
               label="Status"
               value={STATUS_LABEL[state.member_status] ?? state.member_status}
             />
+            {state.member_since && (
+              <ReviewRow label="Lid sinds" value={state.member_since} />
+            )}
             {hasPlans && state.membership_plan_id && (
               <ReviewRow
                 label="Lidmaatschap"
@@ -771,6 +817,12 @@ export function AddMemberWizard({
                   membershipPlans.find((p) => p.id === state.membership_plan_id)
                     ?.name ?? "—"
                 }
+              />
+            )}
+            {state.internal_notes.trim() && (
+              <ReviewRow
+                label="Notities"
+                value={state.internal_notes.trim()}
               />
             )}
           </dl>
