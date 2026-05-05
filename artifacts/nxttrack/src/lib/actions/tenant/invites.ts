@@ -1109,9 +1109,12 @@ export async function acceptMinorParentInvite(
         sourceRef: invite.id,
       });
     }
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("[invites:invite_accepted minor-parent] notification failed:", err);
+  } catch {
+    // Best-effort notificatie: een falende admin-notify mag de
+    // succesvolle invite-acceptatie nooit blokkeren of zichtbaar
+    // maken aan de eindgebruiker. Bewust geen log hier — de
+    // onderliggende sendNotification/sendEmail loggen zelf hun
+    // fouten via de SMTP/notifications-laag.
   }
 
   return {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 import {
@@ -74,8 +75,9 @@ export function AcceptMinorDirectForm({
     watch,
     formState: { errors },
   } = useForm<AcceptMinorParentInput>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(acceptMinorParentSchema) as any,
+    resolver: zodResolver(
+      acceptMinorParentSchema,
+    ) as Resolver<AcceptMinorParentInput>,
     defaultValues: {
       token,
       full_name: defaultName,
@@ -113,6 +115,9 @@ export function AcceptMinorDirectForm({
 
   if (done) {
     const linkedName = done.child ?? childName;
+    const loginHref = `/t/${tenantSlug}/login?next=${encodeURIComponent(
+      `/t/${tenantSlug}/profile`,
+    )}`;
     return (
       <div className="flex flex-col items-center text-center">
         <CheckCircle2 className="h-8 w-8" style={{ color: accentColor }} />
@@ -130,6 +135,13 @@ export function AcceptMinorDirectForm({
         <p className="mt-3 text-xs" style={{ color: "var(--text-secondary)" }}>
           We sturen je door naar het inlogscherm…
         </p>
+        <Link
+          href={loginHref}
+          className="mt-4 inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold"
+          style={{ backgroundColor: accentColor, color: "#fff" }}
+        >
+          Naar mijn profiel
+        </Link>
       </div>
     );
   }
