@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { INVITE_TYPES } from "@/lib/actions/tenant/invite-statuses";
-import { MEMBER_ROLES } from "./members";
+import { MEMBER_ROLES, MEMBER_STATUSES } from "./members";
 
 const optionalText = z
   .string()
@@ -47,6 +47,19 @@ export const newMemberWithInviteSchema = z
       .or(z.literal("")),
     /** Optional explicit duplicate-override flag from the UI. */
     confirm_duplicate: z.boolean().optional().default(false),
+    /** Sprint D: optional admin-step overrides. */
+    member_status: z.enum(MEMBER_STATUSES).optional(),
+    assign_membership_plan_id: z.string().uuid().optional().or(z.literal("")),
+    /** Sprint D: minor flow — create a brand-new parent without an invite. */
+    new_parent_full_name: z.string().trim().min(2).max(120).optional().or(z.literal("")),
+    new_parent_email: z
+      .string()
+      .trim()
+      .max(200)
+      .email("Ongeldig e-mailadres")
+      .optional()
+      .or(z.literal("")),
+    new_parent_phone: optionalText,
   })
   .superRefine((v, ctx) => {
     if (v.mode === "invite") {
@@ -67,12 +80,15 @@ export const newMemberWithInviteSchema = z
     }
     if (v.mode === "minor") {
       // Need at least the minor's full_name (already required above).
-      // Either link to existing parent OR send invite to parent email.
-      if (!v.parent_member_id && !v.parent_email) {
+      // One of three: existing parent, parent invite by email, OR
+      // create a brand-new parent (manual, no invite).
+      const hasNewParent = Boolean(v.new_parent_full_name);
+      if (!v.parent_member_id && !v.parent_email && !hasNewParent) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["parent_email"],
-          message: "Geef een bestaande ouder of een ouderlijk e-mailadres.",
+          message:
+            "Kies een bestaande ouder, vul een ouder e-mailadres in, of maak een nieuwe ouder aan.",
         });
       }
     }

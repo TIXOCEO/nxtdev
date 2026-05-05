@@ -416,6 +416,11 @@ export async function createMemberWithInvite(
     }
   }
 
+  // Resolve member_status: respect explicit admin override, otherwise
+  // pick a sane default based on the flow type.
+  const defaultStatus = v.mode === "manual" ? "prospect" : "aspirant";
+  const memberStatus = v.member_status ?? defaultStatus;
+
   // Insert member.
   const { data: created, error: memberErr } = await supabase
     .from("members")
@@ -424,7 +429,7 @@ export async function createMemberWithInvite(
       full_name: v.full_name,
       email: email || null,
       phone: v.phone,
-      member_status: v.mode === "manual" ? "prospect" : "aspirant",
+      member_status: memberStatus,
     })
     .select("id")
     .single();
@@ -438,12 +443,59 @@ export async function createMemberWithInvite(
     if (roleErr) return fail(roleErr.message);
   }
 
+  // Optionele directe lidmaatschap-toewijzing (Sprint D admin-step).
+  const planId = v.assign_membership_plan_id?.trim();
+  if (planId) {
+    const { error: planErr } = await supabase
+      .from("member_memberships")
+      .insert({
+        member_id: created.id,
+        membership_plan_id: planId,
+        status: "active",
+        start_date: new Date().toISOString().slice(0, 10),
+      });
+    // Niet-fataal: als de tabel iets anders heet of een kolom mist,
+    // willen we de member-creatie niet blokkeren.
+    if (planErr && planErr.code !== "23505") {
+      // Log via console — admin kan plan handmatig nog koppelen.
+      console.warn("assign_membership_plan_id failed:", planErr.message);
+    }
+  }
+
   // Mode-specific follow-up.
   let inviteId: string | null = null;
 
   if (v.mode === "minor") {
-    // Link to existing parent OR send invite to a parent email.
-    if (v.parent_member_id) {
+    // Drie opties: bestaande ouder linken, parent-uitnodiging mailen,
+    // OF direct een nieuwe ouder als member aanmaken (zonder invite).
+    if (v.new_parent_full_name) {
+      const newParentEmail =
+        (v.new_parent_email ?? "").trim().toLowerCase() || null;
+      const { data: newParent, error: newParentErr } = await supabase
+        .from("members")
+        .insert({
+          tenant_id: v.tenant_id,
+          full_name: v.new_parent_full_name,
+          email: newParentEmail,
+          phone: v.new_parent_phone ?? null,
+          member_status: "prospect",
+          account_type: "parent",
+        })
+        .select("id")
+        .single();
+      if (newParentErr || !newParent) {
+        return fail(newParentErr?.message ?? "Kon nieuwe ouder niet aanmaken.");
+      }
+      await supabase
+        .from("member_roles")
+        .insert({ member_id: newParent.id, role: "parent" });
+      const { error: linkErr } = await supabase.from("member_links").insert({
+        tenant_id: v.tenant_id,
+        parent_member_id: newParent.id,
+        child_member_id: created.id,
+      });
+      if (linkErr && linkErr.code !== "23505") return fail(linkErr.message);
+    } else if (v.parent_member_id) {
       const parentCheck = await assertMemberInTenant(
         v.parent_member_id,
         v.tenant_id,

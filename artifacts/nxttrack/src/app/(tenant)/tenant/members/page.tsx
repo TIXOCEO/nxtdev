@@ -7,6 +7,8 @@ import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getMembersByTenant } from "@/lib/db/members";
 import { MemberCard } from "@/components/tenant/member-card";
 import { AddMemberWizard } from "./_add-member-wizard";
+import { getPlansByTenant } from "@/lib/db/membership-plans";
+import { userHasPermission } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,16 +30,36 @@ export default async function TenantMembersPage() {
     .filter((m) => m.roles.includes("parent"))
     .map((m) => ({ id: m.id, full_name: m.full_name }));
 
+  // Sprint D: gate "Voeg toe" achter members.create permission. Tenant
+  // admins en platform-admins hebben dit standaard.
+  const canAdd =
+    result.isPlatformAdmin ||
+    (await userHasPermission(
+      result.tenant.id,
+      result.user.id,
+      "members.create",
+    ));
+
+  // Optionele subscription-keuze tijdens aanmaken: alleen tonen als
+  // de tenant lidmaatschapsplannen heeft.
+  const allPlans = canAdd ? await getPlansByTenant(result.tenant.id) : [];
+  const activePlans = allPlans
+    .filter((p) => p.is_active)
+    .map((p) => ({ id: p.id, name: p.name }));
+
   return (
     <>
       <PageHeading
         title="Leden"
         description="Beheer ouders, sporters, trainers en staf van deze vereniging."
         actions={
-          <AddMemberWizard
-            tenantId={result.tenant.id}
-            existingParents={existingParents}
-          />
+          canAdd ? (
+            <AddMemberWizard
+              tenantId={result.tenant.id}
+              existingParents={existingParents}
+              membershipPlans={activePlans}
+            />
+          ) : null
         }
       />
 

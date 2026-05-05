@@ -4,6 +4,7 @@ import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { TenantShell } from "@/components/tenant/tenant-shell";
 import { TenantSelection } from "./_tenant-selection";
+import { Toaster } from "@/components/ui/toaster";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
       isPlatformAdmin={result.isPlatformAdmin}
     >
       {children}
+      <Toaster />
     </TenantShell>
   );
 }
