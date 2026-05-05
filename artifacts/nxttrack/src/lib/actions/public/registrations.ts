@@ -227,13 +227,6 @@ const ACCOUNT_INVITE_TYPE: Record<
   staff: "staff_account",
 };
 
-const ACCOUNT_TYPE_TO_MEMBER: Record<PublicAccountType, string> = {
-  parent: "parent",
-  adult_athlete: "athlete",
-  trainer: "trainer",
-  staff: "staff",
-};
-
 const ACCOUNT_TYPE_TO_ROLE: Record<PublicAccountType, string> = {
   parent: "parent",
   adult_athlete: "athlete",
