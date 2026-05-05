@@ -100,7 +100,7 @@ export async function PublicHeader({
           <>
             {isAdmin && (
               <Link
-                href={`/tenant?tenant=${tenant.id}`}
+                href={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/tenant?tenant=${tenant.id}`}
                 className="hidden items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold sm:inline-flex"
                 style={{
                   backgroundColor: "var(--accent)",
