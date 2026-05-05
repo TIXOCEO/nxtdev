@@ -12,3 +12,9 @@ id = "bRHpYC1VRzTXL5Qmx08vC"
 uri = "file://NXTTRACK-functionaliteiten.md"
 type = "text"
 title = "NXTTRACK — Overzicht functionaliteiten"
+
+[[outputs]]
+id = "u7D9sEzudSTpWJ8qF0_vV"
+uri = "file://docs/NXTTRACK-features-tenant-admins.md"
+type = "text"
+title = "NXTTRACK features overzicht (tenant admins)"
