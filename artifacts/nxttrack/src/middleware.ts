@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * NXTTRACK middleware — combineert twee verantwoordelijkheden in één file
@@ -57,25 +58,59 @@ const dbCache: Map<string, DbCacheEntry> = new Map();
 const POSITIVE_TTL_MS = 60_000;
 const NEGATIVE_TTL_MS = 30_000;
 
-async function lookupHostInDb(host: string, origin: string): Promise<string | null> {
+// Supabase admin client (service-role). Eerder belde middleware
+// `/api/tls-check` via fetch over de publieke origin, maar dat ging op
+// productie door Cloudflare → Caddy → Next, en die roundtrip kan
+// blokkeren (CF anti-loop, TLS-handshake, rate limit). Resultaat: de
+// fetch faalde stil, slug werd 30s lang als null gecached, en custom
+// domeinen vielen terug op de marketing-site. We bevragen de DB nu
+// rechtstreeks — zelfde service-role key, geen netwerk-omweg.
+let dbClient: SupabaseClient | null = null;
+function getDbClient(): SupabaseClient | null {
+  if (dbClient) return dbClient;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  dbClient = createSupabaseClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return dbClient;
+}
+
+async function lookupHostInDb(host: string): Promise<string | null> {
   const hit = dbCache.get(host);
   if (hit && hit.expires > Date.now()) return hit.slug;
+
+  const client = getDbClient();
+  if (!client) return null;
+
+  // Strip eventuele "www." voor de match — we slaan het kale domein op
+  // maar accepteren beide varianten.
+  const candidates = host.startsWith("www.") ? [host.slice(4), host] : [host, `www.${host}`];
+
   try {
-    const res = await fetch(
-      `${origin}/api/tls-check?domain=${encodeURIComponent(host)}`,
-      { cache: "no-store" },
-    );
-    if (res.status === 200) {
-      const body = (await res.json()) as { slug?: string; kind?: string };
-      // `kind: "apex"` betekent: dit is een apex/subdomein van onze eigen
-      // host — geen rewrite nodig. We cachen dat als null.
-      const slug = body.kind === "tenant" ? body.slug ?? null : null;
-      dbCache.set(host, { slug, expires: Date.now() + POSITIVE_TTL_MS });
-      return slug;
+    const { data, error } = await client
+      .from("tenants")
+      .select("slug, status")
+      .in("domain", candidates)
+      .limit(1);
+
+    if (error) {
+      // Bij DB-fout: kort negative cachen, niet 30s vasthouden — dan herstelt
+      // het systeem zich snel zodra de DB weer reageert.
+      dbCache.set(host, { slug: null, expires: Date.now() + 5_000 });
+      return null;
     }
-    dbCache.set(host, { slug: null, expires: Date.now() + NEGATIVE_TTL_MS });
-    return null;
+
+    const row = (data ?? [])[0] as { slug: string; status: string } | undefined;
+    const slug = row && row.status === "active" ? row.slug : null;
+    dbCache.set(host, {
+      slug,
+      expires: Date.now() + (slug ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS),
+    });
+    return slug;
   } catch {
+    dbCache.set(host, { slug: null, expires: Date.now() + 5_000 });
     return null;
   }
 }
@@ -84,7 +119,7 @@ async function lookupHostInDb(host: string, origin: string): Promise<string | nu
  * Resolve de tenant-slug die hoort bij `host` (custom domein, subdomein of
  * niets). Retourneert `null` voor apex/www/onbekende hosts.
  */
-async function resolveSlug(req: NextRequest, host: string): Promise<string | null> {
+async function resolveSlug(host: string): Promise<string | null> {
   if (!host) return null;
   if (
     host === "localhost" ||
@@ -110,8 +145,8 @@ async function resolveSlug(req: NextRequest, host: string): Promise<string | nul
     return sub;
   }
 
-  // 3. Onbekende host → DB-lookup met cache.
-  return lookupHostInDb(host, req.nextUrl.origin);
+  // 3. Onbekende host → directe DB-lookup met cache.
+  return lookupHostInDb(host);
 }
 
 /**
@@ -152,7 +187,7 @@ export async function middleware(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
   const url = req.nextUrl;
 
-  const slug = await resolveSlug(req, host);
+  const slug = await resolveSlug(host);
 
   // Bouw de basis-response: rewrite indien nodig, anders next().
   let response: NextResponse;
