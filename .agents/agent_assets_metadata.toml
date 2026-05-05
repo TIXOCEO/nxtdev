@@ -18,3 +18,21 @@ id = "u7D9sEzudSTpWJ8qF0_vV"
 uri = "file://docs/NXTTRACK-features-tenant-admins.md"
 type = "text"
 title = "NXTTRACK features overzicht (tenant admins)"
+
+[[outputs]]
+id = "3pZ_z9-mo38r3_qwEUJZl"
+uri = "file://.local/docs/voetbalschool-houtrust-platform-overzicht.md"
+type = "text"
+title = "Platformoverzicht voor Voetbalschool Houtrust"
+
+[[outputs]]
+id = "8xS9v7gkek9PduN9OFkHx"
+uri = "file://.local/docs/notificatie-checklist.md"
+type = "text"
+title = "Notificatie & e-mail checklist"
+
+[[outputs]]
+id = "FiUidqnC75adTUUscKSX-"
+uri = "file://.local/docs/permissies-overzicht.md"
+type = "text"
+title = "Permissie-overzicht (usershell + adminshell)"
