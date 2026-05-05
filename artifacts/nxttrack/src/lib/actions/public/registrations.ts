@@ -278,6 +278,58 @@ function expiryFromNowDays(days: number): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
+/**
+ * Inline koppelcode lookup (gebruikt door de publieke registratie-wizard).
+ * Geeft de child-naam terug zodat de ouder direct ziet welk kind hij koppelt.
+ * Tenant-scoped: we doen alle checks server-side; de anonieme caller krijgt
+ * alleen ok|error + (bij ok) een first-name terug — geen member-id of e-mail.
+ */
+export async function lookupKoppelCode(
+  tenantSlug: string,
+  rawCode: string,
+): Promise<
+  | { ok: true; child_first_name: string }
+  | { ok: false; error: string }
+> {
+  const code = (rawCode ?? "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,12}(-[A-Z0-9]{2,8})?$/.test(code)) {
+    return { ok: false, error: "Voer een geldige koppelcode in." };
+  }
+  const tenant = await resolveActiveTenantContext(tenantSlug);
+  if (!tenant) return { ok: false, error: "Onbekende vereniging." };
+
+  const admin = createAdminClient();
+  const { data: invite } = await admin
+    .from("member_invites")
+    .select("child_member_id, status, expires_at")
+    .eq("tenant_id", tenant.id)
+    .eq("invite_code", code)
+    .maybeSingle();
+
+  if (
+    !invite ||
+    !invite.child_member_id ||
+    invite.status === "revoked" ||
+    invite.status === "expired" ||
+    new Date(invite.expires_at as string).getTime() < Date.now()
+  ) {
+    return { ok: false, error: "Koppelcode is ongeldig of verlopen." };
+  }
+
+  const { data: child } = await admin
+    .from("members")
+    .select("first_name, full_name")
+    .eq("id", invite.child_member_id)
+    .eq("tenant_id", tenant.id)
+    .maybeSingle();
+
+  const name =
+    (child?.first_name as string | undefined) ??
+    ((child?.full_name as string | undefined) ?? "").split(" ")[0] ??
+    "";
+  return { ok: true, child_first_name: name };
+}
+
 async function loadInviteExpiryDays(tenantId: string): Promise<number> {
   const admin = createAdminClient();
   const { data } = await admin
@@ -311,107 +363,56 @@ export async function submitPublicRegistration(
   const fullName = `${v.first_name.trim()} ${v.last_name.trim()}`.trim();
   const status = ACCOUNT_TYPE_STATUS[v.account_type];
 
-  // 1. Insert primary member (parent / athlete / trainer / staff).
-  const { data: primary, error: pErr } = await admin
-    .from("members")
-    .insert({
-      tenant_id: tenant.id,
-      full_name: fullName,
-      first_name: v.first_name.trim(),
-      last_name: v.last_name.trim(),
-      email: v.email,
-      phone: v.phone,
-      account_type: ACCOUNT_TYPE_TO_MEMBER[v.account_type],
-      member_status: status,
-      birth_date: v.account_type === "adult_athlete" ? v.birth_date : null,
-      player_type:
-        v.account_type === "adult_athlete"
-          ? (v.player_type as "player" | "goalkeeper" | undefined) ?? null
-          : null,
-    })
-    .select("id")
-    .single();
+  // 1. Atomic write (parent + children + roles + links) via Postgres-RPC.
+  //    De RPC `public.create_public_registration` voert alles binnen één
+  //    transactie uit; bij failure rolt alles terug zodat we geen
+  //    half-aangemaakte members/links achterlaten.
+  const childrenPayload =
+    v.account_type === "parent"
+      ? v.children.map((c) =>
+          c.mode === "new"
+            ? {
+                mode: "new" as const,
+                first_name: c.first_name.trim(),
+                last_name: c.last_name.trim(),
+                birth_date: c.birth_date,
+                player_type: c.player_type ?? null,
+              }
+            : {
+                mode: "link" as const,
+                koppel_code: (c.koppel_code ?? "").toUpperCase(),
+              },
+        )
+      : [];
 
-  if (pErr || !primary) {
-    return fail(pErr?.message ?? "Aanmelding kon niet worden opgeslagen.");
-  }
-  const primaryId = primary.id as string;
+  const { data: rpcId, error: rpcErr } = await admin.rpc(
+    "create_public_registration",
+    {
+      p_tenant_id: tenant.id,
+      p_account_type: v.account_type,
+      p_first_name: v.first_name.trim(),
+      p_last_name: v.last_name.trim(),
+      p_email: v.email,
+      p_phone: v.phone,
+      p_birth_date: v.account_type === "adult_athlete" ? v.birth_date : null,
+      p_player_type:
+        v.account_type === "adult_athlete" ? v.player_type ?? null : null,
+      p_status: status,
+      p_role: ACCOUNT_TYPE_TO_ROLE[v.account_type],
+      p_children: childrenPayload,
+    },
+  );
 
-  // 1b. Role for the primary member (mirrors admin "voeg lid toe" flow).
-  const { error: roleErr } = await admin
-    .from("member_roles")
-    .insert({ member_id: primaryId, role: ACCOUNT_TYPE_TO_ROLE[v.account_type] });
-  if (roleErr && roleErr.code !== "23505") {
-    return fail(roleErr.message);
-  }
-
-  // 2. Children — only when account_type === "parent".
-  if (v.account_type === "parent") {
-    for (const child of v.children) {
-      if (child.mode === "new") {
-        const childFull = `${child.first_name.trim()} ${child.last_name.trim()}`.trim();
-        const { data: childRow, error: cErr } = await admin
-          .from("members")
-          .insert({
-            tenant_id: tenant.id,
-            full_name: childFull,
-            first_name: child.first_name.trim(),
-            last_name: child.last_name.trim(),
-            account_type: "minor_athlete",
-            member_status: "aspirant",
-            birth_date: child.birth_date,
-            player_type: (child.player_type as "player" | "goalkeeper") ?? null,
-          })
-          .select("id")
-          .single();
-        if (cErr || !childRow) {
-          return fail(cErr?.message ?? "Kon kind niet aanmaken.");
-        }
-        const { error: childRoleErr } = await admin
-          .from("member_roles")
-          .insert({ member_id: childRow.id, role: "athlete" });
-        if (childRoleErr && childRoleErr.code !== "23505") {
-          return fail(childRoleErr.message);
-        }
-        const { error: linkErr } = await admin.from("member_links").insert({
-          tenant_id: tenant.id,
-          parent_member_id: primaryId,
-          child_member_id: childRow.id,
-        });
-        if (linkErr && linkErr.code !== "23505") {
-          return fail(linkErr.message);
-        }
-      } else {
-        // Link via koppelcode → existing minor_parent_link / add_existing_minor invite.
-        const code = (child.koppel_code ?? "").toUpperCase();
-        const { data: invite } = await admin
-          .from("member_invites")
-          .select("id, tenant_id, child_member_id, status, expires_at")
-          .eq("tenant_id", tenant.id)
-          .eq("invite_code", code)
-          .maybeSingle();
-        if (
-          !invite ||
-          !invite.child_member_id ||
-          invite.status === "revoked" ||
-          invite.status === "expired" ||
-          new Date(invite.expires_at as string).getTime() < Date.now()
-        ) {
-          return fail("Koppelcode is ongeldig of verlopen.", {
-            children: ["Controleer de koppelcode en probeer opnieuw."],
-          });
-        }
-        const { error: linkErr } = await admin.from("member_links").insert({
-          tenant_id: tenant.id,
-          parent_member_id: primaryId,
-          child_member_id: invite.child_member_id,
-        });
-        if (linkErr && linkErr.code !== "23505") {
-          return fail(linkErr.message);
-        }
-      }
+  if (rpcErr || !rpcId) {
+    const msg = rpcErr?.message ?? "Aanmelding kon niet worden opgeslagen.";
+    if (msg.includes("invalid_koppel_code")) {
+      return fail("Koppelcode is ongeldig of verlopen.", {
+        children: ["Controleer de koppelcode en probeer opnieuw."],
+      });
     }
+    return fail(msg);
   }
+  const primaryId = rpcId as unknown as string;
 
   // 3. Account-invite zodat de inschrijver een wachtwoord kan instellen.
   const expiryDays = await loadInviteExpiryDays(tenant.id);

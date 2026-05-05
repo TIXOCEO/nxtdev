@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Controller,
   useFieldArray,
@@ -14,7 +14,10 @@ import {
   type PublicAccountType,
   type PublicOnboardingInput,
 } from "@/lib/validation/public-registration";
-import { submitPublicRegistration } from "@/lib/actions/public/registrations";
+import {
+  lookupKoppelCode,
+  submitPublicRegistration,
+} from "@/lib/actions/public/registrations";
 import {
   Wizard,
   WizardNav,
@@ -473,19 +476,18 @@ export function RegistrationWizard({
                       </Field>
                     </div>
                   ) : (
-                    <Field
-                      label="Koppelcode"
-                      hint="Je hebt deze code per e-mail ontvangen."
-                      error={childErrs?.koppel_code?.message}
-                    >
-                      <Input
-                        {...form.register(
-                          `children.${idx}.koppel_code` as const,
-                        )}
-                        autoCapitalize="characters"
-                        placeholder="K7P-9F4M"
-                      />
-                    </Field>
+                    <Controller
+                      control={form.control}
+                      name={`children.${idx}.koppel_code` as const}
+                      render={({ field }) => (
+                        <KoppelCodeField
+                          value={field.value}
+                          onChange={field.onChange}
+                          tenantSlug={tenantSlug}
+                          fieldError={childErrs?.koppel_code?.message}
+                        />
+                      )}
+                    />
                   )}
                 </div>
               );
@@ -618,6 +620,94 @@ function TypeCard({
         {description}
       </span>
     </button>
+  );
+}
+
+type KoppelLookupState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ok"; child_first_name: string }
+  | { status: "error"; message: string };
+
+function KoppelCodeField({
+  value,
+  onChange,
+  tenantSlug,
+  fieldError,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  tenantSlug: string;
+  fieldError?: string;
+}) {
+  const [state, setState] = useState<KoppelLookupState>({ status: "idle" });
+  const reqIdRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const trimmed = (value ?? "").trim();
+    if (trimmed.length < 4) {
+      setState({ status: "idle" });
+      return;
+    }
+    timerRef.current = setTimeout(async () => {
+      const myId = ++reqIdRef.current;
+      setState({ status: "loading" });
+      try {
+        const res = await lookupKoppelCode(tenantSlug, trimmed);
+        if (myId !== reqIdRef.current) return;
+        if (res.ok) {
+          setState({ status: "ok", child_first_name: res.child_first_name });
+        } else {
+          setState({ status: "error", message: res.error });
+        }
+      } catch {
+        if (myId !== reqIdRef.current) return;
+        setState({
+          status: "error",
+          message: "Kon de koppelcode nu niet controleren.",
+        });
+      }
+    }, 350);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [value, tenantSlug]);
+
+  const inlineMessage =
+    state.status === "loading"
+      ? "Controleren…"
+      : state.status === "ok"
+        ? `Gekoppeld aan ${state.child_first_name || "kind"}.`
+        : state.status === "error"
+          ? state.message
+          : undefined;
+  const inlineColor =
+    state.status === "ok"
+      ? "text-emerald-700"
+      : state.status === "error"
+        ? "text-red-600"
+        : "text-[var(--text-secondary)]";
+
+  return (
+    <Field
+      label="Koppelcode"
+      hint="Je hebt deze code per e-mail ontvangen."
+      error={fieldError}
+    >
+      <Input
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        onBlur={(e) => onChange(e.target.value.trim().toUpperCase())}
+        autoCapitalize="characters"
+        placeholder="K7P-9F4M"
+        aria-invalid={state.status === "error" || !!fieldError}
+      />
+      {!fieldError && inlineMessage && (
+        <p className={`mt-1 text-[11px] ${inlineColor}`}>{inlineMessage}</p>
+      )}
+    </Field>
   );
 }
 

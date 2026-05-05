@@ -233,6 +233,17 @@ export type PublicRegistrationInput = z.infer<typeof publicRegistrationSchema>;
 // Sprint 23 / Sprint C — Publieke onboarding-wizard
 // ──────────────────────────────────────────────────────────────────
 
+export function computeAgeYears(iso: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getUTCFullYear() - d.getUTCFullYear();
+  const m = now.getUTCMonth() - d.getUTCMonth();
+  if (m < 0 || (m === 0 && now.getUTCDate() < d.getUTCDate())) age--;
+  return age;
+}
+
 export const PUBLIC_ACCOUNT_TYPES = [
   "parent",
   "adult_athlete",
@@ -343,6 +354,16 @@ export const publicOnboardingSchema = z
           path: ["birth_date"],
           message: "Geboortedatum is verplicht",
         });
+      } else {
+        const age = computeAgeYears(v.birth_date);
+        if (age !== null && age < 18) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["birth_date"],
+            message:
+              "Je bent jonger dan 18 — kies 'Ouder/verzorger' en laat een ouder de aanmelding voltooien.",
+          });
+        }
       }
       if (v.player_type !== "player" && v.player_type !== "goalkeeper") {
         ctx.addIssue({
