@@ -78,9 +78,22 @@ export function middleware(req: NextRequest) {
 
   // Interne rewrite: het pad blijft zichtbaar in de URL-balk, maar Next.js
   // serveert de tenant-routes onder /t/<slug>/...
-  const newUrl = url.clone();
-  newUrl.pathname = `/t/${sub}${url.pathname === "/" ? "" : url.pathname}`;
-  return NextResponse.rewrite(newUrl);
+  //
+  // NB: in productie achter een reverse proxy (nginx) bevat `req.nextUrl` het
+  // interne bind-adres (`localhost:<PORT>`) gecombineerd met `X-Forwarded-Proto:
+  // https`. Als we die URL klonen zou NextResponse.rewrite het als externe
+  // proxy zien en een HTTPS-fetch doen naar een HTTP-poort (EPROTO). Daarom
+  // bouwen we de rewrite-URL expliciet vanaf de inkomende public host.
+  const newPath = `/t/${sub}${url.pathname === "/" ? "" : url.pathname}`;
+  const proto =
+    req.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+    url.protocol.replace(":", "") ||
+    "https";
+  const rewriteTarget = new URL(
+    `${newPath}${url.search}`,
+    `${proto}://${req.headers.get("host") ?? host}`,
+  );
+  return NextResponse.rewrite(rewriteTarget);
 }
 
 export const config = {
