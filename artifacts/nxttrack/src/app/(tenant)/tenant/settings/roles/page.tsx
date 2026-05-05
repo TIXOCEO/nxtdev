@@ -3,7 +3,11 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
 import { listTenantRolesWithPerms } from "@/lib/db/tenant-roles";
-import { seedDefaultRolesIfEmpty } from "@/lib/actions/tenant/roles";
+import {
+  seedDefaultRolesIfEmpty,
+  ensureBeheerderHasAllPermissions,
+  isSuperAdminRole,
+} from "@/lib/actions/tenant/roles";
 import { RolesManager } from "./_manager";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +26,12 @@ export default async function TenantRolesPage() {
     await seedDefaultRolesIfEmpty({ tenant_id: tenantId });
   } catch (err) {
     console.error("seedDefaultRolesIfEmpty failed:", err);
+  }
+  // Re-sync: nieuwe permissies in de catalog automatisch aan Beheerder geven.
+  try {
+    await ensureBeheerderHasAllPermissions({ tenant_id: tenantId });
+  } catch (err) {
+    console.error("ensureBeheerderHasAllPermissions failed:", err);
   }
 
   const roles = await listTenantRolesWithPerms(tenantId).catch((err) => {
@@ -45,6 +55,11 @@ export default async function TenantRolesPage() {
           sort_order: r.sort_order,
           permissions: r.permissions,
           member_count: r.member_count,
+          is_super_admin: isSuperAdminRole({
+            name: r.name,
+            is_system: r.is_system,
+            sort_order: r.sort_order,
+          }),
         }))}
       />
     </>

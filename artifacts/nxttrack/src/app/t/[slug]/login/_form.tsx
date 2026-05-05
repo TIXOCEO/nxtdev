@@ -38,13 +38,15 @@ export function TenantLoginForm({ slug }: TenantLoginFormProps) {
       setErrorMessage(error.message);
       return;
     }
-    const sync = await ensureProfileForCurrentUser();
+    // Geef `next` mee zodat platform admins die via de tenant-login binnenkomen
+    // op de tenant-pagina blijven (en niet teruggestuurd worden naar /platform).
+    const sync = await ensureProfileForCurrentUser(next);
     if (!sync.ok) {
       setState("error");
       setErrorMessage(sync.error ?? "Profielsynchronisatie mislukt.");
       return;
     }
-    router.push(next);
+    router.push(sync.destination ?? next);
     router.refresh();
   }
 

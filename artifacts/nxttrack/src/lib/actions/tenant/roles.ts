@@ -32,6 +32,26 @@ export async function upsertTenantRole(
 
   let roleId = parsed.data.id;
   if (roleId) {
+    // Bescherm de super admin: naam, sort en permissies van Beheerder
+    // (sort_order 0, system) mogen niet via de UI worden aangepast.
+    const { data: existing } = await admin
+      .from("tenant_roles")
+      .select("name, is_system, sort_order")
+      .eq("id", roleId)
+      .eq("tenant_id", parsed.data.tenant_id)
+      .maybeSingle();
+    if (existing && isSuperAdminRole(existing as { name: string; is_system: boolean; sort_order: number })) {
+      // Sta alleen description-aanpassingen toe.
+      const { error } = await admin
+        .from("tenant_roles")
+        .update({ description: parsed.data.description ?? null })
+        .eq("id", roleId)
+        .eq("tenant_id", parsed.data.tenant_id);
+      if (error) return { ok: false, error: error.message };
+      revalidatePath("/tenant/settings/roles");
+      return { ok: true, data: { id: roleId } };
+    }
+
     const { error } = await admin
       .from("tenant_roles")
       .update({
@@ -133,10 +153,97 @@ export async function setMemberRoles(
   return { ok: true, data: undefined };
 }
 
+/**
+ * Default permissie-sets per system role. Beheerder krijgt ALLE permissies
+ * via `ensureBeheerderHasAllPermissions` zodat nieuwe keys in de catalog
+ * automatisch meegroeien.
+ */
+const TRAINER_PERMS = [
+  "members.view",
+  "trainings.view",
+  "trainings.create",
+  "trainings.edit",
+  "attendance.mark",
+  "news.publish",
+  "news.edit",
+  "social.view",
+  "social.post",
+  "social.comment",
+  "social.like",
+  "social.broadcast",
+  "messages.use",
+  "messages.broadcast",
+];
+
+const COACH_PERMS = [
+  "members.view",
+  "trainings.view",
+  "attendance.mark",
+  "social.view",
+  "social.post",
+  "social.comment",
+  "social.like",
+  "messages.use",
+];
+
+const OUDER_PERMS = [
+  "social.view",
+  "social.comment",
+  "social.like",
+  "messages.use",
+];
+
+const SYSTEM_ROLE_SEEDS: Array<{
+  name: string;
+  description: string;
+  sort_order: number;
+  permissions: string[] | "all";
+}> = [
+  {
+    name: "Beheerder",
+    description: "Volledige toegang tot alle tenant-acties (super admin).",
+    sort_order: 0,
+    permissions: "all",
+  },
+  {
+    name: "Trainer",
+    description: "Beheert trainingen, aanwezigheid en communicatie met spelers.",
+    sort_order: 10,
+    permissions: TRAINER_PERMS,
+  },
+  {
+    name: "Coach",
+    description: "Bekijkt leden, markeert aanwezigheid en gebruikt de social feed.",
+    sort_order: 20,
+    permissions: COACH_PERMS,
+  },
+  {
+    name: "Ouder",
+    description: "Bekijkt de social feed en kan berichten gebruiken.",
+    sort_order: 30,
+    permissions: OUDER_PERMS,
+  },
+  {
+    name: "Lid",
+    description: "Standaard rol voor leden zonder bijzondere permissies.",
+    sort_order: 100,
+    permissions: [],
+  },
+];
+
+/** True voor de "super admin"-systeemrol (Beheerder met sort_order 0). */
+export function isSuperAdminRole(role: {
+  name: string;
+  is_system: boolean;
+  sort_order: number;
+}): boolean {
+  return role.is_system && role.sort_order === 0 && role.name === "Beheerder";
+}
+
 const seedSchema = z.object({ tenant_id: z.string().uuid() });
 /**
- * Idempotent: ensures the tenant has a "Beheerder" and "Lid" system role
- * if no roles exist. Called when the roles page is first opened.
+ * Idempotent: ensures the tenant has Beheerder, Trainer, Coach, Ouder en Lid
+ * system roles if no roles exist. Called when the roles page is first opened.
  */
 export async function seedDefaultRolesIfEmpty(
   input: z.infer<typeof seedSchema>,
@@ -150,40 +257,74 @@ export async function seedDefaultRolesIfEmpty(
     .limit(1);
   if ((existing ?? []).length > 0) return { ok: true, data: undefined };
 
+  const { ALL_PERMISSION_KEYS } = await import("@/lib/permissions/catalog");
+
   const { data: inserted } = await admin
     .from("tenant_roles")
-    .insert([
-      {
+    .insert(
+      SYSTEM_ROLE_SEEDS.map((s) => ({
         tenant_id: input.tenant_id,
-        name: "Beheerder",
-        description: "Volledige toegang tot alle tenant-acties.",
+        name: s.name,
+        description: s.description,
         is_system: true,
-        sort_order: 0,
-      },
-      {
-        tenant_id: input.tenant_id,
-        name: "Lid",
-        description: "Standaard rol voor leden zonder bijzondere permissies.",
-        is_system: true,
-        sort_order: 100,
-      },
-    ])
+        sort_order: s.sort_order,
+      })),
+    )
     .select("id, name");
 
-  const beheerder = ((inserted ?? []) as Array<{ id: string; name: string }>).find(
-    (r) => r.name === "Beheerder",
-  );
-  if (beheerder) {
-    // Grant Beheerder all current permissions.
-    const { ALL_PERMISSION_KEYS } = await import("@/lib/permissions/catalog");
-    const rows = ALL_PERMISSION_KEYS.map((p) => ({
-      role_id: beheerder.id,
-      permission: p,
-    }));
-    if (rows.length > 0) {
-      await admin.from("tenant_role_permissions").insert(rows);
+  const insertedRows = (inserted ?? []) as Array<{ id: string; name: string }>;
+  const permRows: Array<{ role_id: string; permission: string }> = [];
+  for (const seed of SYSTEM_ROLE_SEEDS) {
+    const row = insertedRows.find((r) => r.name === seed.name);
+    if (!row) continue;
+    const keys = seed.permissions === "all" ? ALL_PERMISSION_KEYS : seed.permissions;
+    for (const k of keys) {
+      if (ALL_PERMISSION_KEYS.includes(k)) {
+        permRows.push({ role_id: row.id, permission: k });
+      }
     }
   }
+  if (permRows.length > 0) {
+    await admin.from("tenant_role_permissions").insert(permRows);
+  }
   revalidatePath("/tenant/settings/roles");
+  return { ok: true, data: undefined };
+}
+
+/**
+ * Idempotent: zorgt dat de "Beheerder" systeemrol elke permissie uit de
+ * huidige catalog heeft. Wordt bij elke load van de rollenpagina aangeroepen
+ * zodat nieuwe permissies automatisch beschikbaar zijn voor de super admin.
+ */
+export async function ensureBeheerderHasAllPermissions(
+  input: z.infer<typeof seedSchema>,
+): Promise<ActionResult<void>> {
+  await requireTenantAdmin(input.tenant_id);
+  const admin = createAdminClient();
+
+  const { data: roleRow } = await admin
+    .from("tenant_roles")
+    .select("id, name, is_system, sort_order")
+    .eq("tenant_id", input.tenant_id)
+    .eq("is_system", true)
+    .eq("sort_order", 0)
+    .eq("name", "Beheerder")
+    .maybeSingle();
+
+  if (!roleRow) return { ok: true, data: undefined };
+  const roleId = (roleRow as { id: string }).id;
+
+  const { ALL_PERMISSION_KEYS } = await import("@/lib/permissions/catalog");
+  const { data: existing } = await admin
+    .from("tenant_role_permissions")
+    .select("permission")
+    .eq("role_id", roleId);
+
+  const have = new Set(((existing ?? []) as Array<{ permission: string }>).map((r) => r.permission));
+  const missing = ALL_PERMISSION_KEYS.filter((k) => !have.has(k));
+  if (missing.length === 0) return { ok: true, data: undefined };
+
+  const rows = missing.map((p) => ({ role_id: roleId, permission: p }));
+  await admin.from("tenant_role_permissions").insert(rows);
   return { ok: true, data: undefined };
 }

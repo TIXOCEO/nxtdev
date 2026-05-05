@@ -15,7 +15,7 @@ import {
   SortableContext,
   arrayMove,
   useSortable,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -27,12 +27,32 @@ import {
 import type { ModuleCatalog, TenantModule } from "@/types/database";
 import { ModuleConfigEditor, type PageOption } from "./module-config-editor";
 
+const FULL_BLEED_KEYS = new Set(["hero_slider", "news_hero_slider"]);
+
 interface Props {
   tenantId: string;
   initialModules: TenantModule[];
   catalog: ModuleCatalog[];
   /** Tenant's enabled custom pages — used by CTA / hero slider link picker. */
   pages?: PageOption[];
+}
+
+/**
+ * Bepaal de grid-span class op basis van module-key en formaat.
+ * - Hero sliders zijn altijd full-bleed (col-span-2 op desktop).
+ * - 2x1 = volle breedte, 1x2 = half x dubbele hoogte, 1x1 = half.
+ * - In mobile-preview is alles single column.
+ */
+function spanFor(
+  moduleKey: string,
+  size: string,
+  mobile: boolean,
+): string {
+  if (mobile) return "";
+  if (FULL_BLEED_KEYS.has(moduleKey)) return "sm:col-span-2";
+  if (size === "2x1") return "sm:col-span-2";
+  if (size === "1x2") return "sm:col-span-1 sm:row-span-2";
+  return "sm:col-span-1";
 }
 
 export function HomepageBuilder({
@@ -78,9 +98,6 @@ export function HomepageBuilder({
         setError(res.error);
         return;
       }
-      // Direct in lokale state pushen zodat de nieuwe module meteen
-      // verschijnt; daarna nog een server-refresh om in sync te blijven
-      // (config kan revalidated zijn).
       setModules((prev) => [...prev, res.data.module]);
       setAdding(false);
       router.refresh();
@@ -133,6 +150,11 @@ export function HomepageBuilder({
         </button>
       </div>
 
+      <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+        Sleep modules om te herschikken — de kaarten staan in dezelfde 2-koloms
+        opmaak als op de publieke homepage.
+      </p>
+
       {adding && (
         <div
           className="rounded-lg border p-3"
@@ -175,19 +197,26 @@ export function HomepageBuilder({
         </p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={modules.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-            <ul className="space-y-2">
+          <SortableContext items={modules.map((m) => m.id)} strategy={rectSortingStrategy}>
+            <div
+              className={
+                previewMobile
+                  ? "mx-auto grid w-full max-w-sm grid-cols-1 gap-3"
+                  : "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-min"
+              }
+            >
               {modules.map((m) => (
-                <SortableRow
+                <SortableCard
                   key={m.id}
                   module={m}
                   tenantId={tenantId}
                   previewMobile={previewMobile}
                   pages={pages}
+                  spanClass={spanFor(m.module_key, m.size, previewMobile)}
                   onRemove={() => remove(m.id)}
                 />
               ))}
-            </ul>
+            </div>
           </SortableContext>
         </DndContext>
       )}
@@ -195,17 +224,19 @@ export function HomepageBuilder({
   );
 }
 
-function SortableRow({
+function SortableCard({
   module,
   tenantId,
   previewMobile,
   pages,
+  spanClass,
   onRemove,
 }: {
   module: TenantModule;
   tenantId: string;
   previewMobile: boolean;
   pages: PageOption[];
+  spanClass: string;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -218,7 +249,13 @@ function SortableRow({
   const [visibleMobile, setVisibleMobile] = useState(module.visible_mobile);
   const [title, setTitle] = useState(module.title ?? "");
 
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    backgroundColor: "var(--surface-main)",
+    borderColor: "var(--surface-border)",
+  };
 
   function persist(patch: {
     title?: string | null;
@@ -236,16 +273,15 @@ function SortableRow({
   }
 
   return (
-    <li
+    <div
       ref={setNodeRef}
-      style={{
-        ...style,
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
-      }}
-      className="rounded-lg border"
+      style={style}
+      className={`flex h-full min-h-[140px] flex-col overflow-hidden rounded-lg border ${spanClass}`}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div
+        className="flex items-center gap-2 border-b px-3 py-2"
+        style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+      >
         <button
           type="button"
           {...attributes}
@@ -260,7 +296,7 @@ function SortableRow({
           <p className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             {title || module.module_key}
           </p>
-          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          <p className="truncate text-[11px]" style={{ color: "var(--text-secondary)" }}>
             {module.module_key} • {size} • {visibleFor === "logged_in" ? "Ingelogd" : "Publiek"}
             {previewMobile && !visibleMobile ? " • verborgen op mobiel" : ""}
           </p>
@@ -303,11 +339,22 @@ function SortableRow({
         </button>
       </div>
 
+      {!open && (
+        <div className="flex flex-1 items-center justify-center px-3 py-4 text-center">
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            {FULL_BLEED_KEYS.has(module.module_key)
+              ? "Volle breedte"
+              : size === "2x1"
+                ? "2 kolommen breed"
+                : size === "1x2"
+                  ? "1 kolom, dubbele hoogte"
+                  : "1 kolom"}
+          </p>
+        </div>
+      )}
+
       {open && (
-        <div
-          className="space-y-3 border-t px-3 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
-        >
+        <div className="space-y-3 px-3 py-3">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
@@ -332,7 +379,8 @@ function SortableRow({
                   setSize(v);
                   persist({ size: v });
                 }}
-                className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
+                disabled={FULL_BLEED_KEYS.has(module.module_key)}
+                className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none disabled:opacity-50"
                 style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
               >
                 <option value="1x1">1x1 (halve breedte)</option>
@@ -375,6 +423,6 @@ function SortableRow({
           )}
         </div>
       )}
-    </li>
+    </div>
   );
 }

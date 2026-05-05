@@ -39,7 +39,7 @@ export function ProfileMenu({ slug, email, displayName, isAdmin, tenantId }: Pro
   // Admin shell woont op het apex-domein, niet onder een tenant-subdomein.
   // Daarom altijd absolute URL bouwen vanaf NEXT_PUBLIC_APP_URL.
   const apex = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  const adminPath = tenantId ? `/tenant?tenant=${tenantId}` : "/tenant";
+  const adminPath = tenantId ? `/tenant/switch?tenant=${tenantId}` : "/tenant";
   const adminHref = `${apex}${adminPath}`;
 
   return (

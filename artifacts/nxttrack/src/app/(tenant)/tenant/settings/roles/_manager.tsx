@@ -26,6 +26,8 @@ interface RoleVM {
   sort_order: number;
   permissions: string[];
   member_count: number;
+  /** True voor de "Beheerder" super-admin systeemrol. */
+  is_super_admin: boolean;
 }
 
 interface Editor {
@@ -81,14 +83,18 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
       });
       if (!res.ok) return setMsg(res.error);
       // Optimistic refresh
+      const existing = editor.id ? roles.find((r) => r.id === editor.id) : null;
       const newRow: RoleVM = {
         id: res.data.id,
-        name: editor.name.trim(),
+        name: existing?.is_super_admin ? "Beheerder" : editor.name.trim(),
         description: editor.description.trim() || null,
-        is_system: editor.id ? roles.find((r) => r.id === editor.id)?.is_system ?? false : false,
-        sort_order: editor.sort_order,
-        permissions: Array.from(editor.permissions),
-        member_count: editor.id ? roles.find((r) => r.id === editor.id)?.member_count ?? 0 : 0,
+        is_system: existing?.is_system ?? false,
+        sort_order: existing?.is_super_admin ? 0 : editor.sort_order,
+        permissions: existing?.is_super_admin
+          ? existing.permissions
+          : Array.from(editor.permissions),
+        member_count: existing?.member_count ?? 0,
+        is_super_admin: existing?.is_super_admin ?? false,
       };
       setRoles((prev) =>
         editor.id
@@ -215,16 +221,20 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
         ))}
       </ul>
 
-      {editor && (
-        <RoleEditor
-          editor={editor}
-          isSystem={editor.id ? roles.find((r) => r.id === editor.id)?.is_system ?? false : false}
-          onChange={setEditor}
-          onSave={save}
-          onClose={() => setEditor(null)}
-          pending={pending}
-        />
-      )}
+      {editor && (() => {
+        const cur = editor.id ? roles.find((r) => r.id === editor.id) : null;
+        return (
+          <RoleEditor
+            editor={editor}
+            isSystem={cur?.is_system ?? false}
+            isSuperAdmin={cur?.is_super_admin ?? false}
+            onChange={setEditor}
+            onSave={save}
+            onClose={() => setEditor(null)}
+            pending={pending}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -232,6 +242,7 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
 function RoleEditor({
   editor,
   isSystem,
+  isSuperAdmin,
   onChange,
   onSave,
   onClose,
@@ -239,6 +250,7 @@ function RoleEditor({
 }: {
   editor: Editor;
   isSystem: boolean;
+  isSuperAdmin: boolean;
   onChange: (e: Editor) => void;
   onSave: () => void;
   onClose: () => void;
@@ -290,9 +302,19 @@ function RoleEditor({
           <div>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               {editor.id ? "Rol bewerken" : "Nieuwe rol"}
+              {isSuperAdmin && (
+                <span
+                  className="ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+                >
+                  super admin · permissies vergrendeld
+                </span>
+              )}
             </p>
             <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-              {totalSelected} van {totalAvail} permissies geselecteerd
+              {isSuperAdmin
+                ? `Alle ${totalAvail} permissies zijn altijd actief.`
+                : `${totalSelected} van ${totalAvail} permissies geselecteerd`}
             </p>
           </div>
           <button
@@ -314,7 +336,7 @@ function RoleEditor({
               <input
                 value={editor.name}
                 onChange={(e) => onChange({ ...editor, name: e.target.value })}
-                disabled={isSystem}
+                disabled={isSystem || isSuperAdmin}
                 placeholder="Bv. Hoofdtrainer, Bestuur, …"
                 className="w-full rounded-lg border px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{
@@ -334,7 +356,8 @@ function RoleEditor({
                 onChange={(e) =>
                   onChange({ ...editor, sort_order: Number(e.target.value) || 0 })
                 }
-                className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+                disabled={isSuperAdmin}
+                className="w-full rounded-lg border px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{
                   backgroundColor: "var(--surface-soft)",
                   borderColor: "var(--surface-border)",
@@ -374,29 +397,33 @@ function RoleEditor({
               <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
                 Permissies
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  const allOn = totalSelected === totalAvail;
-                  if (allOn) {
-                    onChange({ ...editor, permissions: new Set() });
-                  } else {
-                    const all = new Set<string>();
-                    for (const g of PERMISSION_CATALOG)
-                      for (const p of g.permissions) all.add(p.key);
-                    onChange({ ...editor, permissions: all });
-                  }
-                }}
-                className="text-[11px] font-semibold underline"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                {totalSelected === totalAvail ? "Alles uit" : "Alles aan"}
-              </button>
+              {!isSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allOn = totalSelected === totalAvail;
+                    if (allOn) {
+                      onChange({ ...editor, permissions: new Set() });
+                    } else {
+                      const all = new Set<string>();
+                      for (const g of PERMISSION_CATALOG)
+                        for (const p of g.permissions) all.add(p.key);
+                      onChange({ ...editor, permissions: all });
+                    }
+                  }}
+                  className="text-[11px] font-semibold underline"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {totalSelected === totalAvail ? "Alles uit" : "Alles aan"}
+                </button>
+              )}
             </div>
             <div className="space-y-1 px-2 py-2">
               {PERMISSION_CATALOG.map((g) => {
                 const groupKeys = g.permissions.map((p) => p.key);
-                const selectedInGroup = groupKeys.filter((k) => editor.permissions.has(k)).length;
+                const selectedInGroup = isSuperAdmin
+                  ? groupKeys.length
+                  : groupKeys.filter((k) => editor.permissions.has(k)).length;
                 const allOn = selectedInGroup === groupKeys.length;
                 const open = !!openGroups[g.id];
                 return (
@@ -429,7 +456,8 @@ function RoleEditor({
                       <button
                         type="button"
                         onClick={() => toggleGroup(g.id, groupKeys)}
-                        className="rounded-md px-2 py-1 text-[10px] font-semibold"
+                        disabled={isSuperAdmin}
+                        className="rounded-md px-2 py-1 text-[10px] font-semibold disabled:opacity-50"
                         style={{
                           backgroundColor: allOn ? "var(--accent)" : "var(--surface-soft)",
                           color: "var(--text-primary)",
@@ -442,18 +470,23 @@ function RoleEditor({
                       <div className="grid grid-cols-1 gap-1 border-t px-3 py-2 sm:grid-cols-2"
                         style={{ borderColor: "var(--surface-border)" }}>
                         {g.permissions.map((p) => {
-                          const checked = editor.permissions.has(p.key);
+                          const checked = isSuperAdmin || editor.permissions.has(p.key);
                           return (
                             <label
                               key={p.key}
-                              className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-black/5"
+                              className={
+                                isSuperAdmin
+                                  ? "flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs opacity-80"
+                                  : "flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-black/5"
+                              }
                               style={{ color: "var(--text-primary)" }}
                             >
                               <input
                                 type="checkbox"
                                 checked={checked}
+                                disabled={isSuperAdmin}
                                 onChange={() => togglePerm(p.key)}
-                                className="mt-0.5 h-3.5 w-3.5 cursor-pointer"
+                                className="mt-0.5 h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
                               />
                               <span className="flex-1">{p.label}</span>
                             </label>
