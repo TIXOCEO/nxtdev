@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertTenantAccess } from "./_assert-access";
+import { isPlatformAdmin, isTenantAdmin } from "@/lib/permissions";
+import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
 import {
   newMemberWithInviteSchema,
   inviteIdSchema,
@@ -391,7 +393,34 @@ export async function createMemberWithInvite(
   if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
   const v = parsed.data;
 
-  const user = await assertTenantAccess(v.tenant_id);
+  // Sprint D: server-side permission gate parity met UI.
+  // Toegestaan: platform_admin, tenant_admin (enum) of expliciete
+  // `members.create`/`members.write` permissie via tenant_role.
+  // Een generieke admin-scope tenant-rol zonder die rechten mag deze
+  // actie NIET uitvoeren (zero-permission staff/trainer admin-shell).
+  const user = await requireAuth();
+  const { getMemberships } = await import("@/lib/auth/get-memberships");
+  const memberships = await getMemberships(user.id);
+  const isPlat = isPlatformAdmin(memberships);
+  const isTenantAdminEnum = isTenantAdmin(memberships, v.tenant_id);
+  if (!isPlat && !isTenantAdminEnum) {
+    const perms = await getUserPermissionsInTenant(v.tenant_id, user.id);
+    if (!perms.includes("members.create") && !perms.includes("members.write")) {
+      return fail("Geen rechten om leden toe te voegen.");
+    }
+  }
+
+  // Sprint D: trainer/staf mogen niet via 'manual' (zonder uitnodiging)
+  // worden aangemaakt — ook niet als de UI wordt omzeild.
+  if (
+    v.mode === "manual" &&
+    (v.roles.includes("trainer") || v.roles.includes("staff"))
+  ) {
+    return fail(
+      "Trainer/staf-leden moeten via uitnodiging worden aangemaakt.",
+    );
+  }
+
   const supabase = await createClient();
 
   const email = (v.email ?? "").trim().toLowerCase();
