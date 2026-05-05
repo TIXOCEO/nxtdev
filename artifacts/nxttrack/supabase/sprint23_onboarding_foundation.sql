@@ -246,7 +246,7 @@ create table if not exists public.payment_methods (
   name         text not null,
   type         text not null,
   description  text,
-  iban         text,
+  iban_for_rekening text,
   sort_order   int not null default 0,
   archived_at  timestamptz,
   created_at   timestamptz not null default now(),

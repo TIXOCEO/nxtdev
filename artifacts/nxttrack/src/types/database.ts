@@ -293,7 +293,7 @@ export interface PaymentMethod {
   name: string;
   type: PaymentMethodType | string;
   description: string | null;
-  iban: string | null;
+  iban_for_rekening: string | null;
   sort_order: number;
   archived_at: string | null;
   created_at: string;
