@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getMemberships } from "@/lib/auth/get-memberships";
 import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
@@ -94,17 +95,15 @@ export async function updateProfileGeneral(
     return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
   }
   const v = parsed.data;
-  const user = await requireAuth();
-  const denied = await assertSelfOrTenantAdmin({
-    tenantId: v.tenant_id,
-    memberId: v.member_id,
-    userId: user.id,
-    permission: "members.edit",
-  });
-  if (denied) return fail(denied);
+  await requireAuth();
 
-  const admin = createAdminClient();
-  const { error } = await admin
+  // Autorisatie wordt door RLS afgedwongen
+  // (zie sprint27_rls_member_self_parent.sql):
+  //   • members.user_id = auth.uid() (self)
+  //   • parent via member_links
+  //   • user_has_tenant_permission('members.edit')
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("members")
     .update({
       first_name: v.first_name,
@@ -118,8 +117,12 @@ export async function updateProfileGeneral(
       city: v.city,
     })
     .eq("id", v.member_id)
-    .eq("tenant_id", v.tenant_id);
+    .eq("tenant_id", v.tenant_id)
+    .select("id");
   if (error) return fail(error.message);
+  if (!data || data.length === 0) {
+    return fail("Geen rechten om dit profiel te wijzigen.");
+  }
   revalidatePath("/t/[slug]/profile", "page");
   return { ok: true, data: { member_id: v.member_id } };
 }
@@ -134,24 +137,22 @@ export async function updateProfileSport(
     return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
   }
   const v = parsed.data;
-  const user = await requireAuth();
-  const denied = await assertSelfOrTenantAdmin({
-    tenantId: v.tenant_id,
-    memberId: v.member_id,
-    userId: user.id,
-    permission: "members.edit",
-  });
-  if (denied) return fail(denied);
+  await requireAuth();
 
-  const admin = createAdminClient();
-  const { error } = await admin
+  // Autorisatie via RLS (zie sprint27_rls_member_self_parent.sql).
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("members")
     .update({
       player_type: v.player_type || null,
     })
     .eq("id", v.member_id)
-    .eq("tenant_id", v.tenant_id);
+    .eq("tenant_id", v.tenant_id)
+    .select("id");
   if (error) return fail(error.message);
+  if (!data || data.length === 0) {
+    return fail("Geen rechten om dit profiel te wijzigen.");
+  }
   revalidatePath("/t/[slug]/profile", "page");
   return { ok: true, data: { member_id: v.member_id } };
 }
@@ -167,13 +168,6 @@ export async function updateFinancialDetails(
   }
   const v = parsed.data;
   const user = await requireAuth();
-  const denied = await assertSelfOrTenantAdmin({
-    tenantId: v.tenant_id,
-    memberId: v.member_id,
-    userId: user.id,
-    permission: "members.financial.manage",
-  });
-  if (denied) return fail(denied);
 
   // Server-side belt-and-braces IBAN check (schema already validates).
   if (v.iban && !isValidIban(v.iban)) {
@@ -182,12 +176,16 @@ export async function updateFinancialDetails(
     });
   }
 
-  // Validate payment_method_id belongs to the same tenant before write
-  // (DB trigger also enforces this — we double-check for a friendlier
-  // error message).
-  const admin = createAdminClient();
+  // Autorisatie loopt via RLS (mfd_self_or_admin_modify):
+  //   • members.financial.manage permission, OF
+  //   • self / parent via user_can_act_for_member.
+  const supabase = await createClient();
+
+  // Friendly pre-check op payment_method (de DB-trigger
+  // enforce_mfd_tenant_consistency is autoritatief). Sprint 27
+  // opende een SELECT-pad voor authenticated tenant-members.
   if (v.payment_method_id) {
-    const { data: pm } = await admin
+    const { data: pm } = await supabase
       .from("payment_methods")
       .select("id, tenant_id, archived_at")
       .eq("id", v.payment_method_id)
@@ -201,17 +199,23 @@ export async function updateFinancialDetails(
   }
 
   const ibanValue = v.iban ? normalizeIban(v.iban) : null;
-  const { error } = await admin.from("member_financial_details").upsert(
-    {
-      member_id: v.member_id,
-      tenant_id: v.tenant_id,
-      iban: ibanValue,
-      account_holder_name: v.account_holder_name,
-      payment_method_id: v.payment_method_id || null,
-    },
-    { onConflict: "member_id" },
-  );
+  const { data: upserted, error } = await supabase
+    .from("member_financial_details")
+    .upsert(
+      {
+        member_id: v.member_id,
+        tenant_id: v.tenant_id,
+        iban: ibanValue,
+        account_holder_name: v.account_holder_name,
+        payment_method_id: v.payment_method_id || null,
+      },
+      { onConflict: "member_id" },
+    )
+    .select("member_id");
   if (error) return fail(error.message);
+  if (!upserted || upserted.length === 0) {
+    return fail("Geen rechten om financiële gegevens te wijzigen.");
+  }
 
   await recordAudit({
     tenant_id: v.tenant_id,
@@ -283,100 +287,38 @@ export async function addChildAsParent(
   const v = parsed.data;
   const user = await requireAuth();
 
-  // The parent member must belong to the calling user.
-  const admin = createAdminClient();
-  const { data: parent } = await admin
-    .from("members")
-    .select("id, user_id, tenant_id")
-    .eq("id", v.parent_member_id)
-    .eq("tenant_id", v.tenant_id)
-    .maybeSingle();
-  if (!parent) return fail("Ouderlid niet gevonden in deze vereniging.");
-  if (parent.user_id !== user.id) {
-    // Only platform/tenant admins kunnen dit voor iemand anders doen.
-    const memberships = await getMemberships(user.id);
-    if (!isPlatformAdmin(memberships) && !isTenantAdmin(memberships, v.tenant_id)) {
-      return fail("Alleen je eigen kinderen kun je toevoegen.");
-    }
-  }
-
-  const fullName = `${v.first_name} ${v.last_name}`.trim();
-
-  // Idempotency: als ouder al een gekoppeld kind heeft met exact dezelfde
-  // first_name/last_name/birth_date in deze tenant, geef dat kind terug
-  // i.p.v. een tweede record aan te maken (voorkomt dubbele clicks /
-  // herhaalde submits).
-  const { data: existingLinks } = await admin
-    .from("member_links")
-    .select("child_member_id")
-    .eq("tenant_id", v.tenant_id)
-    .eq("parent_member_id", v.parent_member_id);
-  const linkedChildIds = ((existingLinks ?? []) as Array<{ child_member_id: string }>).map(
-    (l) => l.child_member_id,
-  );
-  if (linkedChildIds.length > 0) {
-    const { data: dupes } = await admin
-      .from("members")
-      .select("id, first_name, last_name, birth_date")
-      .in("id", linkedChildIds)
-      .eq("tenant_id", v.tenant_id);
-    const dupe = ((dupes ?? []) as Array<{
-      id: string;
-      first_name: string | null;
-      last_name: string | null;
-      birth_date: string | null;
-    }>).find(
-      (d) =>
-        (d.first_name ?? "").toLowerCase() === v.first_name.toLowerCase() &&
-        (d.last_name ?? "").toLowerCase() === v.last_name.toLowerCase() &&
-        (d.birth_date ?? null) === (v.birth_date ?? null),
-    );
-    if (dupe) {
-      return { ok: true, data: { child_member_id: dupe.id } };
-    }
-  }
-
-  const { data: childRow, error: insertErr } = await admin
-    .from("members")
-    .insert({
-      tenant_id: v.tenant_id,
-      full_name: fullName,
-      first_name: v.first_name,
-      last_name: v.last_name,
-      birth_date: v.birth_date,
-      gender: v.gender || null,
-      player_type: v.player_type || null,
-      account_type: "minor_athlete",
-      member_status: "aspirant",
-    })
-    .select("id")
-    .single();
-  if (insertErr || !childRow) {
-    return fail(insertErr?.message ?? "Kon kind niet aanmaken.");
-  }
-
-  // Geef het kind de athlete-rol (voor consistentie met Sprint C).
-  await admin
-    .from("member_roles")
-    .insert({ member_id: childRow.id, role: "athlete" });
-
-  // Link parent ↔ child.
-  const { error: linkErr } = await admin.from("member_links").insert({
-    tenant_id: v.tenant_id,
-    parent_member_id: v.parent_member_id,
-    child_member_id: childRow.id,
+  // Alle autorisatie + writes lopen via de SECURITY DEFINER RPC
+  // public.add_child_as_parent (zie sprint27_rls_member_self_parent.sql).
+  // De RPC checkt zelf op auth.uid() of de caller eigenaar is van
+  // het parent_member of platform/tenant-admin van de tenant.
+  const supabase = await createClient();
+  const { data: childId, error } = await supabase.rpc("add_child_as_parent", {
+    p_tenant_id: v.tenant_id,
+    p_parent_member_id: v.parent_member_id,
+    p_first_name: v.first_name,
+    p_last_name: v.last_name,
+    p_birth_date: v.birth_date ?? null,
+    p_gender: v.gender ?? "",
+    p_player_type: v.player_type ?? "",
   });
-  if (linkErr && linkErr.code !== "23505") {
-    return fail(linkErr.message);
+  if (error) {
+    // 42501 = insufficient_privilege (parent niet van caller, niet admin,
+    // of niet gevonden in tenant). Voor de UI is dat hetzelfde verhaal.
+    if (error.code === "42501") {
+      return fail("Je mag alleen je eigen kinderen toevoegen.");
+    }
+    return fail(error.message);
   }
+  const childMemberId = (childId as string | null) ?? null;
+  if (!childMemberId) return fail("Kon kind niet aanmaken.");
 
   await recordAudit({
     tenant_id: v.tenant_id,
     actor_user_id: user.id,
-    member_id: childRow.id,
+    member_id: childMemberId,
     action: "profile.child.add",
   });
 
   revalidatePath("/t/[slug]/profile", "page");
-  return { ok: true, data: { child_member_id: childRow.id } };
+  return { ok: true, data: { child_member_id: childMemberId } };
 }
