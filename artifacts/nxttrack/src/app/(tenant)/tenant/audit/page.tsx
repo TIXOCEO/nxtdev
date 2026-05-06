@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ScrollText } from "lucide-react";
+import { Download, ScrollText } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
@@ -184,6 +184,26 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
               Wissen
             </a>
           )}
+          <a
+            href={`/tenant/audit/export${
+              action || from || to
+                ? "?" +
+                  new URLSearchParams(
+                    Object.entries({ action, from, to }).filter(
+                      ([, v]) => v !== "",
+                    ) as [string, string][],
+                  ).toString()
+                : ""
+            }`}
+            className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <Download className="h-4 w-4" aria-hidden />
+            Exporteer als CSV
+          </a>
         </div>
       </form>
 
