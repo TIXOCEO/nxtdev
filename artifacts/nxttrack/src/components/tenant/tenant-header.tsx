@@ -4,6 +4,7 @@ import { MobileNavTrigger } from "@/components/admin/mobile-nav-trigger";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { TenantSidebar } from "./tenant-sidebar";
 import { TenantProfileMenu } from "./tenant-profile-menu";
+import { buildPublicTenantUrl } from "@/lib/tenant/public-url";
 
 export interface TenantHeaderProps {
   tenantName: string;
@@ -13,23 +14,6 @@ export interface TenantHeaderProps {
   queryString?: string;
   tenantSlug?: string;
   tenantDomain?: string | null;
-}
-
-/**
- * Bouw de publieke URL voor een tenant. Custom-domein heeft voorrang;
- * anders subdomein onder APEX_DOMAIN. In dev (geen apex bekend) val
- * terug op het relatieve `/t/<slug>` pad zodat de knop niet stuk gaat.
- */
-function buildPublicTenantUrl(slug?: string, domain?: string | null): string | null {
-  if (!slug) return null;
-  if (domain && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) {
-    return `https://${domain}`;
-  }
-  const apex = (
-    process.env.NEXT_PUBLIC_APEX_DOMAIN ?? process.env.APEX_DOMAIN ?? ""
-  ).trim();
-  if (apex) return `https://${slug}.${apex}`;
-  return `/t/${slug}`;
 }
 
 export function TenantHeader({

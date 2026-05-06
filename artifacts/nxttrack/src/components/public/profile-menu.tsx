@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { signOutAction } from "@/lib/actions/auth";
+import { buildPublicTenantUrl } from "@/lib/tenant/public-url";
 import { AdminHandoffButton } from "./admin-handoff-button";
 
 export interface ProfileMenuProps {
@@ -21,6 +22,8 @@ export interface ProfileMenuProps {
   isAdmin?: boolean;
   /** Sprint 16: tenant id used to set the active-tenant cookie when entering admin. */
   tenantId?: string;
+  /** Custom-domein van de tenant — gebruikt voor de uitlog-redirect. */
+  tenantDomain?: string | null;
 }
 
 function initialsOf(name?: string | null, email?: string | null): string {
@@ -31,9 +34,10 @@ function initialsOf(name?: string | null, email?: string | null): string {
   return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
 }
 
-export function ProfileMenu({ slug, email, displayName, isAdmin, tenantId }: ProfileMenuProps) {
+export function ProfileMenu({ slug, email, displayName, isAdmin, tenantId, tenantDomain }: ProfileMenuProps) {
   async function onLogout() {
-    await signOutAction(`/t/${slug}`);
+    const target = buildPublicTenantUrl(slug, tenantDomain) ?? `/t/${slug}`;
+    await signOutAction(target);
   }
 
   const initials = initialsOf(displayName, email);

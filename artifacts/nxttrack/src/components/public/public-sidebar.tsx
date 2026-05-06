@@ -23,6 +23,7 @@ import type { LucideIcon } from "lucide-react";
 import type { Tenant } from "@/types/database";
 import type { CustomPageNode } from "@/lib/db/custom-pages";
 import { signOutAction } from "@/lib/actions/auth";
+import { buildPublicTenantUrl } from "@/lib/tenant/public-url";
 
 export type PublicNavKey =
   | "home"
@@ -221,7 +222,9 @@ export function PublicSidebar({
 
   async function onLogout() {
     onNavigate?.();
-    await signOutAction(`/t/${tenant.slug}`);
+    const target =
+      buildPublicTenantUrl(tenant.slug, tenant.domain) ?? `/t/${tenant.slug}`;
+    await signOutAction(target);
   }
 
   return (

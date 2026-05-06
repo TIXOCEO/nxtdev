@@ -111,6 +111,7 @@ export async function PublicHeader({
               email={user.email ?? null}
               isAdmin={isAdmin}
               tenantId={tenant.id}
+              tenantDomain={tenant.domain}
             />
           </>
         ) : (

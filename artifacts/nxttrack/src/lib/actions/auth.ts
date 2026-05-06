@@ -76,7 +76,15 @@ export async function signOutAction(redirectTo?: string): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
-  redirect(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/");
+  // Sta zowel interne paden ("/t/foo") als absolute https-URLs
+  // (custom-domein of subdomein van een tenant) toe.
+  const safe =
+    redirectTo &&
+    (redirectTo.startsWith("/") ||
+      /^https:\/\/[a-z0-9.-]+(\/.*)?$/i.test(redirectTo))
+      ? redirectTo
+      : "/";
+  redirect(safe);
 }
 
 /**
