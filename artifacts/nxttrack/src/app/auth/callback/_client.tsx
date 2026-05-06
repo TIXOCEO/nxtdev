@@ -98,12 +98,17 @@ export function AuthCallbackClient() {
           { auth: { detectSessionInUrl: false } },
         );
 
-        // Eventuele stale sessie wegruimen — voorkomt lock-conflicten
-        // na uitloggen+inloggen-als-andere-gebruiker in dezelfde tab.
+        // Stale auth-state synchroon wegvegen uit storage — geen await,
+        // dus geen lock-conflict. setSession overschrijft daarna alles.
         try {
-          await supabase.auth.signOut({ scope: "local" });
+          for (let i = window.localStorage.length - 1; i >= 0; i--) {
+            const k = window.localStorage.key(i);
+            if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
+              window.localStorage.removeItem(k);
+            }
+          }
         } catch {
-          // negeer; we proberen meteen daarna een nieuwe sessie te zetten
+          /* private mode / disabled storage — negeren */
         }
 
         let setError: string | null = null;

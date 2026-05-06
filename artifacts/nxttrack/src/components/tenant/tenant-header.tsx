@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ShieldCheck, ExternalLink } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { MobileNavTrigger } from "@/components/admin/mobile-nav-trigger";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { TenantSidebar } from "./tenant-sidebar";
+import { TenantProfileMenu } from "./tenant-profile-menu";
 
 export interface TenantHeaderProps {
   tenantName: string;
@@ -77,30 +78,8 @@ export function TenantHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        {publicUrl && (
-          <Link
-            href={publicUrl}
-            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-80"
-            style={{
-              backgroundColor: "var(--surface-soft)",
-              color: "var(--text-primary)",
-              border: "1px solid var(--surface-border)",
-            }}
-            title="Terug naar publieke site"
-          >
-            <ExternalLink className="h-3 w-3" />
-            <span className="hidden sm:inline">Publieke site</span>
-          </Link>
-        )}
-        {email && (
-          <div
-            className="hidden truncate text-xs sm:block"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            {email}
-          </div>
-        )}
         <NotificationCenter />
+        <TenantProfileMenu email={email ?? null} publicUrl={publicUrl} />
       </div>
     </header>
   );

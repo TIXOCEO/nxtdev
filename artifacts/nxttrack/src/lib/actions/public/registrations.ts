@@ -59,6 +59,7 @@ async function dispatchPlatformNotice(
     await notifyPlatformOfRegistration({
       tenantName: name,
       tenantSlug: slug,
+      tenantId,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       registration: reg as any,
     });

@@ -6,6 +6,8 @@ import { platformSender } from "./resolve-sender";
 import { listPlatformAdmins } from "@/lib/db/platform-admins";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { appBaseUrl } from "@/lib/url";
+import { wrapBrandedEmail } from "./branded-wrap";
+import type { Tenant } from "@/types/database";
 
 /**
  * Stuur een notificatie-mail naar ALLE platform admins.
@@ -120,12 +122,32 @@ interface RegistrationLike {
 export async function notifyPlatformOfRegistration(params: {
   tenantName: string;
   tenantSlug: string;
+  /** Optioneel: tenant-id zodat we de volledige branding (logo + kleur) kunnen ophalen. */
+  tenantId?: string;
   registration: RegistrationLike;
 }): Promise<void> {
   const r = params.registration;
   const isTryout = r.type === "tryout";
   const kind = isTryout ? "proefles" : "inschrijving";
-  const subject = `[NXTTRACK] Nieuwe ${kind} — ${params.tenantName}`;
+  const subject = `Nieuwe ${kind} — ${params.tenantName}`;
+
+  // Brand-data ophalen voor de wrap (logo + primaire kleur + website + contact).
+  let brandedTenant:
+    | Pick<Tenant, "name" | "slug" | "logo_url" | "domain" | "contact_email" | "primary_color">
+    | null = null;
+  if (params.tenantId) {
+    try {
+      const admin = createAdminClient();
+      const { data } = await admin
+        .from("tenants")
+        .select("name, slug, logo_url, domain, contact_email, primary_color")
+        .eq("id", params.tenantId)
+        .maybeSingle();
+      if (data) brandedTenant = data;
+    } catch {
+      /* als brand-data niet lukt, vallen we terug op kale wrap met alleen naam */
+    }
+  }
 
   const rows: string[] = [
     row("Tenant", `${params.tenantName} (${params.tenantSlug})`),
@@ -162,29 +184,48 @@ export async function notifyPlatformOfRegistration(params: {
   }
 
   const adminLink = `${appBaseUrl()}/tenant/registrations`;
-  const html = `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
-      <h2 style="font-size:18px;color:#111827;margin:0 0 4px;">Nieuwe ${escape(kind)} — ${escape(params.tenantName)}</h2>
-      <p style="color:#6b7280;font-size:13px;margin:0 0 16px;">Er is zojuist een nieuwe ${escape(kind)}-aanvraag binnengekomen.</p>
-      <table style="border-collapse:collapse;width:100%;">
-        ${rows.join("")}
-      </table>
-      <p style="color:#9ca3af;font-size:11px;margin-top:24px;">Bekijken in admin: <a href="${escape(adminLink)}">${escape(adminLink)}</a> · Registratie-ID: ${escape(r.id)}</p>
-    </div>
+  const innerHtml = `
+    <h1 style="font-size:20px;color:#111827;margin:0 0 6px;line-height:1.3;">Nieuwe ${escape(kind)}</h1>
+    <p style="color:#6b7280;font-size:13px;margin:0 0 16px;">Er is zojuist een nieuwe ${escape(kind)}-aanvraag binnengekomen.</p>
+    <table style="border-collapse:collapse;width:100%;">
+      ${rows.join("")}
+    </table>
+    <p style="margin-top:20px;">
+      <a href="${escape(adminLink)}" style="display:inline-block;padding:10px 16px;border-radius:6px;background:#111827;color:#fff;text-decoration:none;font-size:13px;font-weight:600;">Bekijk in admin</a>
+    </p>
+    <p style="color:#9ca3af;font-size:11px;margin-top:16px;">Registratie-ID: ${escape(r.id)}</p>
   `.trim();
 
-  const text = [
+  const innerText = [
     `Nieuwe ${kind} — ${params.tenantName}`,
     "",
     ...rows.map((html) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()),
     "",
+    `Bekijk in admin: ${adminLink}`,
     `ID: ${r.id}`,
   ].join("\n");
 
+  // Branded wrap toepassen (logo + tenantkleur + footer) — gebruikt
+  // de bekende tenant brand-data, of valt terug op een minimale wrap
+  // met alleen de tenantnaam als header.
+  const wrapped = wrapBrandedEmail({
+    tenant: brandedTenant ?? {
+      name: params.tenantName,
+      slug: params.tenantSlug,
+      logo_url: null,
+      domain: null,
+      contact_email: null,
+      primary_color: "#b6d83b",
+    },
+    innerHtml,
+    innerText,
+    preheader: `Nieuwe ${kind} bij ${params.tenantName}`,
+  });
+
   await notifyPlatformAdmins({
     subject,
-    html,
-    text,
+    html: wrapped.html,
+    text: wrapped.text,
     triggerSource: isTryout ? "new_tryout" : "new_registration",
   });
 }
