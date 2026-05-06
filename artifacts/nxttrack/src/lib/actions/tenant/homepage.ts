@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { assertTenantAccess } from "./_assert-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getModuleDef } from "@/lib/homepage/module-registry";
-import {
-  findFirstFreeSlot,
-  validateLayoutItems,
-} from "@/lib/homepage/validate-layout";
+import { validateLayoutItems } from "@/lib/homepage/validate-layout";
 import {
   addTenantModuleSchema,
   updateTenantModuleSchema,
@@ -80,41 +77,22 @@ export async function addTenantModule(
     return { ok: false, error: "Module is niet beschikbaar" };
   }
 
-  // Bereken positie (x,y) op eerste vrije plek in 2D grid.
-  const { data: existing } = await admin
-    .from("tenant_modules")
-    .select("position_x, position_y, w, h, position")
-    .eq("tenant_id", parsed.data.tenant_id);
-  const existingRows = (existing ?? []) as Array<{
-    position_x: number;
-    position_y: number;
-    w: number;
-    h: number;
-    position: number;
-  }>;
+  // Sprint 30 — slotberekening + insert in één DB-call achter een
+  // per-tenant advisory lock. Voorkomt dat twee gelijktijdige admin-acties
+  // hetzelfde vrije slot uitkiezen.
   const { w, h } = sizeToWh(chosen);
-  const slot = findFirstFreeSlot(existingRows, w, h);
-
-  // Legacy `position` kolom: hou op (max+1) zodat oude code blijft werken.
-  const nextPos = existingRows.reduce((acc, r) => Math.max(acc, r.position), -1) + 1;
-
   const { data: ins, error } = await admin
-    .from("tenant_modules")
-    .insert({
-      tenant_id: parsed.data.tenant_id,
-      module_key: parsed.data.module_key,
-      title: def.name,
-      size: chosen,
-      position: nextPos,
-      position_x: slot.x,
-      position_y: slot.y,
-      w,
-      h,
-      visible_for: def.forcedVisibility ?? "public",
-      visible_mobile: true,
-      config: def.defaultConfig,
+    .rpc("add_tenant_module", {
+      p_tenant_id: parsed.data.tenant_id,
+      p_module_key: parsed.data.module_key,
+      p_title: def.name,
+      p_size: chosen,
+      p_w: w,
+      p_h: h,
+      p_visible_for: def.forcedVisibility ?? "public",
+      p_visible_mobile: true,
+      p_config: def.defaultConfig ?? {},
     })
-    .select("*")
     .single();
   if (error || !ins) return { ok: false, error: error?.message ?? "Insert mislukt" };
 
@@ -277,21 +255,22 @@ export async function updateModuleLayout(
   const v = validateLayoutItems(items);
   if (!v.valid) return { ok: false, error: v.errors.join(" • ") };
 
-  for (const it of items) {
-    const { error } = await admin
-      .from("tenant_modules")
-      .update({
-        position_x: it.x,
-        position_y: it.y,
-        w: it.w,
-        h: it.h,
-        // Houd legacy `size` consistent met w/h.
-        size: whToSize(it.w, it.h),
-      })
-      .eq("id", it.id)
-      .eq("tenant_id", parsed.data.tenant_id);
-    if (error) return { ok: false, error: error.message };
-  }
+  // Sprint 30 — alle updates atomair in één DB-functie achter een
+  // per-tenant advisory lock; voorkomt dat een gelijktijdige
+  // addTenantModule of andere updateModuleLayout een halve layout ziet.
+  const payload = items.map((it) => ({
+    id: it.id,
+    x: it.x,
+    y: it.y,
+    w: it.w,
+    h: it.h,
+    size: whToSize(it.w, it.h),
+  }));
+  const { error } = await admin.rpc("update_tenant_module_layout", {
+    p_tenant_id: parsed.data.tenant_id,
+    p_items: payload,
+  });
+  if (error) return { ok: false, error: error.message };
   revalidateAll(await getTenantSlug(parsed.data.tenant_id));
   return { ok: true, data: undefined };
 }
