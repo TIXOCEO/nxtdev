@@ -31,7 +31,8 @@ export function AuthCallbackClient() {
         const next = params.get("next");
         const safeNext = next && next.startsWith("/") ? next : "/tenant";
 
-        // Supabase kan errors ook in de querystring zetten i.p.v. fragment.
+        // Supabase kan errors zowel in de querystring als in de fragment
+        // zetten — afhankelijk van de auth-flow van het project.
         const queryError =
           params.get("error_description") ?? params.get("error");
         if (queryError) {
@@ -43,16 +44,12 @@ export function AuthCallbackClient() {
           return;
         }
 
-        // Supabase implicit flow: tokens in URL fragment.
-        const hash = window.location.hash.startsWith("#")
+        const hashRaw = window.location.hash.startsWith("#")
           ? window.location.hash.slice(1)
           : window.location.hash;
-        const fragment = new URLSearchParams(hash);
-        const accessToken = fragment.get("access_token");
-        const refreshToken = fragment.get("refresh_token");
+        const fragment = new URLSearchParams(hashRaw);
         const fragmentError =
           fragment.get("error_description") ?? fragment.get("error");
-
         if (fragmentError) {
           if (!cancelled) {
             window.clearTimeout(watchdog);
@@ -62,22 +59,40 @@ export function AuthCallbackClient() {
           return;
         }
 
-        if (!accessToken || !refreshToken) {
+        const supabase = createClient();
+
+        // Drie ondersteunde varianten:
+        // 1. PKCE / code flow: `?code=<authcode>`
+        // 2. Query-style implicit: `?access_token=...&refresh_token=...`
+        // 3. Hash-style implicit:  `#access_token=...&refresh_token=...`
+        const code = params.get("code");
+        const accessToken =
+          fragment.get("access_token") ?? params.get("access_token");
+        const refreshToken =
+          fragment.get("refresh_token") ?? params.get("refresh_token");
+
+        let setSessionError: { message: string } | null = null;
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          setSessionError = error ? { message: error.message } : null;
+        } else if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          setSessionError = error ? { message: error.message } : null;
+        } else {
           if (!cancelled) {
             window.clearTimeout(watchdog);
             setState("error");
             setMessage(
-              "Geen sessie-tokens ontvangen. Magic-link in Supabase staat waarschijnlijk uit.",
+              "Geen sessie-tokens ontvangen. Controleer in Supabase dat https://nxttrack.nl/auth/callback in de Redirect URLs staat.",
             );
           }
           return;
         }
 
-        const supabase = createClient();
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
+        const error = setSessionError;
         window.clearTimeout(watchdog);
         if (error) {
           if (!cancelled) {
