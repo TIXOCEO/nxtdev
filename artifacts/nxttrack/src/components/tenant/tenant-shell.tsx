@@ -10,6 +10,9 @@ export interface TenantShellProps {
   isPlatformAdmin?: boolean;
   /** Persisted across nav links, e.g. `?tenant=<id>` for platform admins. */
   queryString?: string;
+  /** Slug + (optionele) custom domain — gebruikt voor "terug naar publieke site". */
+  tenantSlug?: string;
+  tenantDomain?: string | null;
 }
 
 export function TenantShell({
@@ -19,6 +22,8 @@ export function TenantShell({
   email,
   isPlatformAdmin,
   queryString = "",
+  tenantSlug,
+  tenantDomain,
 }: TenantShellProps) {
   return (
     <div
@@ -42,6 +47,8 @@ export function TenantShell({
           email={email}
           isPlatformAdmin={isPlatformAdmin}
           queryString={queryString}
+          tenantSlug={tenantSlug}
+          tenantDomain={tenantDomain}
         />
         <main
           className="flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6"

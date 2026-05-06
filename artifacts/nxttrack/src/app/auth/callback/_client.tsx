@@ -15,10 +15,33 @@ export function AuthCallbackClient() {
 
   useEffect(() => {
     let cancelled = false;
+    // Watchdog: als er na 8s nog niets gebeurd is, laat een error zien
+    // i.p.v. eindeloos spinnen (bv. wanneer Supabase magic-link uit staat
+    // en er geen tokens of error in fragment terechtkomen).
+    const watchdog = window.setTimeout(() => {
+      if (!cancelled) {
+        setState("error");
+        setMessage(
+          "Geen reactie van Supabase. Controleer of 'Magic Link' onder Auth → Providers → Email aanstaat, en dat https://nxttrack.nl/auth/callback in de Redirect URLs staat.",
+        );
+      }
+    }, 8000);
     async function run() {
       try {
         const next = params.get("next");
         const safeNext = next && next.startsWith("/") ? next : "/tenant";
+
+        // Supabase kan errors ook in de querystring zetten i.p.v. fragment.
+        const queryError =
+          params.get("error_description") ?? params.get("error");
+        if (queryError) {
+          if (!cancelled) {
+            window.clearTimeout(watchdog);
+            setState("error");
+            setMessage(queryError);
+          }
+          return;
+        }
 
         // Supabase implicit flow: tokens in URL fragment.
         const hash = window.location.hash.startsWith("#")
@@ -32,6 +55,7 @@ export function AuthCallbackClient() {
 
         if (fragmentError) {
           if (!cancelled) {
+            window.clearTimeout(watchdog);
             setState("error");
             setMessage(fragmentError);
           }
@@ -40,8 +64,11 @@ export function AuthCallbackClient() {
 
         if (!accessToken || !refreshToken) {
           if (!cancelled) {
+            window.clearTimeout(watchdog);
             setState("error");
-            setMessage("Geen geldige sessie-tokens ontvangen.");
+            setMessage(
+              "Geen sessie-tokens ontvangen. Magic-link in Supabase staat waarschijnlijk uit.",
+            );
           }
           return;
         }
@@ -51,6 +78,7 @@ export function AuthCallbackClient() {
           access_token: accessToken,
           refresh_token: refreshToken,
         });
+        window.clearTimeout(watchdog);
         if (error) {
           if (!cancelled) {
             setState("error");
@@ -66,6 +94,7 @@ export function AuthCallbackClient() {
         // direct redirect — Next router cachet daar minder netjes mee.
         window.location.replace(safeNext);
       } catch (e) {
+        window.clearTimeout(watchdog);
         if (!cancelled) {
           setState("error");
           setMessage(e instanceof Error ? e.message : "Onbekende fout.");
@@ -75,6 +104,7 @@ export function AuthCallbackClient() {
     void run();
     return () => {
       cancelled = true;
+      window.clearTimeout(watchdog);
     };
   }, [params, router]);
 

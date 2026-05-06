@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, ExternalLink } from "lucide-react";
 import { MobileNavTrigger } from "@/components/admin/mobile-nav-trigger";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { TenantSidebar } from "./tenant-sidebar";
@@ -10,6 +10,25 @@ export interface TenantHeaderProps {
   email?: string | null;
   isPlatformAdmin?: boolean;
   queryString?: string;
+  tenantSlug?: string;
+  tenantDomain?: string | null;
+}
+
+/**
+ * Bouw de publieke URL voor een tenant. Custom-domein heeft voorrang;
+ * anders subdomein onder APEX_DOMAIN. In dev (geen apex bekend) val
+ * terug op het relatieve `/t/<slug>` pad zodat de knop niet stuk gaat.
+ */
+function buildPublicTenantUrl(slug?: string, domain?: string | null): string | null {
+  if (!slug) return null;
+  if (domain && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) {
+    return `https://${domain}`;
+  }
+  const apex = (
+    process.env.NEXT_PUBLIC_APEX_DOMAIN ?? process.env.APEX_DOMAIN ?? ""
+  ).trim();
+  if (apex) return `https://${slug}.${apex}`;
+  return `/t/${slug}`;
 }
 
 export function TenantHeader({
@@ -18,7 +37,10 @@ export function TenantHeader({
   email,
   isPlatformAdmin,
   queryString = "",
+  tenantSlug,
+  tenantDomain,
 }: TenantHeaderProps) {
+  const publicUrl = buildPublicTenantUrl(tenantSlug, tenantDomain);
   return (
     <header
       className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:px-6"
@@ -55,6 +77,21 @@ export function TenantHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        {publicUrl && (
+          <Link
+            href={publicUrl}
+            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-opacity hover:opacity-80"
+            style={{
+              backgroundColor: "var(--surface-soft)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--surface-border)",
+            }}
+            title="Terug naar publieke site"
+          >
+            <ExternalLink className="h-3 w-3" />
+            <span className="hidden sm:inline">Publieke site</span>
+          </Link>
+        )}
         {email && (
           <div
             className="hidden truncate text-xs sm:block"

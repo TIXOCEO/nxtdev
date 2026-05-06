@@ -26,6 +26,8 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
       primaryColor={result.tenant.primary_color}
       email={result.user.email ?? null}
       isPlatformAdmin={result.isPlatformAdmin}
+      tenantSlug={result.tenant.slug}
+      tenantDomain={result.tenant.domain}
     >
       {children}
       <Toaster />
