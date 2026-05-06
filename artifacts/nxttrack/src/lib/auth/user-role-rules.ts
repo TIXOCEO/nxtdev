@@ -8,9 +8,16 @@ export interface UserTenantContext {
   roles: MemberRoleName[];
   /** Children members linked via member_links where the user owns a parent member. */
   children: Member[];
+  /** Sprint 30 — true wanneer een tenant-custom rol met `is_trainer_role` aanstaat. */
+  hasCustomTrainerRole: boolean;
 }
 
-const EMPTY: UserTenantContext = { members: [], roles: [], children: [] };
+const EMPTY: UserTenantContext = {
+  members: [],
+  roles: [],
+  children: [],
+  hasCustomTrainerRole: false,
+};
 
 /**
  * Resolve everything we need about a user's relationship to a tenant in a
@@ -35,20 +42,41 @@ export async function getUserTenantContext(
 
   const memberIds = ownMembers.map((m) => m.id);
 
-  const [{ data: roleRows }, { data: linkRows }] = await Promise.all([
-    admin.from("member_roles").select("member_id, role").in("member_id", memberIds),
-    admin
-      .from("member_links")
-      .select("child_member_id")
-      .eq("tenant_id", tenantId)
-      .in("parent_member_id", memberIds),
-  ]);
+  const [{ data: roleRows }, { data: linkRows }, { data: tmRoleRows }] =
+    await Promise.all([
+      admin.from("member_roles").select("member_id, role").in("member_id", memberIds),
+      admin
+        .from("member_links")
+        .select("child_member_id")
+        .eq("tenant_id", tenantId)
+        .in("parent_member_id", memberIds),
+      admin
+        .from("tenant_member_roles")
+        .select("member_id, tenant_roles!inner(is_trainer_role)")
+        .eq("tenant_id", tenantId)
+        .in("member_id", memberIds),
+    ]);
 
   const roles = Array.from(
     new Set(
       ((roleRows ?? []) as Array<{ role: string }>).map((r) => r.role),
     ),
   ) as MemberRoleName[];
+
+  type TmRow = {
+    tenant_roles:
+      | { is_trainer_role: boolean }
+      | { is_trainer_role: boolean }[]
+      | null;
+  };
+  const hasCustomTrainerRole = ((tmRoleRows ?? []) as TmRow[]).some((r) => {
+    const list = Array.isArray(r.tenant_roles)
+      ? r.tenant_roles
+      : r.tenant_roles
+        ? [r.tenant_roles]
+        : [];
+    return list.some((tr) => tr.is_trainer_role);
+  });
 
   const childIds = ((linkRows ?? []) as Array<{ child_member_id: string }>).map(
     (l) => l.child_member_id,
@@ -64,7 +92,7 @@ export async function getUserTenantContext(
     children = (data ?? []) as Member[];
   }
 
-  return { members: ownMembers, roles, children };
+  return { members: ownMembers, roles, children, hasCustomTrainerRole };
 }
 
 // ── Pure helpers ──────────────────────────────────────────
@@ -78,7 +106,7 @@ export function isParent(ctx: UserTenantContext): boolean {
 }
 
 export function isTrainer(ctx: UserTenantContext): boolean {
-  return hasRole(ctx, "trainer");
+  return hasRole(ctx, "trainer") || ctx.hasCustomTrainerRole;
 }
 
 export function isAthlete(ctx: UserTenantContext): boolean {

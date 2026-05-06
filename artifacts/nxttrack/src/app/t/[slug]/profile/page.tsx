@@ -2,7 +2,12 @@ import { notFound, redirect } from "next/navigation";
 import { UserRound, Layers, Bell, Smartphone } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
-import { getUserTenantContext } from "@/lib/auth/user-role-rules";
+import { getUserTenantContext, isTrainer } from "@/lib/auth/user-role-rules";
+import {
+  ensureTrainerBioTemplate,
+  listActiveTemplate,
+  getAnswersForMember,
+} from "@/lib/db/trainer-bio";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { ProfileClientStatus } from "./_status";
@@ -106,11 +111,27 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   const isParentRole =
     ctx.roles.includes("parent") || ctx.children.length > 0 || primary.account_type === "parent";
+  const userIsTrainer = isTrainer(ctx);
   const isAthleteOrTrainer =
     ctx.roles.includes("athlete") ||
-    ctx.roles.includes("trainer") ||
+    userIsTrainer ||
     primary.account_type === "adult_athlete" ||
     primary.account_type === "trainer";
+
+  // Sprint 30 — Trainersbio data alleen laden voor trainers.
+  let trainerBio: {
+    sections: Awaited<ReturnType<typeof listActiveTemplate>>["sections"];
+    fields: Awaited<ReturnType<typeof listActiveTemplate>>["fields"];
+    answers: Awaited<ReturnType<typeof getAnswersForMember>>;
+  } | null = null;
+  if (userIsTrainer) {
+    await ensureTrainerBioTemplate(tenant.id);
+    const [tpl, ans] = await Promise.all([
+      listActiveTemplate(tenant.id),
+      getAnswersForMember(tenant.id, primary.id),
+    ]);
+    trainerBio = { sections: tpl.sections, fields: tpl.fields, answers: ans };
+  }
 
   // Derived athlete code (geen kolom op members; UUID-prefix als korte
   // identifier zodat trainers/admins een lid snel terug kunnen vinden).
@@ -213,6 +234,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
           paymentMethods={paymentMethods}
           isParent={isParentRole}
           isAthleteOrTrainer={isAthleteOrTrainer}
+          isTrainer={userIsTrainer}
+          trainerBio={trainerBio}
           canViewIban={canViewIban}
           canManageIban={canManageIban}
           children={childrenVM}

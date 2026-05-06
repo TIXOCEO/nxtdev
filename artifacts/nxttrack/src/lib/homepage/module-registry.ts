@@ -171,6 +171,22 @@ registerModule({
   defaultConfig: { limit: 8, show_bio: true },
 });
 
+// Sprint 30: Trainerskaartjes (foto, naam, leeftijd, rol + CTA naar bio).
+registerModule({
+  key: "trainer_cards",
+  name: "Trainerskaartjes",
+  description:
+    "Kaartjes met trainersfoto, naam, leeftijd en huidige rol — knop opent volledige bio.",
+  defaultSize: "2x1",
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
+  defaultConfig: {
+    limit: 8,
+    show_age: true,
+    show_role: true,
+    cta_label: "Bekijk bio",
+  },
+});
+
 // Sprint 29: Image slider (1 image = stilstaand, meerdere = auto slider)
 registerModule({
   key: "image_slider",

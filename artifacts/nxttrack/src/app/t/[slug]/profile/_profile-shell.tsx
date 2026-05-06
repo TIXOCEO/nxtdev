@@ -7,7 +7,19 @@ import { GeneralTab, type GeneralMemberVM } from "./_general-tab";
 import { SportTab, type SportMemberVM } from "./_sport-tab";
 import { FinancialTab, type FinancialVM } from "./_financial-tab";
 import { ChildrenTab, type ChildVM } from "./_children-tab";
+import { TrainerBioTab } from "./_trainer-bio-tab";
 import type { PaymentMethod } from "@/types/database";
+import type {
+  TrainerBioAnswer,
+  TrainerBioField,
+  TrainerBioSection,
+} from "@/lib/db/trainer-bio";
+
+export interface TrainerBioVM {
+  sections: TrainerBioSection[];
+  fields: TrainerBioField[];
+  answers: TrainerBioAnswer[];
+}
 
 export interface ProfileShellProps {
   tenantId: string;
@@ -17,13 +29,15 @@ export interface ProfileShellProps {
   paymentMethods: PaymentMethod[];
   isParent: boolean;
   isAthleteOrTrainer: boolean;
+  isTrainer: boolean;
+  trainerBio: TrainerBioVM | null;
   canViewIban: boolean;
   canManageIban: boolean;
   children: ChildVM[];
   athleteCodeDisplay: string | null;
 }
 
-type TabKey = "general" | "children" | "sport" | "financial";
+type TabKey = "general" | "children" | "sport" | "financial" | "trainer_bio";
 
 export function ProfileShell(props: ProfileShellProps) {
   const router = useRouter();
@@ -49,6 +63,7 @@ export function ProfileShell(props: ProfileShellProps) {
   const showSport = props.isAthleteOrTrainer || props.sportMember !== null;
   const showFinancial = true; // self-or-admin gate is enforced server-side
   const showChildren = props.isParent;
+  const showTrainerBio = props.isTrainer && props.trainerBio !== null;
 
   return (
     <Tabs value={tab} onValueChange={onChange} className="w-full">
@@ -57,6 +72,7 @@ export function ProfileShell(props: ProfileShellProps) {
         {showChildren && <Trigger value="children" label="Kinderen" />}
         {showSport && <Trigger value="sport" label="Sport" />}
         {showFinancial && <Trigger value="financial" label="Financieel" />}
+        {showTrainerBio && <Trigger value="trainer_bio" label="Trainersbio" />}
       </TabsList>
 
       <TabsContent value="general" className="mt-4">
@@ -92,6 +108,18 @@ export function ProfileShell(props: ProfileShellProps) {
             paymentMethods={props.paymentMethods}
             canViewIban={props.canViewIban}
             canManageIban={props.canManageIban}
+          />
+        </TabsContent>
+      )}
+
+      {showTrainerBio && props.trainerBio && (
+        <TabsContent value="trainer_bio" className="mt-4">
+          <TrainerBioTab
+            tenantId={props.tenantId}
+            memberId={props.primaryMember.id}
+            sections={props.trainerBio.sections}
+            fields={props.trainerBio.fields}
+            answers={props.trainerBio.answers}
           />
         </TabsContent>
       )}

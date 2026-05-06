@@ -194,6 +194,8 @@ export interface TenantRole {
   scope: TenantRoleScope;
   /** Sprint 22 — automatisch alle permissies, lock in UI. */
   is_super_admin: boolean;
+  /** Sprint 30 — markeert deze custom rol als trainer (voor profiel-tab + trainerskaartjes). */
+  is_trainer_role: boolean;
   created_at: string;
   updated_at: string;
 }

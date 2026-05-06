@@ -107,6 +107,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Menu volgorde",    icon: ListOrdered,  href: "/tenant/pages/menu" },
       { label: "Media Wall",       icon: ImagePlay,    href: "/tenant/media-wall" },
       { label: "Sponsoren",        icon: Star,         href: "/tenant/sponsors" },
+      { label: "Trainersbio formulier", icon: FileText, href: "/tenant/cms/trainer-bio" },
     ],
   },
   {

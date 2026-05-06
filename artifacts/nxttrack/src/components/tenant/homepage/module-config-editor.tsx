@@ -120,6 +120,7 @@ export function ModuleConfigEditor({
       {k === "personal_dashboard" && <PersonalDashboardEditor config={config} set={set} />}
       {k === "alerts_announcements" && <AlertsEditor config={config} set={set} />}
       {k === "trainers" && <TrainersEditor config={config} set={set} />}
+      {k === "trainer_cards" && <TrainerCardsEditor config={config} set={set} />}
       {k === "social_feed" && <SocialFeedEditor config={config} set={set} />}
       {k === "image_slider" && (
         <ImageSliderEditor tenantId={tenantId} config={config} set={set} />
@@ -959,6 +960,53 @@ function GoogleMapsEditor({ config, set }: CfgProps) {
         Het adres wordt direct in de gratis Google Maps embed geladen — geen
         API-key nodig. Hogere zoom = dichter op het adres (1 = wereld, 20 =
         gebouw).
+      </p>
+    </div>
+  );
+}
+
+function TrainerCardsEditor({ config, set }: CfgProps) {
+  return (
+    <div className="space-y-2">
+      <Field label="Maximaal aantal trainers">
+        <input
+          type="number"
+          min={1}
+          max={48}
+          value={(config.limit as number) ?? 8}
+          onChange={(e) => set("limit", Number(e.target.value))}
+          className={inputClass}
+          style={inputStyle}
+        />
+      </Field>
+      <Field label="CTA-tekst op de kaart">
+        <input
+          value={(config.cta_label as string) ?? "Bekijk bio"}
+          onChange={(e) => set("cta_label", e.target.value)}
+          className={inputClass}
+          style={inputStyle}
+        />
+      </Field>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={(config.show_age as boolean) ?? true}
+          onChange={(e) => set("show_age", e.target.checked)}
+        />
+        <span style={{ color: "var(--text-primary)" }}>Leeftijd tonen</span>
+      </label>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={(config.show_role as boolean) ?? true}
+          onChange={(e) => set("show_role", e.target.checked)}
+        />
+        <span style={{ color: "var(--text-primary)" }}>Rol tonen</span>
+      </label>
+      <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+        Toont leden met <strong>show_in_public</strong> én rol{" "}
+        <em>trainer</em> (systeem) of een tenant-rol gemarkeerd als{" "}
+        <em>is trainer</em>.
       </p>
     </div>
   );

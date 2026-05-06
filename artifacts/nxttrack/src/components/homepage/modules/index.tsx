@@ -20,6 +20,7 @@ import {
   getSponsors,
   getPublicTrainers,
 } from "@/lib/db/homepage";
+import { getTrainerCardsForTenant } from "@/lib/db/trainer-cards";
 import { getPublicNewsPosts } from "@/lib/db/public-tenant";
 import { getSessionsForUser } from "@/lib/db/trainings";
 import { getMyNotifications } from "@/lib/db/notifications";
@@ -569,6 +570,94 @@ export async function TrainersModule({ tenant, module }: BaseProps) {
   );
 }
 
+// ──────────────── Trainerskaartjes (Sprint 30) ────────────────
+function computeAgeYears(birth: string | null): number | null {
+  if (!birth) return null;
+  const d = new Date(birth);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 && age < 130 ? age : null;
+}
+
+export async function TrainerCardsModule({ tenant, module }: BaseProps) {
+  const limit = tag<number>(module.config, "limit", 8);
+  const showAge = tag<boolean>(module.config, "show_age", true);
+  const showRole = tag<boolean>(module.config, "show_role", true);
+  const ctaLabel = tag<string>(module.config, "cta_label", "Bekijk bio");
+  const cards = await getTrainerCardsForTenant(tenant.id, limit);
+  return (
+    <ModuleContainer title={module.title || "Onze trainers"}>
+      {cards.length === 0 ? (
+        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          Nog geen trainers gemarkeerd als publiek zichtbaar.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {cards.map((c) => {
+            const age = showAge ? computeAgeYears(c.birth_date) : null;
+            return (
+              <Link
+                key={c.id}
+                href={`/t/${tenant.slug}/trainers/${c.id}`}
+                className="flex flex-col items-center rounded-xl border p-3 text-center transition-colors hover:opacity-90"
+                style={{
+                  backgroundColor: "var(--surface-soft)",
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <div
+                  className="mb-2 flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border"
+                  style={{
+                    backgroundColor: "var(--surface-main)",
+                    borderColor: "var(--surface-border)",
+                    color: "var(--tenant-accent)",
+                  }}
+                >
+                  {c.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.photo_url}
+                      alt={c.full_name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <UserRound className="h-7 w-7" />
+                  )}
+                </div>
+                <p
+                  className="line-clamp-2 text-xs font-semibold"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {c.full_name}
+                </p>
+                {(showRole && c.role_label) || age !== null ? (
+                  <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                    {showRole && c.role_label ? c.role_label : ""}
+                    {showRole && c.role_label && age !== null ? " · " : ""}
+                    {age !== null ? `${age} jaar` : ""}
+                  </p>
+                ) : null}
+                <span
+                  className="mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{
+                    backgroundColor: "var(--accent)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {ctaLabel}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </ModuleContainer>
+  );
+}
+
 // ──────────────── Social Feed ────────────────
 import { getFeedPosts } from "@/lib/db/social";
 
@@ -762,6 +851,8 @@ export async function renderModule(
       return <AlertsAnnouncementsModule tenant={tenant} module={module} />;
     case "trainers":
       return <TrainersModule tenant={tenant} module={module} />;
+    case "trainer_cards":
+      return <TrainerCardsModule tenant={tenant} module={module} />;
     case "social_feed":
       return <SocialFeedModule tenant={tenant} module={module} userId={userId} />;
     case "image_slider":
