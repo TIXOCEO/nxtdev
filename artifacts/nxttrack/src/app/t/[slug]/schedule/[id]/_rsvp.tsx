@@ -30,6 +30,8 @@ export interface RsvpRowProps {
   currentRsvp: string | null;
   currentReason: string | null;
   currentReasonText: string | null;
+  /** Sprint 35 — trainer note shown to lid/ouder when visibility=member. */
+  trainerNote?: string | null;
   disabled?: boolean;
   /** Sprint 13: read-only when minor athlete viewing own row. */
   readOnly?: boolean;
@@ -43,6 +45,7 @@ export function RsvpRow({
   currentRsvp,
   currentReason,
   currentReasonText,
+  trainerNote,
   disabled,
   readOnly,
 }: RsvpRowProps) {
@@ -194,6 +197,20 @@ export function RsvpRow({
             </button>
           </div>
         </div>
+      )}
+      {trainerNote && (
+        <p
+          className="mt-2 rounded-lg border px-2 py-1.5 text-[11px]"
+          style={{
+            borderColor: "var(--surface-border)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            Notitie van trainer:
+          </span>{" "}
+          {trainerNote}
+        </p>
       )}
       {err && <p className="mt-2 text-xs text-red-600">{err}</p>}
     </li>

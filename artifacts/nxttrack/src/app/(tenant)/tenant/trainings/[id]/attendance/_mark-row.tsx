@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setAttendance } from "@/lib/actions/tenant/trainings";
-import { ABSENCE_REASONS } from "@/lib/validation/trainings";
+import { ABSENCE_REASONS, type NoteVisibility } from "@/lib/validation/trainings";
 
 const MARKS = [
   { value: "present", label: "Aanwezig" },
@@ -36,11 +36,9 @@ export interface AttendanceMarkRowProps {
   memberName: string;
   currentRsvp: string | null;
   currentMark: string | null;
-  currentNotes: string;
-  /** Sprint 13. */
+  currentNote: string;
+  currentNoteVisibility: NoteVisibility;
   currentAbsenceReason: string | null;
-  currentTrainerNote: string | null;
-  /** Sprint 13: free text the parent/athlete entered with their RSVP. */
   rsvpReasonText: string | null;
 }
 
@@ -51,17 +49,18 @@ export function AttendanceMarkRow({
   memberName,
   currentRsvp,
   currentMark,
-  currentNotes,
+  currentNote,
+  currentNoteVisibility,
   currentAbsenceReason,
-  currentTrainerNote,
   rsvpReasonText,
 }: AttendanceMarkRowProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [mark, setMark] = useState<Mark | null>(currentMark as Mark | null);
-  const [notes, setNotes] = useState(currentNotes);
+  const [note, setNote] = useState(currentNote);
+  const [visibility, setVisibility] =
+    useState<NoteVisibility>(currentNoteVisibility);
   const [absenceReason, setAbsenceReason] = useState<string>(currentAbsenceReason ?? "");
-  const [trainerNote, setTrainerNote] = useState(currentTrainerNote ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   function commit(nextMark?: Mark) {
@@ -74,11 +73,12 @@ export function AttendanceMarkRow({
         session_id: sessionId,
         member_id: memberId,
         attendance: finalMark,
-        notes,
-        absence_reason: finalMark === "absent" && absenceReason
-          ? (absenceReason as "ziekte")
-          : null,
-        trainer_note: trainerNote,
+        note,
+        note_visibility: visibility,
+        absence_reason:
+          finalMark === "absent" && absenceReason
+            ? (absenceReason as "ziekte")
+            : null,
       });
       if (!res.ok) {
         setErr(res.error);
@@ -155,46 +155,63 @@ export function AttendanceMarkRow({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start">
         <label
-          className="text-[11px] sm:w-32"
+          className="text-[11px] sm:w-32 sm:pt-1.5"
           style={{ color: "var(--text-secondary)" }}
         >
-          Zichtbare notitie
+          Notitie
         </label>
-        <input
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          onBlur={() => commit()}
-          placeholder="Notitie (zichtbaar voor lid)"
-          disabled={pending}
-          className="h-8 flex-1 rounded-lg border bg-transparent px-2 text-xs"
-          style={{
-            borderColor: "var(--surface-border)",
-            color: "var(--text-primary)",
-          }}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-        <label
-          className="text-[11px] sm:w-32"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Trainer-notitie
-        </label>
-        <input
-          value={trainerNote}
-          onChange={(e) => setTrainerNote(e.target.value)}
-          onBlur={() => commit()}
-          placeholder="Privé notitie voor trainers"
-          disabled={pending}
-          className="h-8 flex-1 rounded-lg border bg-transparent px-2 text-xs"
-          style={{
-            borderColor: "var(--surface-border)",
-            color: "var(--text-primary)",
-          }}
-        />
+        <div className="flex flex-1 flex-col gap-1.5">
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onBlur={() => commit()}
+            placeholder="Notitie (zie onder voor zichtbaarheid)"
+            disabled={pending}
+            className="h-8 rounded-lg border bg-transparent px-2 text-xs"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-primary)",
+            }}
+          />
+          <div className="flex items-center gap-2 text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                setVisibility("private");
+                commit();
+              }}
+              disabled={pending}
+              className="rounded-md border px-2 py-0.5"
+              style={{
+                borderColor: "var(--surface-border)",
+                backgroundColor:
+                  visibility === "private" ? "var(--accent)" : "transparent",
+                color: "var(--text-primary)",
+              }}
+            >
+              Privé (trainers)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setVisibility("member");
+                commit();
+              }}
+              disabled={pending}
+              className="rounded-md border px-2 py-0.5"
+              style={{
+                borderColor: "var(--surface-border)",
+                backgroundColor:
+                  visibility === "member" ? "var(--accent)" : "transparent",
+                color: "var(--text-primary)",
+              }}
+            >
+              Zichtbaar voor lid
+            </button>
+          </div>
+        </div>
       </div>
 
       {err && <span className="text-[11px] text-red-600">{err}</span>}

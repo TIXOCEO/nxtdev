@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getTrainingSessionsByTenant } from "@/lib/db/trainings";
+import { getTrainingSettingsResolved } from "@/lib/db/training-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,10 @@ export default async function TenantTrainingsPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const sessions = await getTrainingSessionsByTenant(result.tenant.id);
+  const [sessions, settings] = await Promise.all([
+    getTrainingSessionsByTenant(result.tenant.id),
+    getTrainingSettingsResolved(result.tenant.id),
+  ]);
 
   return (
     <>
@@ -46,6 +50,18 @@ export default async function TenantTrainingsPage() {
           </Link>
         }
       />
+
+      <div
+        className="mb-3 rounded-xl border px-3 py-2 text-xs"
+        style={{
+          backgroundColor: "var(--surface-soft)",
+          borderColor: "var(--surface-border)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        Auto-herinnering loopt elk uur en stuurt {settings.reminder_hours_before}
+        {" "}uur voor de start een melding naar de groep.
+      </div>
 
       {sessions.length === 0 ? (
         <EmptyState

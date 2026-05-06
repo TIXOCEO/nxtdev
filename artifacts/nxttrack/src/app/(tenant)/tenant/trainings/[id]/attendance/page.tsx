@@ -58,9 +58,17 @@ export default async function AttendancePage({ params }: PageProps) {
               memberName={a.member?.full_name ?? "—"}
               currentRsvp={a.rsvp ?? null}
               currentMark={a.attendance ?? null}
-              currentNotes={a.notes ?? ""}
+              currentNote={a.note ?? a.trainer_note ?? a.notes ?? ""}
+              currentNoteVisibility={
+                (a.note_visibility === "member" || a.note_visibility === "private"
+                  ? a.note_visibility
+                  : a.trainer_note
+                    ? "private"
+                    : a.notes
+                      ? "member"
+                      : "private") as "private" | "member"
+              }
               currentAbsenceReason={a.absence_reason ?? null}
-              currentTrainerNote={a.trainer_note ?? null}
               rsvpReasonText={a.attendance_reason ?? null}
             />
           ))}

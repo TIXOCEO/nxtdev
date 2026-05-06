@@ -120,8 +120,9 @@ export async function setMyRsvp(
     .single();
   if (error || !data) return fail(error?.message ?? "Kon reactie niet opslaan.");
 
-  // Late notification to trainers (group target → role='trainer'-only-aware
-  // is not supported; we just notify the group's trainers via role target).
+  // Sprint 35 — late notification only goes to trainers of the *specific*
+  // group (intersection of group_members + trainer roles), not every
+  // tenant-wide trainer.
   if (isLate && settings.notify_trainer_on_late) {
     try {
       const evt = await getNotificationEvent(
@@ -134,16 +135,65 @@ export async function setMyRsvp(
           not_attending: "Afwezig",
           maybe: "Misschien",
         };
-        await sendNotification({
-          tenantId: parsed.data.tenant_id,
-          title: `Late wijziging: ${session.title}`,
-          contentText: `Reactie binnen de cutoff: ${labels[parsed.data.rsvp]}.`,
-          targets: [{ target_type: "role", target_id: "trainer" }],
-          sendEmail: evt?.email_enabled ?? false,
-          source: "attendance_changed_late",
-          sourceRef: session.id,
-          createdBy: user.id,
-        });
+
+        const { data: gmRows } = await admin
+          .from("group_members")
+          .select("member_id")
+          .eq("group_id", session.group_id);
+        const groupMemberIds = ((gmRows ?? []) as Array<{ member_id: string }>).map(
+          (r) => r.member_id,
+        );
+        const trainerIds = new Set<string>();
+        if (groupMemberIds.length > 0) {
+          const [{ data: roleRows }, { data: tmrRows }] = await Promise.all([
+            admin
+              .from("member_roles")
+              .select("member_id, role")
+              .in("member_id", groupMemberIds)
+              .eq("role", "trainer"),
+            admin
+              .from("tenant_member_roles")
+              .select("member_id, tenant_roles!inner(is_trainer_role)")
+              .eq("tenant_id", parsed.data.tenant_id)
+              .in("member_id", groupMemberIds),
+          ]);
+          for (const r of (roleRows ?? []) as Array<{ member_id: string }>) {
+            trainerIds.add(r.member_id);
+          }
+          type TmrRow = {
+            member_id: string;
+            tenant_roles:
+              | { is_trainer_role: boolean }
+              | { is_trainer_role: boolean }[]
+              | null;
+          };
+          for (const r of (tmrRows ?? []) as TmrRow[]) {
+            const list = Array.isArray(r.tenant_roles)
+              ? r.tenant_roles
+              : r.tenant_roles
+                ? [r.tenant_roles]
+                : [];
+            if (list.some((tr) => tr.is_trainer_role)) {
+              trainerIds.add(r.member_id);
+            }
+          }
+        }
+        const targets = Array.from(trainerIds).map((id) => ({
+          target_type: "member" as const,
+          target_id: id,
+        }));
+        if (targets.length > 0) {
+          await sendNotification({
+            tenantId: parsed.data.tenant_id,
+            title: `Late wijziging: ${session.title}`,
+            contentText: `Reactie binnen de cutoff: ${labels[parsed.data.rsvp]}.`,
+            targets,
+            sendEmail: evt?.email_enabled ?? false,
+            source: "attendance_changed_late",
+            sourceRef: session.id,
+            createdBy: user.id,
+          });
+        }
       }
     } catch (err) {
       logErr("notif_late", err);

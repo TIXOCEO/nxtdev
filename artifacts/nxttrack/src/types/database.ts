@@ -575,6 +575,8 @@ export interface TrainingSession {
   location: string | null;
   status: TrainingSessionStatus | string;
   created_by: string | null;
+  /** Sprint 35 — auto-reminder run marker (per session). */
+  reminder_run_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -609,8 +611,27 @@ export interface TrainingAttendance {
   absence_reason: AbsenceReason | string | null;
   /** Sprint 13 — free text used when absence_reason = "overig". */
   attendance_reason: string | null;
-  /** Sprint 13 — trainer-only note. */
+  /** Sprint 13 — trainer-only note. Deprecated; replaced by `note` + `note_visibility`. */
   trainer_note: string | null;
+  /** Sprint 35 — single trainer note (replaces notes + trainer_note). */
+  note: string | null;
+  /** Sprint 35 — `private` (trainers/staff only) or `member` (lid/ouder kan zien). */
+  note_visibility: "private" | "member" | string;
+  /** Sprint 35 — auto-reminder idempotency. */
+  reminder_sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Sprint 35 — minimal LVS observation. */
+export interface MemberObservation {
+  id: string;
+  tenant_id: string;
+  member_id: string;
+  author_user_id: string;
+  session_id: string | null;
+  body: string;
+  visibility: "private" | "member" | string;
   created_at: string;
   updated_at: string;
 }

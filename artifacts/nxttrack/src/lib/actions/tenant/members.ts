@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { assertTenantAccess } from "./_assert-access";
 import {
   createMemberSchema,
@@ -510,6 +511,35 @@ export async function addMemberToGroup(
   if (error || !data) {
     if (error?.code === "23505") return fail("Lid zit al in deze groep.");
     return fail(error?.message ?? "Kon lid niet toevoegen.");
+  }
+
+  // Sprint 35 — backfill attendance rows for already-scheduled future
+  // sessions of this group so the new member shows up on the trainer's
+  // manage screen and in their own agenda.
+  try {
+    const admin = createAdminClient();
+    const { data: futureSessions } = await admin
+      .from("training_sessions")
+      .select("id")
+      .eq("tenant_id", parsed.data.tenant_id)
+      .eq("group_id", parsed.data.group_id)
+      .eq("status", "scheduled")
+      .gte("starts_at", new Date().toISOString());
+    const sessionIds = ((futureSessions ?? []) as Array<{ id: string }>).map(
+      (s) => s.id,
+    );
+    if (sessionIds.length > 0) {
+      const rows = sessionIds.map((sid) => ({
+        tenant_id: parsed.data.tenant_id,
+        session_id: sid,
+        member_id: parsed.data.member_id,
+      }));
+      await admin
+        .from("training_attendance")
+        .upsert(rows, { onConflict: "session_id,member_id" });
+    }
+  } catch (err) {
+    logTriggerErr("attendance_backfill", err);
   }
 
   // Sprint 12 — group_assigned trigger.

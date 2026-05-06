@@ -38,10 +38,16 @@ export default async function PublicSchedulePage({ params }: PageProps) {
   const user = await getUser();
   if (!user) redirect(`/t/${slug}/login?next=/t/${slug}/schedule`);
 
-  const sessions = await getSessionsForUser(tenant.id, user.id, {
-    fromIso: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  });
+  // Sprint 35 — bound to a 90-day window with a hard limit so trainers of
+  // big groups don't load every historical session.
   const now = Date.now();
+  const fromIso = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const toIso = new Date(now + 90 * 24 * 60 * 60 * 1000).toISOString();
+  const sessions = await getSessionsForUser(tenant.id, user.id, {
+    fromIso,
+    toIso,
+    limit: 100,
+  });
   const stats = {
     total: sessions.length,
     upcoming: sessions.filter(
@@ -89,20 +95,35 @@ export default async function PublicSchedulePage({ params }: PageProps) {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <Link
-                      href={`/t/${slug}/schedule/${s.id}`}
-                      className="text-sm font-semibold hover:underline"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      {s.title}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/t/${slug}/schedule/${s.id}`}
+                        className="text-sm font-semibold hover:underline"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {s.title}
+                      </Link>
+                      {s.viewerRole === "trainer" && (
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                          style={{
+                            backgroundColor: "var(--accent)",
+                            color: "var(--text-primary)",
+                          }}
+                        >
+                          Trainer
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-0.5 text-xs" style={{ color: "var(--text-secondary)" }}>
                       {fmt(s.starts_at)} · {s.group?.name ?? ""}
                       {s.location ? ` · ${s.location}` : ""}
                     </p>
-                    <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-secondary)" }}>
-                      Voor: {s.forMembers.map((m) => m.full_name).join(", ")}
-                    </p>
+                    {s.viewerRole === "athlete" && s.forMembers.length > 0 && (
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                        Voor: {s.forMembers.map((m) => m.full_name).join(", ")}
+                      </p>
+                    )}
                   </div>
                   <span
                     className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium"

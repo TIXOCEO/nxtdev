@@ -186,9 +186,13 @@ export async function setAttendance(
         attendance: parsed.data.attendance,
         attendance_at: new Date().toISOString(),
         attendance_by_user_id: user.id,
-        notes: parsed.data.notes,
+        note: parsed.data.note,
+        note_visibility: parsed.data.note_visibility,
+        // Keep legacy columns in sync for one release.
+        notes: parsed.data.note_visibility === "member" ? parsed.data.note : null,
+        trainer_note:
+          parsed.data.note_visibility === "private" ? parsed.data.note : null,
         absence_reason: parsed.data.absence_reason ?? null,
-        trainer_note: parsed.data.trainer_note ?? null,
       },
       { onConflict: "session_id,member_id" },
     )
@@ -209,10 +213,12 @@ export async function setAttendance(
         late: "Te laat",
         injured: "Geblesseerd",
       };
+      const memberVisibleNote =
+        parsed.data.note_visibility === "member" ? parsed.data.note : null;
       await sendNotification({
         tenantId: parsed.data.tenant_id,
         title: `Aanwezigheid bijgewerkt: ${labels[parsed.data.attendance] ?? parsed.data.attendance}`,
-        contentText: parsed.data.notes ?? "",
+        contentText: memberVisibleNote ?? "",
         targets: [{ target_type: "member", target_id: parsed.data.member_id }],
         sendEmail: evt.email_enabled,
         source: "trainer_attendance_updated",

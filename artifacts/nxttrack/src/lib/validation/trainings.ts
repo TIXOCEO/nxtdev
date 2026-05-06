@@ -62,18 +62,31 @@ export const setRsvpSchema = z.object({
 });
 export type SetRsvpInput = z.infer<typeof setRsvpSchema>;
 
+export const NOTE_VISIBILITY = ["private", "member"] as const;
+export type NoteVisibility = (typeof NOTE_VISIBILITY)[number];
+
 export const setAttendanceSchema = z.object({
   tenant_id: z.string().uuid(),
   session_id: z.string().uuid(),
   member_id: z.string().uuid(),
   attendance: z.enum(["present", "absent", "late", "injured"]),
-  notes: optStr(500),
+  /** Sprint 35 — single note + visibility (replaces notes + trainer_note). */
+  note: optStr(1000),
+  note_visibility: z.enum(NOTE_VISIBILITY).default("private"),
   /** Sprint 13: trainer can see/override the absence reason. */
   absence_reason: z.enum(ABSENCE_REASONS).nullish(),
-  /** Sprint 13: trainer-only private note. */
-  trainer_note: optStr(1000),
 });
 export type SetAttendanceInput = z.infer<typeof setAttendanceSchema>;
+
+/** Sprint 35 — minimal observation (LVS) input. */
+export const createObservationSchema = z.object({
+  tenant_id: z.string().uuid(),
+  member_id: z.string().uuid(),
+  session_id: z.string().uuid().nullish(),
+  body: z.string().trim().min(2, "Notitie is verplicht").max(4000),
+  visibility: z.enum(NOTE_VISIBILITY).default("private"),
+});
+export type CreateObservationInput = z.infer<typeof createObservationSchema>;
 
 export const trainingSettingsSchema = z.object({
   tenant_id: z.string().uuid(),
