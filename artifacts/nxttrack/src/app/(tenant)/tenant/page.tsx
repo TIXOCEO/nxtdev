@@ -21,7 +21,7 @@ import {
   getTenantNewsOverview,
   getTenantRegistrationsOverview,
 } from "@/lib/db/tenant-admin";
-import { getLatestPublishedRelease } from "@/lib/db/releases";
+import { getLatestPublishedRelease, hasUserSeenRelease } from "@/lib/db/releases";
 import { LatestReleaseCard } from "@/components/tenant/release-card";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +53,9 @@ export default async function TenantDashboardPage() {
     getTenantRegistrationsOverview(tenantId, 5),
     getLatestPublishedRelease(),
   ]);
+  const latestReleaseUnseen = latestRelease
+    ? !(await hasUserSeenRelease(result.user.id, latestRelease.version).catch(() => true))
+    : false;
 
   return (
     <>
@@ -70,7 +73,7 @@ export default async function TenantDashboardPage() {
         }
       />
 
-      <LatestReleaseCard release={latestRelease} />
+      <LatestReleaseCard release={latestRelease} isUnseen={latestReleaseUnseen} />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <TenantStatCard label="News posts"   value={stats.newsTotal}          icon={Newspaper} />

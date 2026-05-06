@@ -15,6 +15,8 @@ export interface TenantShellProps {
   tenantDomain?: string | null;
   /** Huidige (laatst gepubliceerde) NXTTRACK-versie, getoond onder "Powered by". */
   currentVersion?: string | null;
+  /** True wanneer de huidige gebruiker de laatste release nog niet als gezien heeft gemarkeerd. */
+  currentVersionUnseen?: boolean;
 }
 
 export function TenantShell({
@@ -27,6 +29,7 @@ export function TenantShell({
   tenantSlug,
   tenantDomain,
   currentVersion,
+  currentVersionUnseen,
 }: TenantShellProps) {
   return (
     <div
@@ -42,6 +45,7 @@ export function TenantShell({
           primaryColor={primaryColor}
           queryString={queryString}
           currentVersion={currentVersion}
+          currentVersionUnseen={currentVersionUnseen}
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">

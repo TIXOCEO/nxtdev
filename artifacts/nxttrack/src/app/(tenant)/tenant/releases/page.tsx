@@ -2,13 +2,22 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getPublishedReleases } from "@/lib/db/releases";
+import { getPublishedReleases, markReleaseSeen } from "@/lib/db/releases";
+import { requireAuth } from "@/lib/auth/require-auth";
 import { ReleasesArchive } from "./_releases-archive";
 
 export const dynamic = "force-dynamic";
 
 export default async function TenantReleasesPage() {
-  const releases = await getPublishedReleases();
+  const [releases, user] = await Promise.all([
+    getPublishedReleases(),
+    requireAuth(),
+  ]);
+
+  // Bezoek aan het archief telt als "ik heb de laatste release gezien".
+  if (releases[0]) {
+    await markReleaseSeen(user.id, releases[0].version).catch(() => undefined);
+  }
 
   return (
     <>

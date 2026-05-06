@@ -110,3 +110,54 @@ export async function getLatestPublishedRelease(): Promise<PlatformRelease | nul
   const all = await getPublishedReleases();
   return all[0] ?? null;
 }
+
+/**
+ * Heeft de gebruiker deze release-versie al als gezien gemarkeerd?
+ * Gebruikt RLS — een user kan enkel zijn eigen rij lezen.
+ */
+export async function hasUserSeenRelease(
+  userId: string,
+  version: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("release_reads")
+    .select("version")
+    .eq("user_id", userId)
+    .eq("version", version)
+    .maybeSingle();
+  if (error) {
+    // Falen we, dan tonen we de "nieuw"-indicator liever onterecht dan de
+    // request te crashen.
+    return false;
+  }
+  return !!data;
+}
+
+/**
+ * Markeer een release als gezien voor de huidige gebruiker. Idempotent;
+ * een tweede bezoek aan dezelfde versie houdt de oorspronkelijke `seen_at`.
+ */
+export async function markReleaseSeen(
+  userId: string,
+  version: string,
+): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("release_reads")
+    .upsert(
+      { user_id: userId, version },
+      { onConflict: "user_id,version", ignoreDuplicates: true },
+    );
+  if (error) {
+    // Niet fataal — de UI valt simpelweg terug op "nieuw" — maar wel zichtbaar
+    // in server logs zodat een ontbrekende migratie of RLS-fout opvalt.
+    // eslint-disable-next-line no-console
+    console.error("[releases] markReleaseSeen failed", {
+      userId,
+      version,
+      message: error.message,
+      code: (error as { code?: string }).code,
+    });
+  }
+}

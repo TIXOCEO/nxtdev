@@ -23,7 +23,14 @@ function fmt(iso: string | null): string {
  * Niet weg te klikken of te verwijderen door een tenant-admin —
  * onderdeel van de vaste dashboard-layout.
  */
-export function LatestReleaseCard({ release }: { release: PlatformRelease | null }) {
+export function LatestReleaseCard({
+  release,
+  isUnseen = false,
+}: {
+  release: PlatformRelease | null;
+  /** Tonen we een "nieuw"-dot? True wanneer de huidige gebruiker deze versie nog niet heeft gezien. */
+  isUnseen?: boolean;
+}) {
   return (
     <section
       className="rounded-2xl border p-5"
@@ -38,9 +45,24 @@ export function LatestReleaseCard({ release }: { release: PlatformRelease | null
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
-              Laatste update
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
+                Laatste update
+              </p>
+              {release && isUnseen ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
+                  style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }}
+                  aria-label="Nieuwe release, nog niet gelezen"
+                >
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: "#ef4444" }}
+                  />
+                  Nieuw
+                </span>
+              ) : null}
+            </div>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
               {release ? release.title : "Nog geen release gepubliceerd"}
             </p>

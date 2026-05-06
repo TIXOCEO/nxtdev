@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
-import { getReleaseByVersion } from "@/lib/db/releases";
+import { getReleaseByVersion, markReleaseSeen } from "@/lib/db/releases";
+import { requireAuth } from "@/lib/auth/require-auth";
 import type { ReleaseBody, ReleaseType } from "@/lib/validation/release";
 
 export const dynamic = "force-dynamic";
@@ -37,8 +38,14 @@ export default async function TenantReleaseDetailPage({
   params: Promise<{ version: string }>;
 }) {
   const { version } = await params;
-  const release = await getReleaseByVersion(version);
+  const [release, user] = await Promise.all([
+    getReleaseByVersion(version),
+    requireAuth(),
+  ]);
   if (!release) notFound();
+
+  // Bezoek aan de detailpagina markeert die specifieke versie als gezien.
+  await markReleaseSeen(user.id, release.version).catch(() => undefined);
 
   const tone = TYPE_TONE[release.release_type];
 

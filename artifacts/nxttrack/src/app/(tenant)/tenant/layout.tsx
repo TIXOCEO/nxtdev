@@ -5,7 +5,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { TenantShell } from "@/components/tenant/tenant-shell";
 import { TenantSelection } from "./_tenant-selection";
 import { Toaster } from "@/components/ui/toaster";
-import { getLatestPublishedRelease } from "@/lib/db/releases";
+import { getLatestPublishedRelease, hasUserSeenRelease } from "@/lib/db/releases";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,9 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
   }
 
   const latestRelease = await getLatestPublishedRelease().catch(() => null);
+  const latestVersionUnseen = latestRelease
+    ? !(await hasUserSeenRelease(result.user.id, latestRelease.version).catch(() => true))
+    : false;
 
   return (
     <TenantShell
@@ -32,6 +35,7 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
       tenantSlug={result.tenant.slug}
       tenantDomain={result.tenant.domain}
       currentVersion={latestRelease?.version ?? null}
+      currentVersionUnseen={latestVersionUnseen}
     >
       {children}
       <Toaster />

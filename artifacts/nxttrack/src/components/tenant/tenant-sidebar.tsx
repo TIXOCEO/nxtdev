@@ -132,6 +132,8 @@ export interface TenantSidebarProps {
   queryString?: string;
   /** Huidige (laatst gepubliceerde) NXTTRACK-versie, getoond onder "Powered by". */
   currentVersion?: string | null;
+  /** True wanneer de huidige gebruiker de laatste release nog niet als gezien heeft gemarkeerd. */
+  currentVersionUnseen?: boolean;
 }
 
 export function TenantSidebar({
@@ -139,6 +141,7 @@ export function TenantSidebar({
   primaryColor,
   queryString = "",
   currentVersion,
+  currentVersionUnseen,
 }: TenantSidebarProps) {
   const pathname = usePathname();
   const swatch = primaryColor || "var(--accent)";
@@ -261,10 +264,21 @@ export function TenantSidebar({
         {currentVersion ? (
           <Link
             href={`/tenant/releases/${currentVersion}${queryString}`}
-            className="font-mono text-[10px] tracking-wider transition-opacity hover:opacity-80"
-            title={`Bekijk release notes v${currentVersion}`}
+            className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-wider transition-opacity hover:opacity-80"
+            title={
+              currentVersionUnseen
+                ? `Nieuwe release: bekijk release notes v${currentVersion}`
+                : `Bekijk release notes v${currentVersion}`
+            }
           >
-            v{currentVersion}
+            <span>v{currentVersion}</span>
+            {currentVersionUnseen ? (
+              <span
+                aria-label="Nieuwe release"
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: "#ef4444" }}
+              />
+            ) : null}
           </Link>
         ) : null}
       </div>
