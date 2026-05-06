@@ -13,8 +13,24 @@ import {
   updateModuleLayout,
 } from "@/lib/actions/tenant/homepage";
 import type { ModuleCatalog, ModuleSize, TenantModule } from "@/types/database";
-import { ModuleConfigEditor, type PageOption } from "./module-config-editor";
+import {
+  ModuleConfigEditor,
+  type PageOption,
+  type NewsCategoryOption,
+} from "./module-config-editor";
 import { ModuleAddDialog, FULL_BLEED_KEYS } from "./module-add-dialog";
+import { getModuleDef } from "@/lib/homepage/module-registry";
+import {
+  ROW_HEIGHT_DESKTOP,
+  GRID_GAP_PX,
+} from "@/lib/homepage/grid-sizes";
+
+const SIZE_LABELS: Record<ModuleSize, string> = {
+  "1x1": "1×1",
+  "1x2": "1×2",
+  "2x1": "2×1",
+  "2x2": "2×2",
+};
 
 const GridLayout = dynamic(
   () => import("react-grid-layout/legacy").then((m) => m.default),
@@ -26,6 +42,7 @@ interface Props {
   initialModules: TenantModule[];
   catalog: ModuleCatalog[];
   pages?: PageOption[];
+  newsCategories?: NewsCategoryOption[];
 }
 
 interface LayoutItem {
@@ -38,7 +55,10 @@ interface LayoutItem {
 }
 
 const COLS = 2;
-const ROW_HEIGHT = 160;
+// Sprint 29 — gebruik dezelfde rijhoogte als de publieke render zodat
+// CMS en publieke site nooit uit de pas lopen.
+const ROW_HEIGHT = ROW_HEIGHT_DESKTOP;
+const GRID_MARGIN: [number, number] = [GRID_GAP_PX, GRID_GAP_PX];
 
 function moduleToLayoutItem(m: TenantModule): LayoutItem {
   return {
@@ -62,6 +82,7 @@ export function HomepageBuilder({
   initialModules,
   catalog,
   pages = [],
+  newsCategories = [],
 }: Props) {
   const router = useRouter();
   const [modules, setModules] = useState<TenantModule[]>(initialModules);
@@ -233,6 +254,7 @@ export function HomepageBuilder({
               tenantId={tenantId}
               previewMobile
               pages={pages}
+              newsCategories={newsCategories}
               open={openId === m.id}
               onToggleOpen={() => setOpenId((id) => (id === m.id ? null : m.id))}
               onPatch={(p) => patchModule(m.id, p)}
@@ -251,7 +273,7 @@ export function HomepageBuilder({
             cols={COLS}
             rowHeight={ROW_HEIGHT}
             width={typeof window !== "undefined" ? Math.min(window.innerWidth - 64, 960) : 720}
-            margin={[12, 12]}
+            margin={GRID_MARGIN}
             isResizable
             isDraggable
             compactType="vertical"
@@ -266,6 +288,7 @@ export function HomepageBuilder({
                   tenantId={tenantId}
                   previewMobile={false}
                   pages={pages}
+                  newsCategories={newsCategories}
                   open={openId === m.id}
                   onToggleOpen={() =>
                     setOpenId((id) => (id === m.id ? null : m.id))
@@ -287,6 +310,7 @@ function ModuleCard({
   tenantId,
   previewMobile,
   pages,
+  newsCategories,
   open,
   onToggleOpen,
   onPatch,
@@ -296,6 +320,7 @@ function ModuleCard({
   tenantId: string;
   previewMobile: boolean;
   pages: PageOption[];
+  newsCategories: NewsCategoryOption[];
   open: boolean;
   onToggleOpen: () => void;
   onPatch: (p: Partial<TenantModule>) => void;
@@ -308,6 +333,7 @@ function ModuleCard({
     title?: string | null;
     visible_for?: "public" | "logged_in";
     visible_mobile?: boolean;
+    size?: ModuleSize;
   }) {
     start(async () => {
       await updateTenantModule({
@@ -316,6 +342,20 @@ function ModuleCard({
         ...patch,
       });
     });
+  }
+
+  const def = getModuleDef(module.module_key);
+  const allowedSizes: ModuleSize[] = def?.allowedSizes ?? ["1x1", "1x2", "2x1", "2x2"];
+  const currentSize: ModuleSize = (module.size as ModuleSize) ?? "1x1";
+
+  function changeSize(next: ModuleSize) {
+    if (next === currentSize) return;
+    if (!allowedSizes.includes(next)) return;
+    const w = next === "2x1" || next === "2x2" ? 2 : 1;
+    const h = next === "1x2" || next === "2x2" ? 2 : 1;
+    const nx = module.position_x + w > 2 ? 0 : module.position_x;
+    onPatch({ size: next, w, h, position_x: nx });
+    persist({ size: next });
   }
 
   return (
@@ -433,11 +473,52 @@ function ModuleCard({
             </label>
           </div>
 
+          {allowedSizes.length > 1 && (
+            <div>
+              <p
+                className="mb-1 block text-[11px] font-semibold uppercase tracking-wider"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Formaat
+              </p>
+              <div className="inline-flex flex-wrap gap-1 rounded-lg border p-1" style={{ borderColor: "var(--surface-border)" }}>
+                {(["1x1", "1x2", "2x1", "2x2"] as ModuleSize[]).map((s) => {
+                  const allowed = allowedSizes.includes(s);
+                  const active = s === currentSize;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={!allowed || pending}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        changeSize(s);
+                      }}
+                      className="rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-30"
+                      style={{
+                        backgroundColor: active ? "var(--accent)" : "transparent",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {SIZE_LABELS[s]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-lg border p-3" style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}>
             <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
               <Settings2 className="h-3 w-3" /> Configuratie
             </p>
-            <ModuleConfigEditor tenantId={tenantId} module={module} pages={pages} />
+            <ModuleConfigEditor
+              tenantId={tenantId}
+              module={module}
+              pages={pages}
+              newsCategories={newsCategories}
+            />
           </div>
 
           {pending && (

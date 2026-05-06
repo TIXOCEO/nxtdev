@@ -18,10 +18,16 @@ export interface PageOption {
   title: string;
 }
 
+export interface NewsCategoryOption {
+  id: string;
+  name: string;
+}
+
 interface Props {
   tenantId: string;
   module: TenantModule;
   pages?: PageOption[];
+  newsCategories?: NewsCategoryOption[];
   onSaved?: () => void;
 }
 
@@ -52,7 +58,13 @@ const inputStyle = {
   color: "var(--text-primary)",
 } as const;
 
-export function ModuleConfigEditor({ tenantId, module, pages = [], onSaved }: Props) {
+export function ModuleConfigEditor({
+  tenantId,
+  module,
+  pages = [],
+  newsCategories = [],
+  onSaved,
+}: Props) {
   const [config, setConfig] = useState<Record<string, unknown>>(
     module.config ?? {},
   );
@@ -91,7 +103,13 @@ export function ModuleConfigEditor({ tenantId, module, pages = [], onSaved }: Pr
           pages={pages}
         />
       )}
-      {k === "news_hero_slider" && <NewsHeroSliderEditor config={config} set={set} />}
+      {k === "news_hero_slider" && (
+        <NewsHeroSliderEditor
+          config={config}
+          set={set}
+          categories={newsCategories}
+        />
+      )}
       {k === "news" && <NewsEditor config={config} set={set} />}
       {k === "custom_content" && <CustomContentEditor config={config} set={set} />}
       {k === "video" && <VideoEditor config={config} set={set} />}
@@ -103,6 +121,10 @@ export function ModuleConfigEditor({ tenantId, module, pages = [], onSaved }: Pr
       {k === "alerts_announcements" && <AlertsEditor config={config} set={set} />}
       {k === "trainers" && <TrainersEditor config={config} set={set} />}
       {k === "social_feed" && <SocialFeedEditor config={config} set={set} />}
+      {k === "image_slider" && (
+        <ImageSliderEditor tenantId={tenantId} config={config} set={set} />
+      )}
+      {k === "google_maps" && <GoogleMapsEditor config={config} set={set} />}
 
       {error && (
         <p className="text-xs" style={{ color: "#dc2626" }}>
@@ -434,7 +456,12 @@ function HeroSliderEditor({
   );
 }
 
-function NewsHeroSliderEditor({ config, set }: CfgProps) {
+function NewsHeroSliderEditor({
+  config,
+  set,
+  categories = [],
+}: CfgProps & { categories?: NewsCategoryOption[] }) {
+  const selected = (config.category_id as string | undefined) ?? "";
   return (
     <div className="space-y-2">
       <Field label="Aantal nieuwsslides">
@@ -448,6 +475,21 @@ function NewsHeroSliderEditor({ config, set }: CfgProps) {
           style={inputStyle}
         />
       </Field>
+      <Field label="Categorie (optioneel)">
+        <select
+          value={selected}
+          onChange={(e) => set("category_id", e.target.value || null)}
+          className={inputClass}
+          style={inputStyle}
+        >
+          <option value="">Alle categorieën</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </Field>
       <label className="flex items-center gap-2 text-xs">
         <input
           type="checkbox"
@@ -458,7 +500,8 @@ function NewsHeroSliderEditor({ config, set }: CfgProps) {
       </label>
       <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
         Slides worden automatisch opgebouwd uit de laatste nieuwsberichten.
-        Voeg een omslagfoto toe in de nieuwseditor om de achtergrond te zetten.
+        Filter optioneel op categorie. Voeg een omslagfoto toe in de
+        nieuwseditor om de achtergrond te zetten.
       </p>
     </div>
   );
@@ -733,6 +776,190 @@ function SocialFeedEditor({ config, set }: CfgProps) {
           <option value="achievements">Alleen prestaties</option>
         </select>
       </Field>
+    </div>
+  );
+}
+
+// ─── Image slider editor ────────────────────────────────────────────────
+interface SliderImage {
+  url: string;
+  alt?: string;
+  link?: string;
+}
+
+function ImageSliderEditor({
+  tenantId,
+  config,
+  set,
+}: CfgProps & { tenantId: string }) {
+  const images = ((config.images as SliderImage[] | undefined) ?? []).filter(
+    (i): i is SliderImage => !!i && typeof i === "object",
+  );
+  const update = (next: SliderImage[]) => set("images", next);
+
+  function patch(i: number, p: Partial<SliderImage>) {
+    const next = [...images];
+    next[i] = { ...(next[i] ?? { url: "" }), ...p };
+    update(next);
+  }
+  function add() {
+    update([...images, { url: "", alt: "", link: "" }]);
+  }
+  function remove(i: number) {
+    update(images.filter((_, idx) => idx !== i));
+  }
+  function move(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= images.length) return;
+    const next = [...images];
+    [next[i], next[j]] = [next[j], next[i]];
+    update(next);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={(config.autoplay as boolean) ?? true}
+            onChange={(e) => set("autoplay", e.target.checked)}
+          />
+          <span style={{ color: "var(--text-primary)" }}>
+            Automatisch doorbladeren
+          </span>
+        </label>
+        <Field label="Interval (ms)">
+          <input
+            type="number"
+            min={1500}
+            max={30000}
+            step={500}
+            value={(config.interval as number) ?? 5000}
+            onChange={(e) => set("interval", Number(e.target.value))}
+            className={inputClass}
+            style={inputStyle}
+          />
+        </Field>
+      </div>
+
+      <div className="space-y-2">
+        {images.length === 0 && (
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            Voeg minimaal één afbeelding toe.
+          </p>
+        )}
+        {images.map((img, i) => (
+          <div
+            key={i}
+            className="rounded-lg border p-3"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wider"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Afbeelding {i + 1}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  className="text-[11px] font-semibold disabled:opacity-40"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(i, 1)}
+                  disabled={i === images.length - 1}
+                  className="text-[11px] font-semibold disabled:opacity-40"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+            <ImageUploadField
+              tenantId={tenantId}
+              value={img.url ?? ""}
+              onChange={(url) => patch(i, { url })}
+            />
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <input
+                placeholder="Alt-tekst (toegankelijkheid)"
+                value={img.alt ?? ""}
+                onChange={(e) => patch(i, { alt: e.target.value })}
+                className={inputClass}
+                style={inputStyle}
+              />
+              <input
+                placeholder="Optionele klikbare link (URL)"
+                value={img.link ?? ""}
+                onChange={(e) => patch(i, { link: e.target.value })}
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="mt-2 text-[11px] font-semibold"
+              style={{ color: "#dc2626" }}
+            >
+              Verwijderen
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={add}
+          className="rounded-lg border px-3 py-1.5 text-xs font-semibold"
+          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+        >
+          + Afbeelding toevoegen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Google Maps editor ─────────────────────────────────────────────────
+function GoogleMapsEditor({ config, set }: CfgProps) {
+  const zoom = Math.max(
+    1,
+    Math.min(20, Number((config.zoom as number) ?? 14) || 14),
+  );
+  return (
+    <div className="space-y-2">
+      <Field label="Adres">
+        <input
+          value={(config.address as string) ?? ""}
+          onChange={(e) => set("address", e.target.value)}
+          placeholder="bv. Sportlaan 1, 1000 AA Amsterdam"
+          className={inputClass}
+          style={inputStyle}
+        />
+      </Field>
+      <Field label={`Zoomniveau (${zoom})`}>
+        <input
+          type="range"
+          min={1}
+          max={20}
+          step={1}
+          value={zoom}
+          onChange={(e) => set("zoom", Number(e.target.value))}
+          className="w-full"
+        />
+      </Field>
+      <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+        Het adres wordt direct in de gratis Google Maps embed geladen — geen
+        API-key nodig. Hogere zoom = dichter op het adres (1 = wereld, 20 =
+        gebouw).
+      </p>
     </div>
   );
 }

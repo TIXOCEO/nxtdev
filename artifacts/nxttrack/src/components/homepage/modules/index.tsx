@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { ModuleContainer } from "../module-container";
 import { PublicHeroSlider, type HeroSlide } from "@/components/public/public-hero-slider";
+import { ImageSliderClient, type ImageSliderImage } from "./image-slider-client";
 import {
   getActiveAlerts,
   getMediaWallItems,
@@ -73,7 +74,9 @@ export function HeroSliderModule({ tenant, module }: BaseProps) {
 // als achtergrondfoto gebruikt zodat het er full-bleed editorial uit ziet.
 export async function NewsHeroSliderModule({ tenant, module }: BaseProps) {
   const limit = tag<number>(module.config, "limit", 5);
-  const posts = await getPublicNewsPosts(tenant.id, { limit });
+  const categoryRaw = tag<string>(module.config, "category_id", "");
+  const categoryId = categoryRaw && categoryRaw.length > 0 ? categoryRaw : null;
+  const posts = await getPublicNewsPosts(tenant.id, { limit, categoryId });
   const slides: HeroSlide[] = posts.map((p) => ({
     eyebrow: "Nieuws",
     title: p.title,
@@ -648,6 +651,86 @@ async function SocialFeedModule({ tenant, module, userId }: AuthedProps) {
   );
 }
 
+// ──────────────── Image Slider ────────────────
+// Sprint 29 — Eén afbeelding = stilstaand beeld; meerdere = autoplay slider.
+// Vult altijd de containerhoogte (h-full); valt terug op een placeholder als
+// er nog geen afbeeldingen zijn ingesteld.
+export function ImageSliderModule({ module }: BaseProps) {
+  const rawImages = tag<unknown>(module.config, "images", []);
+  const images: ImageSliderImage[] = Array.isArray(rawImages)
+    ? rawImages.flatMap((it): ImageSliderImage[] => {
+        if (!it || typeof it !== "object") return [];
+        const obj = it as Record<string, unknown>;
+        const url = typeof obj.url === "string" ? obj.url.trim() : "";
+        if (!url) return [];
+        return [
+          {
+            url,
+            alt: typeof obj.alt === "string" ? obj.alt : undefined,
+            link: typeof obj.link === "string" && obj.link ? obj.link : undefined,
+          },
+        ];
+      })
+    : [];
+  const autoplay = tag<boolean>(module.config, "autoplay", true);
+  const interval = tag<number>(module.config, "interval", 5000);
+
+  if (images.length === 0) {
+    return (
+      <ModuleContainer title={module.title || "Beeld slider"}>
+        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          Nog geen afbeeldingen toegevoegd.
+        </p>
+      </ModuleContainer>
+    );
+  }
+
+  return (
+    <ImageSliderClient
+      images={images}
+      autoplay={autoplay}
+      intervalMs={interval}
+    />
+  );
+}
+
+// ──────────────── Google Maps ────────────────
+// Sprint 29 — Gratis Maps embed (geen API-key vereist) op basis van adres.
+// Iframe vult de volledige containerhoogte.
+export function GoogleMapsModule({ module }: BaseProps) {
+  const address = tag<string>(module.config, "address", "").trim();
+  const zoomRaw = tag<number>(module.config, "zoom", 14);
+  const zoom = Math.max(1, Math.min(20, Number.isFinite(zoomRaw) ? zoomRaw : 14));
+  if (!address) {
+    return (
+      <ModuleContainer title={module.title || "Google Maps"}>
+        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          Voer een adres in om de kaart te tonen.
+        </p>
+      </ModuleContainer>
+    );
+  }
+  const src = `https://www.google.com/maps?q=${encodeURIComponent(address)}&z=${zoom}&output=embed`;
+  return (
+    <div
+      className="relative h-full w-full overflow-hidden rounded-[var(--radius-nxt-lg)] border"
+      style={{
+        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--surface-soft)",
+      }}
+    >
+      <iframe
+        title={module.title || `Kaart van ${address}`}
+        src={src}
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        className="absolute inset-0 h-full w-full border-0"
+        allowFullScreen
+      />
+    </div>
+  );
+}
+
 // ──────────────── Renderer dispatcher ────────────────
 export async function renderModule(
   tenant: Tenant,
@@ -681,6 +764,10 @@ export async function renderModule(
       return <TrainersModule tenant={tenant} module={module} />;
     case "social_feed":
       return <SocialFeedModule tenant={tenant} module={module} userId={userId} />;
+    case "image_slider":
+      return <ImageSliderModule tenant={tenant} module={module} />;
+    case "google_maps":
+      return <GoogleMapsModule tenant={tenant} module={module} />;
     default:
       return (
         <ModuleContainer title={module.title || "Onbekende module"}>

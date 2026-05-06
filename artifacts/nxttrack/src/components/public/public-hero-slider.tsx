@@ -21,8 +21,7 @@ export interface PublicHeroSliderProps {
 }
 
 /**
- * Beperk CTA hrefs tot veilige protocollen / paden, om ingevoerde
- * `javascript:` of `data:` URLs te blokkeren.
+ * Beperk CTA hrefs tot veilige protocollen / paden.
  */
 function safeHref(raw: string): string | null {
   const v = raw.trim();
@@ -30,7 +29,6 @@ function safeHref(raw: string): string | null {
   if (v.startsWith("/")) return v;
   if (/^https?:\/\//i.test(v)) return v;
   if (v.startsWith("mailto:") || v.startsWith("tel:")) return v;
-  // Tenant-relatieve slug zoals "nieuws" of "info/contact" → maak relatief.
   if (/^[a-z0-9][a-z0-9/_-]*$/i.test(v)) return `/${v}`;
   return null;
 }
@@ -78,7 +76,6 @@ export function PublicHeroSlider({
   const goPrev = () => setIndex((i) => (i - 1 + finalSlides.length) % finalSlides.length);
   const goNext = () => setIndex((i) => (i + 1) % finalSlides.length);
 
-  // Lichte tekstkleur boven foto, anders normale tenant-kleuren.
   const titleColor = hasImage ? "#ffffff" : "var(--text-primary)";
   const bodyColor = hasImage ? "rgba(255,255,255,0.92)" : "var(--text-secondary)";
   const eyebrowBg = hasImage
@@ -90,9 +87,12 @@ export function PublicHeroSlider({
   const dotInactive = hasImage ? "rgba(255,255,255,0.4)" : "var(--surface-border)";
   const dotActive = hasImage ? "#ffffff" : "var(--tenant-accent)";
 
+  // Sprint 29: vaste hoogte = h-full van het grid-item; geen min-height
+  // meer op de container of op slide-content. CTA-regio reserveert vaste
+  // ruimte zodat slides zonder CTA niet inkrimpen.
   return (
     <div
-      className="relative overflow-hidden rounded-[var(--radius-nxt-lg)] border"
+      className="relative h-full w-full overflow-hidden rounded-[var(--radius-nxt-lg)] border"
       style={{
         backgroundColor: "var(--surface-main)",
         borderColor: "var(--surface-border)",
@@ -105,7 +105,6 @@ export function PublicHeroSlider({
         transition: "background-image 400ms ease",
       }}
     >
-      {/* Donkere overlay alleen bij foto, voor leesbaarheid. */}
       {hasImage && (
         <div
           aria-hidden
@@ -117,45 +116,59 @@ export function PublicHeroSlider({
         />
       )}
 
-      <div className="relative flex min-h-[220px] flex-col justify-between gap-4 p-6 sm:min-h-[260px] sm:p-8">
-        <div className="space-y-3">
-          {slide.eyebrow && (
+      <div className="relative flex h-full flex-col justify-between gap-4 p-6 sm:p-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+          {slide.eyebrow ? (
             <p
-              className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
+              className="inline-block w-fit rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
               style={{ backgroundColor: eyebrowBg, color: eyebrowColor }}
             >
               {slide.eyebrow}
             </p>
+          ) : (
+            <span aria-hidden className="block h-[26px]" />
           )}
           <h1
             className="line-clamp-2 text-2xl font-bold leading-tight sm:text-3xl"
-            style={{ color: titleColor, textShadow: hasImage ? "0 1px 2px rgba(0,0,0,0.4)" : undefined }}
+            style={{
+              color: titleColor,
+              textShadow: hasImage ? "0 1px 2px rgba(0,0,0,0.4)" : undefined,
+            }}
           >
             {slide.title}
           </h1>
-          {slide.body && (
+          {slide.body ? (
             <p
               className="line-clamp-3 max-w-xl text-sm sm:text-base"
-              style={{ color: bodyColor, textShadow: hasImage ? "0 1px 2px rgba(0,0,0,0.4)" : undefined }}
+              style={{
+                color: bodyColor,
+                textShadow: hasImage ? "0 1px 2px rgba(0,0,0,0.4)" : undefined,
+              }}
             >
               {slide.body}
             </p>
+          ) : (
+            <span aria-hidden className="block" />
           )}
-          {slide.ctaLabel && slide.ctaHref && safeHref(slide.ctaHref) && (
-            <a
-              href={safeHref(slide.ctaHref) ?? "#"}
-              className="mt-2 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold sm:text-sm"
-              style={{
-                backgroundColor: hasImage ? "#ffffff" : "var(--tenant-accent)",
-                color: hasImage ? "#111111" : "var(--text-primary)",
-              }}
-            >
-              {slide.ctaLabel}
-            </a>
-          )}
+
+          {/* Vaste CTA-regio — altijd evenveel ruimte, ook zonder knop. */}
+          <div className="mt-2 min-h-[44px]">
+            {slide.ctaLabel && slide.ctaHref && safeHref(slide.ctaHref) && (
+              <a
+                href={safeHref(slide.ctaHref) ?? "#"}
+                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold sm:text-sm"
+                style={{
+                  backgroundColor: hasImage ? "#ffffff" : "var(--tenant-accent)",
+                  color: hasImage ? "#111111" : "var(--text-primary)",
+                }}
+              >
+                {slide.ctaLabel}
+              </a>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             {finalSlides.map((_, i) => (
               <button

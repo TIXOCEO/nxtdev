@@ -171,6 +171,31 @@ registerModule({
   defaultConfig: { limit: 8, show_bio: true },
 });
 
+// Sprint 29: Image slider (1 image = stilstaand, meerdere = auto slider)
+registerModule({
+  key: "image_slider",
+  name: "Beeld slider",
+  description:
+    "Eén afbeelding = stilstaand beeld, meerdere afbeeldingen = automatische slider.",
+  defaultSize: "2x1",
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
+  defaultConfig: {
+    images: [] as Array<{ url: string; alt?: string; link?: string }>,
+    autoplay: true,
+    interval: 5000,
+  },
+});
+
+// Sprint 29: Google Maps embed (gratis embed-URL, geen API-key nodig)
+registerModule({
+  key: "google_maps",
+  name: "Google Maps",
+  description: "Toont een ingebouwde kaart op basis van een adres.",
+  defaultSize: "2x1",
+  allowedSizes: ["1x1", "1x2", "2x1", "2x2"],
+  defaultConfig: { address: "", zoom: 14 },
+});
+
 // Sprint 19: Social feed module
 registerModule({
   key: "social_feed",

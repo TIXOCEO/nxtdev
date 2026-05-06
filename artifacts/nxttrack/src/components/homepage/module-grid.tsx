@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import type { TenantModule } from "@/types/database";
 import { renderModule } from "./modules";
+import {
+  GRID_GAP_PX,
+  ROW_HEIGHT_DESKTOP,
+  rowsToHeightMobile,
+} from "@/lib/homepage/grid-sizes";
 import type { Tenant } from "@/types/database";
 
 const FULL_BLEED_KEYS = new Set(["hero_slider", "news_hero_slider"]);
@@ -24,9 +29,10 @@ interface RenderedItem {
 }
 
 /**
- * Sprint 22 — render via 2D x/y/w/h coördinaten op een 2-koloms CSS-grid.
- * Hero-sliders forceren w=2 (volle breedte). Op mobiel wordt alles in 1 kolom
- * gerenderd, gesorteerd op (y, x).
+ * Sprint 29 — render via 2D x/y/w/h coördinaten op een 2-koloms CSS-grid
+ * met **vaste rij-hoogtes** zodat modules nooit van hoogte wisselen.
+ * Hero-sliders forceren w=2 (volle breedte). Op mobiel wordt alles in
+ * 1 kolom gerenderd, gesorteerd op (y, x), met dezelfde vaste hoogtes.
  */
 export async function ModuleGrid({
   tenant,
@@ -55,22 +61,22 @@ export async function ModuleGrid({
     });
   }
 
-  // Sorteer op (y, x) voor stabiele render-volgorde / mobiele view.
   rendered.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
 
-  // Mobile preview mode (gebruikt door de homepage builder) → forceer 1 kolom.
+  // Mobile preview mode (gebruikt door de homepage builder) → 1 kolom met
+  // dezelfde vaste hoogte-mapping als de echte mobiele view.
   if (mobile) {
     return (
       <div className="grid grid-cols-1 gap-4">
         {rendered.map((r) => (
-          <div key={r.id}>{r.node}</div>
+          <div key={r.id} style={{ height: rowsToHeightMobile(r.h) }}>
+            {r.node}
+          </div>
         ))}
       </div>
     );
   }
 
-  // Op echte mobiele viewports: 1 kolom gestapeld op (y, x) volgorde.
-  // Op md+: 2-koloms grid met de geconfigureerde x/y/w/h posities.
   const mobileVisible = rendered.filter((r) => {
     const m = visible.find((v) => v.id === r.id);
     return !m || m.visible_mobile !== false;
@@ -80,17 +86,27 @@ export async function ModuleGrid({
     <>
       <div className="grid grid-cols-1 gap-4 md:hidden">
         {mobileVisible.map((r) => (
-          <div key={`m-${r.id}`}>{r.node}</div>
+          <div key={`m-${r.id}`} style={{ height: rowsToHeightMobile(r.h) }}>
+            {r.node}
+          </div>
         ))}
       </div>
 
-      <div className="hidden grid-cols-2 gap-4 sm:auto-rows-min md:grid">
+      <div
+        className="hidden grid-cols-2 gap-4 md:grid"
+        style={{
+          gridAutoRows: `${ROW_HEIGHT_DESKTOP}px`,
+          rowGap: `${GRID_GAP_PX}px`,
+          columnGap: `${GRID_GAP_PX}px`,
+        }}
+      >
         {rendered.map((r) => (
           <div
             key={`d-${r.id}`}
             style={{
               gridColumn: `${r.x + 1} / span ${r.w}`,
               gridRow: `${r.y + 1} / span ${r.h}`,
+              minHeight: 0,
             }}
           >
             {r.node}

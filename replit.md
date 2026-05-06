@@ -69,6 +69,7 @@ I prefer the AI to
 
 ## Gotchas
 
+- **Manual Supabase migrations (VPS)**: Run new sprint SQL files in `artifacts/nxttrack/supabase/` against the production DB in order. Most recent: `sprint29_homepage_modules_v2.sql` — relaxes `tenant_modules.size` check to include `2x2` and seeds `news_hero_slider`, `image_slider`, `google_maps` in `modules_catalog`.
 - **Tenant-scoped Operations**: Always ensure tenant context is correctly applied to prevent data leakage. `assertTenantAccess` is crucial.
 - **RLS**: Supabase Row Level Security is fundamental for data isolation and access control; understand its implications before making schema changes.
 - **Email Templates**: New tenants lazily seed `staff_invite` email templates; ensure consistency if modifying default templates.

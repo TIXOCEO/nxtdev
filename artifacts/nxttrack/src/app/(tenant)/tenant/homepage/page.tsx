@@ -3,6 +3,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getTenantHomepageModules, getModuleCatalog } from "@/lib/db/homepage";
 import { listEnabledCustomPages, buildPageTree } from "@/lib/db/custom-pages";
+import { getPublicNewsCategories } from "@/lib/db/public-tenant";
 import { HomepageBuilder } from "@/components/tenant/homepage/homepage-builder";
 import type { PageOption } from "@/components/tenant/homepage/module-config-editor";
 
@@ -27,10 +28,11 @@ export default async function TenantHomepageBuilderPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const [modules, catalog, customPages] = await Promise.all([
+  const [modules, catalog, customPages, newsCategories] = await Promise.all([
     getTenantHomepageModules(result.tenant.id),
     getModuleCatalog(),
     listEnabledCustomPages(result.tenant.id),
+    getPublicNewsCategories(result.tenant.id),
   ]);
   const pages = flattenPaths(buildPageTree(customPages));
 
@@ -45,6 +47,7 @@ export default async function TenantHomepageBuilderPage() {
         initialModules={modules}
         catalog={catalog}
         pages={pages}
+        newsCategories={newsCategories.map((c) => ({ id: c.id, name: c.name }))}
       />
     </>
   );

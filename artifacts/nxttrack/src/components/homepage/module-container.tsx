@@ -12,8 +12,10 @@ export interface ModuleContainerProps {
 }
 
 /**
- * Shared visual shell for every homepage module.
- * Rounded, subtle border, title top-left, optional link top-right.
+ * Sprint 29 — Shared visual shell voor elke homepage-module.
+ * De container vult 100% van de hoogte die het grid-item krijgt.
+ * Content die niet past krijgt een interne scrollbar; de container
+ * zelf beweegt nooit.
  */
 export function ModuleContainer({
   title,
@@ -24,9 +26,7 @@ export function ModuleContainer({
 }: ModuleContainerProps) {
   return (
     <section
-      // Min-height op mobile zorgt dat alle modules ongeveer dezelfde hoogte
-      // hebben als de hero slider (220px), zodat de pagina visueel rustig is.
-      className={`flex h-full min-h-[220px] flex-col rounded-[var(--radius-nxt-lg)] border sm:min-h-[260px] ${className ?? ""}`}
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-nxt-lg)] border ${className ?? ""}`}
       style={{
         backgroundColor: "var(--surface-main)",
         borderColor: "var(--surface-border)",
@@ -34,9 +34,7 @@ export function ModuleContainer({
       }}
     >
       {(title || action) && (
-        <header
-          className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5"
-        >
+        <header className="flex shrink-0 items-center justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5">
           {title ? (
             <h2
               className="min-w-0 truncate text-sm font-semibold sm:text-base"
@@ -58,7 +56,13 @@ export function ModuleContainer({
           )}
         </header>
       )}
-      <div className={padded ? "flex-1 px-4 py-4 sm:px-5 sm:py-5" : "flex-1"}>
+      <div
+        className={
+          padded
+            ? "min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 [scrollbar-width:thin]"
+            : "min-h-0 flex-1 overflow-hidden"
+        }
+      >
         {children}
       </div>
     </section>
