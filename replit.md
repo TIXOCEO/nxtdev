@@ -69,7 +69,7 @@ I prefer the AI to
 
 ## Gotchas
 
-- **Manual Supabase migrations (VPS)**: Run new sprint SQL files in `artifacts/nxttrack/supabase/` against the production DB in order. Most recent: `sprint30_trainer_bio.sql` — adds `tenant_roles.is_trainer_role`, `trainer_bio_sections/fields/answers` tables with RLS, `seed_trainer_bio_template` RPC and `trainer_cards` entry in `modules_catalog`.
+- **Manual Supabase migrations (VPS)**: Run new sprint SQL files in `artifacts/nxttrack/supabase/` against the production DB in order. Apply in this order: `sprint30_trainer_bio.sql` (adds `tenant_roles.is_trainer_role`, `trainer_bio_sections/fields/answers` tables with RLS, `seed_trainer_bio_template` RPC and `trainer_cards` entry in `modules_catalog`), then `sprint30_payments_v2.sql` (adds `is_default` on `membership_plans` & `payment_methods` (one-default partial-unique index), extends `membership_payment_logs` with `amount_expected`/`amount_paid`/`period`/`due_date`/`parent_payment_id`/`original_amount_paid`, broadens status check (paid|due|partial|overdue|refunded|cancelled|waived), creates `membership_payment_audit` (payment_id nullable + ON DELETE SET NULL) plus atomic `set_membership_plan_default` / `set_payment_method_default` RPCs, and adds `ended_at`/`end_reason` on `member_memberships` (status enum incl. `ended`)).
 - **Tenant-scoped Operations**: Always ensure tenant context is correctly applied to prevent data leakage. `assertTenantAccess` is crucial.
 - **RLS**: Supabase Row Level Security is fundamental for data isolation and access control; understand its implications before making schema changes.
 - **Email Templates**: New tenants lazily seed `staff_invite` email templates; ensure consistency if modifying default templates.

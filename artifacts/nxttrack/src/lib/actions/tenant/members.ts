@@ -65,6 +65,61 @@ export async function createMember(
     if (roleErr) return fail(roleErr.message);
   }
 
+  // Sprint 30 — auto-assign tenant-default plan + payment-method.
+  // Errors worden niet meer stil geslikt: ze komen als actionable fail()
+  // terug zodat de UI de tenant-admin kan informeren en handmatig kan
+  // bijsturen (lid is dan al aangemaakt; defaults kunnen via de
+  // ledendetail later toegevoegd worden — idempotent retrybaar).
+  const { data: defPlan, error: defPlanErr } = await supabase
+    .from("membership_plans")
+    .select("id")
+    .eq("tenant_id", parsed.data.tenant_id)
+    .eq("is_default", true)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (defPlanErr) return fail(`Standaard abonnement ophalen mislukt: ${defPlanErr.message}`);
+  if (defPlan) {
+    const { error: planInsErr } = await supabase
+      .from("member_memberships")
+      .insert({
+        member_id: created.id,
+        membership_plan_id: (defPlan as { id: string }).id,
+        status: "active",
+        start_date: new Date().toISOString().slice(0, 10),
+      });
+    if (planInsErr) {
+      return fail(`Standaard abonnement koppelen mislukt: ${planInsErr.message}`);
+    }
+  }
+
+  const isStaffOrTrainer =
+    roles.includes("trainer") || roles.includes("staff");
+  if (!isStaffOrTrainer) {
+    const { data: defPm, error: defPmErr } = await supabase
+      .from("payment_methods")
+      .select("id")
+      .eq("tenant_id", parsed.data.tenant_id)
+      .eq("is_default", true)
+      .is("archived_at", null)
+      .maybeSingle();
+    if (defPmErr) return fail(`Standaard methode ophalen mislukt: ${defPmErr.message}`);
+    if (defPm) {
+      const { error: pmInsErr } = await supabase
+        .from("member_financial_details")
+        .upsert(
+          {
+            member_id: created.id,
+            tenant_id: parsed.data.tenant_id,
+            payment_method_id: (defPm as { id: string }).id,
+          },
+          { onConflict: "member_id" },
+        );
+      if (pmInsErr) {
+        return fail(`Standaard methode koppelen mislukt: ${pmInsErr.message}`);
+      }
+    }
+  }
+
   revalidatePath("/tenant/members");
   return { ok: true, data: { id: created.id } };
 }

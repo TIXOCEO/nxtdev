@@ -24,7 +24,14 @@ import { getActivePaymentMethods } from "@/lib/db/payment-methods";
 import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
 import { GroupSelector } from "@/components/tenant/group-selector";
 import { MembershipCard } from "@/components/tenant/membership-card";
-import { PaymentLog } from "@/components/tenant/payment-log";
+import { PaymentsTable } from "@/components/tenant/payments-table";
+import { EndMembershipButton } from "@/components/tenant/end-membership-button";
+import { UpcomingPaymentCard } from "@/components/tenant/upcoming-payment-card";
+import { getTenantDefaults } from "@/lib/actions/tenant/payments";
+import {
+  computeUpcomingPayment,
+  pickVisibleUpcoming,
+} from "@/lib/payments/upcoming";
 import { TrainerPublicSettings } from "@/components/tenant/members/trainer-public-settings";
 import { FinancialTab } from "@/app/t/[slug]/profile/_financial-tab";
 import { maskIban } from "@/lib/iban";
@@ -33,7 +40,6 @@ import { ArchiveButton, UnlinkChildButton } from "./_archive-controls";
 import {
   LinkChildForm,
   AssignPlanForm,
-  LogPaymentForm,
   GenerateMinorCodeButton,
 } from "./_member-detail-actions";
 
@@ -72,17 +78,19 @@ export default async function MemberDetailPage({ params }: PageProps) {
   const canViewFinancial = isAdmin || explicitPerms.includes("members.financial.view");
   const canManageFinancial = isAdmin || explicitPerms.includes("members.financial.manage");
 
-  const [allGroups, allPlans, allMembers, financialRow, paymentMethods] = await Promise.all([
-    getGroupsByTenant(result.tenant.id),
-    getPlansByTenant(result.tenant.id),
-    getMembersByTenant(result.tenant.id),
-    canViewFinancial
-      ? getMemberFinancialDetails(data.member.id, result.tenant.id)
-      : Promise.resolve(null),
-    canViewFinancial
-      ? getActivePaymentMethods(result.tenant.id)
-      : Promise.resolve([]),
-  ]);
+  const [allGroups, allPlans, allMembers, financialRow, paymentMethods, defaults] =
+    await Promise.all([
+      getGroupsByTenant(result.tenant.id),
+      getPlansByTenant(result.tenant.id),
+      getMembersByTenant(result.tenant.id),
+      canViewFinancial
+        ? getMemberFinancialDetails(data.member.id, result.tenant.id)
+        : Promise.resolve(null),
+      // Sprint 30 — payments table mag altijd de actieve methoden zien zodat
+      // tenant-admins een betaling kunnen koppelen, ook zonder financial-perm.
+      getActivePaymentMethods(result.tenant.id),
+      getTenantDefaults(result.tenant.id),
+    ]);
 
   const isParentRole = data.roles.some((r) => r.role === "parent");
   const isAthleteRole = data.roles.some((r) => r.role === "athlete");
@@ -355,8 +363,16 @@ export default async function MemberDetailPage({ params }: PageProps) {
         ) : (
           <ul className="space-y-2">
             {data.memberships.map((m) => (
-              <li key={m.id}>
+              <li key={m.id} className="space-y-2">
                 <MembershipCard membership={m} plan={m.plan} />
+                {m.status === "active" && (
+                  <div className="flex justify-end">
+                    <EndMembershipButton
+                      tenantId={result.tenant.id}
+                      memberMembershipId={m.id}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -382,20 +398,40 @@ export default async function MemberDetailPage({ params }: PageProps) {
         </Section>
       )}
 
-      {/* Section 9: Payment history */}
-      <Section title="Betaalhistorie" icon={<Receipt className="h-4 w-4" />}>
-        <PaymentLog payments={data.payments} />
-        {data.memberships.length > 0 && (
-          <div className="mt-4">
-            <LogPaymentForm
-              tenantId={result.tenant.id}
-              memberships={data.memberships.map((m) => ({
-                id: m.id,
-                label: m.plan?.name ?? "Onbekend abonnement",
-              }))}
-            />
-          </div>
-        )}
+      {/* Section 9: Payments (Sprint 30) — aankomend + historie */}
+      <Section title="Betalingen" icon={<Receipt className="h-4 w-4" />}>
+        {(() => {
+          // Aankomende-betaling tegels per actief abonnement, zelfde helper
+          // als de speler-zelf zijn profiel ziet, maar getoond in de admin-
+          // detail zodat tenant-admins zowel toekomstige als historische
+          // boekingen op één plek vinden.
+          const upcomingList = pickVisibleUpcoming(
+            data.memberships.map((m) =>
+              computeUpcomingPayment({
+                membership: m,
+                plan: m.plan ?? null,
+                paymentMethods,
+                payments: data.payments,
+              }),
+            ),
+          );
+          if (upcomingList.length === 0) return null;
+          return (
+            <div className="mb-4 space-y-2">
+              {upcomingList.map((u) => (
+                <UpcomingPaymentCard key={u.member_membership_id} upcoming={u} />
+              ))}
+            </div>
+          );
+        })()}
+        <PaymentsTable
+          tenantId={result.tenant.id}
+          memberId={data.member.id}
+          memberships={data.memberships}
+          payments={data.payments}
+          paymentMethods={paymentMethods}
+          defaultPaymentMethodId={defaults.payment_method?.id ?? null}
+        />
       </Section>
     </>
   );

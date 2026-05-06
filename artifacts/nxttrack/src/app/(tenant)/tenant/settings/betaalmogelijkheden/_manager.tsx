@@ -12,6 +12,7 @@ import {
 import { PAYMENT_METHOD_TYPES } from "@/lib/validation/payment-methods";
 import { formatIbanGroups } from "@/lib/iban";
 import type { PaymentMethod } from "@/types/database";
+import { PaymentMethodDefaultRadio } from "./_default-radio";
 
 const TYPE_LABEL: Record<string, string> = {
   contant: "Contant",
@@ -242,10 +243,12 @@ export function PaymentMethodsManager({
       )}
 
       <PaymentMethodList
+        tenantId={tenantId}
         rows={active}
         onEdit={openEdit}
         onArchive={archive}
         onUnarchive={null}
+        showDefaultRadio
       />
 
       {archived.length > 0 && (
@@ -254,10 +257,12 @@ export function PaymentMethodsManager({
             Gearchiveerd ({archived.length})
           </h3>
           <PaymentMethodList
+            tenantId={tenantId}
             rows={archived}
             onEdit={null}
             onArchive={null}
             onUnarchive={unarchive}
+            showDefaultRadio={false}
           />
         </>
       )}
@@ -272,15 +277,19 @@ export function PaymentMethodsManager({
 }
 
 function PaymentMethodList({
+  tenantId,
   rows,
   onEdit,
   onArchive,
   onUnarchive,
+  showDefaultRadio,
 }: {
+  tenantId: string;
   rows: PaymentMethod[];
   onEdit: ((m: PaymentMethod) => void) | null;
   onArchive: ((id: string) => void) | null;
   onUnarchive: ((id: string) => void) | null;
+  showDefaultRadio: boolean;
 }) {
   if (rows.length === 0) {
     return (
@@ -316,6 +325,13 @@ function PaymentMethodList({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {showDefaultRadio && (
+              <PaymentMethodDefaultRadio
+                tenantId={tenantId}
+                id={m.id}
+                isDefault={Boolean((m as PaymentMethod & { is_default?: boolean }).is_default)}
+              />
+            )}
             {onEdit && (
               <button
                 type="button"

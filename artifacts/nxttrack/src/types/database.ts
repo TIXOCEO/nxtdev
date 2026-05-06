@@ -303,6 +303,8 @@ export interface PaymentMethod {
   iban_for_rekening: string | null;
   sort_order: number;
   archived_at: string | null;
+  /** Sprint 30 — tenant-default methode; max 1 per tenant. */
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -345,10 +347,16 @@ export interface MembershipPlan {
   price: number | null;
   billing_period: BillingPeriod | string | null;
   is_active: boolean;
+  /** Sprint 30 — tenant-default plan; max 1 per tenant via partial unique. */
+  is_default: boolean;
   created_at: string;
 }
 
-export type MemberMembershipStatus = "active" | "paused" | "cancelled";
+export type MemberMembershipStatus =
+  | "active"
+  | "paused"
+  | "ended"
+  | "cancelled";
 
 export interface MemberMembership {
   id: string;
@@ -357,18 +365,53 @@ export interface MemberMembership {
   start_date: string | null;
   end_date: string | null;
   status: MemberMembershipStatus | string;
+  /** Sprint 30 — gezet door endMemberMembership. */
+  ended_at: string | null;
+  end_reason: string | null;
   created_at: string;
 }
 
-export type PaymentLogStatus = "paid" | "due" | "overdue" | "waived";
+export type PaymentLogStatus =
+  | "paid"
+  | "due"
+  | "partial"
+  | "overdue"
+  | "waived"
+  | "refunded"
+  | "cancelled";
+
+export type PaymentPeriod = "maand" | "jaar" | "anders";
 
 export interface MembershipPaymentLog {
   id: string;
   member_membership_id: string;
+  /** Legacy (Sprint 8). Bestaande rijen behouden hun waarde; nieuwe rijen
+   *  schrijven `amount_paid` en `amount_expected`. */
   amount: number | null;
+  amount_paid: number | null;
+  amount_expected: number | null;
   status: PaymentLogStatus | string;
   paid_at: string | null;
+  due_date: string | null;
+  period: PaymentPeriod | string | null;
+  membership_plan_id: string | null;
+  paid_via_payment_method_id: string | null;
+  parent_payment_id: string | null;
+  /** Snapshot van amount_paid vóór dat restant-children werden geboekt. */
+  original_amount_paid: number | null;
   note: string | null;
+  created_at: string;
+}
+
+export interface MembershipPaymentAudit {
+  id: string;
+  payment_id: string;
+  tenant_id: string;
+  actor_user_id: string | null;
+  action: "updated" | "deleted";
+  note: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
   created_at: string;
 }
 

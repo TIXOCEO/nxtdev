@@ -14,6 +14,11 @@ import { ProfileClientStatus } from "./_status";
 import { ProfileShell } from "./_profile-shell";
 import { getMemberFinancialDetails } from "@/lib/db/financial-details";
 import { getActivePaymentMethods } from "@/lib/db/payment-methods";
+import type {
+  MemberMembership,
+  MembershipPaymentLog,
+  MembershipPlan,
+} from "@/types/database";
 import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
 import { getMemberships } from "@/lib/auth/get-memberships";
 import { isPlatformAdmin, isTenantAdmin } from "@/lib/permissions";
@@ -100,6 +105,31 @@ export default async function PublicProfilePage({ params }: PageProps) {
     getMemberFinancialDetails(primary.id, tenant.id),
     getActivePaymentMethods(tenant.id),
   ]);
+
+  // Sprint 30 — eigen abonnementen + betalingen voor de Betalingen-tab.
+  const { data: ownMembershipRows } = await admin
+    .from("member_memberships")
+    .select("*, membership_plans(*)")
+    .eq("member_id", primary.id)
+    .order("start_date", { ascending: false });
+  const ownMemberships = ((ownMembershipRows ?? []) as Array<
+    MemberMembership & { membership_plans: MembershipPlan | null }
+  >).map(({ membership_plans, ...rest }) => ({
+    ...(rest as MemberMembership),
+    plan: membership_plans ?? null,
+  }));
+  let ownPayments: MembershipPaymentLog[] = [];
+  if (ownMemberships.length > 0) {
+    const { data: payRows } = await admin
+      .from("membership_payment_logs")
+      .select("*")
+      .in(
+        "member_membership_id",
+        ownMemberships.map((m) => m.id),
+      )
+      .order("due_date", { ascending: false, nullsFirst: false });
+    ownPayments = (payRows ?? []) as MembershipPaymentLog[];
+  }
 
   const platformOrTenantAdmin =
     isPlatformAdmin(memberships) || isTenantAdmin(memberships, tenant.id);
@@ -240,6 +270,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
           canManageIban={canManageIban}
           children={childrenVM}
           athleteCodeDisplay={athleteCodeDisplay}
+          memberships={ownMemberships}
+          payments={ownPayments}
         />
 
         {groupNames.length > 0 && (

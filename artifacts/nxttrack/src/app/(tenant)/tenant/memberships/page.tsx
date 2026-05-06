@@ -6,6 +6,7 @@ import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
 import { NewPlanForm } from "./_new-plan-form";
 import { PlanToggle } from "./_plan-toggle";
+import { PlanDefaultRadio } from "./_plan-default-radio";
 
 export const dynamic = "force-dynamic";
 
@@ -88,12 +89,28 @@ export default async function TenantMembershipsPage() {
                       : ""}
                   </p>
                 </div>
-                <PlanToggle
-                  tenantId={result.tenant.id}
-                  id={p.id}
-                  isActive={p.is_active}
-                />
+                <div className="flex items-center gap-3">
+                  <PlanDefaultRadio
+                    tenantId={result.tenant.id}
+                    id={p.id}
+                    isDefault={p.is_default}
+                    disabled={!p.is_active}
+                  />
+                  <PlanToggle
+                    tenantId={result.tenant.id}
+                    id={p.id}
+                    isActive={p.is_active}
+                  />
+                </div>
               </div>
+              {p.is_default && (
+                <p
+                  className="mt-2 text-[11px] font-medium uppercase tracking-wide"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Wordt automatisch toegekend bij nieuwe leden.
+                </p>
+              )}
             </li>
           ))}
         </ul>

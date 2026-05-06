@@ -13,6 +13,7 @@ export const createMembershipPlanSchema = z.object({
     .default(null),
   billing_period: z.enum(BILLING_PERIODS).default("monthly"),
   is_active: z.boolean().default(true),
+  is_default: z.boolean().default(false),
 });
 
 export type CreateMembershipPlanInput = z.infer<typeof createMembershipPlanSchema>;

@@ -513,8 +513,49 @@ export async function createMemberWithInvite(
     if (roleErr) return fail(roleErr.message);
   }
 
-  // Optionele directe lidmaatschap-toewijzing (Sprint D admin-step).
-  const planId = v.assign_membership_plan_id?.trim();
+  // Sprint 30 — auto-assign tenant-default plan + payment-method als
+  // expliciete keuze ontbreekt zodat nieuw aangemaakte leden meteen het
+  // standaard-abonnement en de standaard-methode hebben.
+  const explicitPlanId = v.assign_membership_plan_id?.trim();
+  let planId = explicitPlanId;
+  if (!planId) {
+    const { data: defPlan } = await supabase
+      .from("membership_plans")
+      .select("id")
+      .eq("tenant_id", v.tenant_id)
+      .eq("is_default", true)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (defPlan) planId = (defPlan as { id: string }).id;
+  }
+  // Default payment-method op de financial-details rij plaatsen (best-effort,
+  // staf/trainer mogen geen financial-row krijgen).
+  const isStaff = v.roles.includes("trainer") || v.roles.includes("staff");
+  if (!isStaff) {
+    const { data: defPm } = await supabase
+      .from("payment_methods")
+      .select("id")
+      .eq("tenant_id", v.tenant_id)
+      .eq("is_default", true)
+      .is("archived_at", null)
+      .maybeSingle();
+    const defPmId = (defPm as { id: string } | null)?.id ?? null;
+    if (defPmId) {
+      await supabase
+        .from("member_financial_details")
+        .upsert(
+          {
+            member_id: created.id,
+            tenant_id: v.tenant_id,
+            payment_method_id: defPmId,
+          },
+          { onConflict: "member_id" },
+        );
+    }
+  }
+
+  // Optionele directe lidmaatschap-toewijzing (Sprint D admin-step) — of de
+  // tenant-default uit het blok hierboven.
   if (planId) {
     // Verifieer expliciet dat het plan bij dezelfde tenant hoort —
     // anders kunnen forged UUIDs cross-tenant koppelingen maken.

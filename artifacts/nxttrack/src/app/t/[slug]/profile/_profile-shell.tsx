@@ -8,7 +8,13 @@ import { SportTab, type SportMemberVM } from "./_sport-tab";
 import { FinancialTab, type FinancialVM } from "./_financial-tab";
 import { ChildrenTab, type ChildVM } from "./_children-tab";
 import { TrainerBioTab } from "./_trainer-bio-tab";
-import type { PaymentMethod } from "@/types/database";
+import { PaymentsTab } from "./_payments-tab";
+import type {
+  MemberMembership,
+  MembershipPaymentLog,
+  MembershipPlan,
+  PaymentMethod,
+} from "@/types/database";
 import type {
   TrainerBioAnswer,
   TrainerBioField,
@@ -35,9 +41,18 @@ export interface ProfileShellProps {
   canManageIban: boolean;
   children: ChildVM[];
   athleteCodeDisplay: string | null;
+  /** Sprint 30 — read-only Betalingen tab. */
+  memberships: Array<MemberMembership & { plan: MembershipPlan | null }>;
+  payments: MembershipPaymentLog[];
 }
 
-type TabKey = "general" | "children" | "sport" | "financial" | "trainer_bio";
+type TabKey =
+  | "general"
+  | "children"
+  | "sport"
+  | "financial"
+  | "trainer_bio"
+  | "payments";
 
 export function ProfileShell(props: ProfileShellProps) {
   const router = useRouter();
@@ -64,6 +79,7 @@ export function ProfileShell(props: ProfileShellProps) {
   const showFinancial = true; // self-or-admin gate is enforced server-side
   const showChildren = props.isParent;
   const showTrainerBio = props.isTrainer && props.trainerBio !== null;
+  const showPayments = props.memberships.length > 0 || props.payments.length > 0;
 
   return (
     <Tabs value={tab} onValueChange={onChange} className="w-full">
@@ -73,6 +89,7 @@ export function ProfileShell(props: ProfileShellProps) {
         {showSport && <Trigger value="sport" label="Sport" />}
         {showFinancial && <Trigger value="financial" label="Financieel" />}
         {showTrainerBio && <Trigger value="trainer_bio" label="Trainersbio" />}
+        {showPayments && <Trigger value="payments" label="Betalingen" />}
       </TabsList>
 
       <TabsContent value="general" className="mt-4">
@@ -120,6 +137,16 @@ export function ProfileShell(props: ProfileShellProps) {
             sections={props.trainerBio.sections}
             fields={props.trainerBio.fields}
             answers={props.trainerBio.answers}
+          />
+        </TabsContent>
+      )}
+
+      {showPayments && (
+        <TabsContent value="payments" className="mt-4">
+          <PaymentsTab
+            memberships={props.memberships}
+            payments={props.payments}
+            paymentMethods={props.paymentMethods}
           />
         </TabsContent>
       )}

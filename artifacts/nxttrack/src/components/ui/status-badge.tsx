@@ -1,6 +1,21 @@
 import { cn } from "@/lib/utils";
 
-export type StatusKind = "active" | "inactive" | "draft" | "published" | "archived" | "new";
+export type StatusKind =
+  | "active"
+  | "inactive"
+  | "draft"
+  | "published"
+  | "archived"
+  | "new"
+  | "paid"
+  | "due"
+  | "partial"
+  | "overdue"
+  | "waived"
+  | "refunded"
+  | "cancelled"
+  | "ended"
+  | "paused";
 
 const STYLES: Record<StatusKind, { bg: string; text: string; dot: string }> = {
   active:    { bg: "bg-emerald-50",  text: "text-emerald-700", dot: "bg-emerald-500" },
@@ -9,6 +24,15 @@ const STYLES: Record<StatusKind, { bg: string; text: string; dot: string }> = {
   published: { bg: "bg-emerald-50",  text: "text-emerald-700", dot: "bg-emerald-500" },
   archived:  { bg: "bg-zinc-100",    text: "text-zinc-600",    dot: "bg-zinc-400" },
   new:       { bg: "bg-sky-50",      text: "text-sky-700",     dot: "bg-sky-500" },
+  paid:      { bg: "bg-emerald-50",  text: "text-emerald-700", dot: "bg-emerald-500" },
+  due:       { bg: "bg-amber-50",    text: "text-amber-700",   dot: "bg-amber-500" },
+  partial:   { bg: "bg-orange-50",   text: "text-orange-700",  dot: "bg-orange-500" },
+  overdue:   { bg: "bg-red-50",      text: "text-red-700",     dot: "bg-red-500" },
+  waived:    { bg: "bg-zinc-100",    text: "text-zinc-600",    dot: "bg-zinc-400" },
+  refunded:  { bg: "bg-sky-50",      text: "text-sky-700",     dot: "bg-sky-500" },
+  cancelled: { bg: "bg-zinc-100",    text: "text-zinc-600",    dot: "bg-zinc-400" },
+  ended:     { bg: "bg-zinc-100",    text: "text-zinc-600",    dot: "bg-zinc-400" },
+  paused:    { bg: "bg-amber-50",    text: "text-amber-700",   dot: "bg-amber-500" },
 };
 
 export interface StatusBadgeProps {
