@@ -1,19 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type State = "working" | "error";
 
+// Module-level guard: voorkomt dat een dubbele mount (Next 15 / React
+// concurrent rendering / Suspense re-mount) twee gelijktijdige
+// setSession-calls afvuurt — die racen om dezelfde Supabase auth-lock
+// en geven "Lock was released because another request stole it".
+let didStart = false;
+
 export function AuthCallbackClient() {
   const router = useRouter();
   const params = useSearchParams();
   const [state, setState] = useState<State>("working");
   const [message, setMessage] = useState("");
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current || didStart) return;
+    startedRef.current = true;
+    didStart = true;
     let cancelled = false;
     // Watchdog: als er na 8s nog niets gebeurd is, laat een error zien
     // i.p.v. eindeloos spinnen (bv. wanneer Supabase magic-link uit staat
