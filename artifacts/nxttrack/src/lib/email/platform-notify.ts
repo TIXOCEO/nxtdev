@@ -2,7 +2,7 @@ import "server-only";
 
 import sgMail from "@sendgrid/mail";
 import { getEmailConfig } from "@/lib/config/email";
-import { platformSender } from "./resolve-sender";
+import { platformSender, resolveSender, type ResolvedSender } from "./resolve-sender";
 import { listPlatformAdmins } from "@/lib/db/platform-admins";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { appBaseUrl } from "@/lib/url";
@@ -27,6 +27,10 @@ export async function notifyPlatformAdmins(params: {
   html: string;
   text: string;
   triggerSource: string;
+  /** Optionele override: stuur uit naam van een tenant ipv het platform. */
+  from?: ResolvedSender;
+  /** Optionele Reply-To, bv. tenant contact-email. */
+  replyTo?: string;
 }): Promise<{ ok: boolean; sent: number; error?: string }> {
   try {
     const cfg = getEmailConfig();
@@ -37,13 +41,14 @@ export async function notifyPlatformAdmins(params: {
       return { ok: true, sent: 0 };
     }
 
-    const { fromName, fromEmail } = platformSender();
+    const { fromName, fromEmail } = params.from ?? platformSender();
     const recipients = admins.map((a) => a.email).filter(Boolean);
     if (recipients.length === 0) return { ok: true, sent: 0 };
 
     await sgMail.send({
       to: recipients,
       from: { email: fromEmail, name: fromName },
+      ...(params.replyTo ? { replyTo: params.replyTo } : {}),
       subject: params.subject,
       html: params.html,
       text: params.text,
@@ -131,33 +136,82 @@ export async function notifyPlatformOfRegistration(params: {
   const kind = isTryout ? "proefles" : "inschrijving";
   const subject = `Nieuwe ${kind} — ${params.tenantName}`;
 
-  // Brand-data ophalen voor de wrap (logo + primaire kleur + website + contact).
+  // Brand-data + email-settings ophalen — voor de visuele wrap én voor
+  // de tenant-sender (From:) en Reply-To.
   let brandedTenant:
-    | Pick<Tenant, "name" | "slug" | "logo_url" | "domain" | "contact_email" | "primary_color">
+    | Pick<
+        Tenant,
+        | "name"
+        | "slug"
+        | "logo_url"
+        | "domain"
+        | "contact_email"
+        | "primary_color"
+        | "email_domain_verified"
+      >
     | null = null;
+  let tenantSenderName: string | null = null;
+  let tenantReplyTo: string | null = null;
   if (params.tenantId) {
     try {
       const admin = createAdminClient();
-      const { data } = await admin
-        .from("tenants")
-        .select("name, slug, logo_url, domain, contact_email, primary_color")
-        .eq("id", params.tenantId)
-        .maybeSingle();
-      if (data) brandedTenant = data;
+      const [{ data: tdata }, { data: sdata }] = await Promise.all([
+        admin
+          .from("tenants")
+          .select(
+            "name, slug, logo_url, domain, contact_email, primary_color, email_domain_verified",
+          )
+          .eq("id", params.tenantId)
+          .maybeSingle(),
+        admin
+          .from("tenant_email_settings")
+          .select("default_sender_name, reply_to_email")
+          .eq("tenant_id", params.tenantId)
+          .maybeSingle(),
+      ]);
+      if (tdata) brandedTenant = tdata;
+      tenantSenderName = sdata?.default_sender_name ?? null;
+      tenantReplyTo = sdata?.reply_to_email ?? null;
     } catch {
       /* als brand-data niet lukt, vallen we terug op kale wrap met alleen naam */
     }
   }
 
+  // Tenant-sender bepalen via dezelfde regels als alle andere tenant-mails.
+  const senderTenant = brandedTenant ?? {
+    name: params.tenantName,
+    slug: params.tenantSlug,
+    domain: null,
+    contact_email: null,
+    email_domain_verified: false,
+  };
+  const tenantFrom = resolveSender(
+    senderTenant as Pick<Tenant, "name" | "slug" | "domain"> & {
+      email_domain_verified?: boolean | null;
+    },
+    tenantSenderName ? { default_sender_name: tenantSenderName } : null,
+  );
+  const replyTo =
+    tenantReplyTo ??
+    brandedTenant?.contact_email ??
+    undefined;
+
+  // Voor "self" (proefles voor zichzelf) staat de naam van de aanmelder
+  // in `child_name` (zie registrations-action). Voor "child" staat de
+  // naam van de ouder in `parent_name` en de naam van het kind in
+  // `child_name`. We tonen het label hier dus context-afhankelijk.
+  const isChildTarget = r.registration_target === "child";
+  const aanmelderNaam = isChildTarget ? r.parent_name : r.child_name ?? r.parent_name;
+
   const rows: string[] = [
     row("Tenant", `${params.tenantName} (${params.tenantSlug})`),
     row("Type", kind),
-    row("Doelgroep", r.registration_target === "child" ? "Voor een kind" : "Voor zichzelf"),
-    row("Naam (ouder/aanmelder)", r.parent_name),
+    row("Doelgroep", isChildTarget ? "Voor een kind" : "Voor zichzelf"),
+    row(isChildTarget ? "Naam ouder/aanmelder" : "Naam", aanmelderNaam),
     row("E-mail", r.parent_email),
     row("Telefoon", r.parent_phone),
   ];
-  if (r.registration_target === "child") {
+  if (isChildTarget) {
     rows.push(row("Naam kind", r.child_name));
   }
   if (r.date_of_birth) rows.push(row("Geboortedatum", r.date_of_birth));
@@ -227,5 +281,7 @@ export async function notifyPlatformOfRegistration(params: {
     html: wrapped.html,
     text: wrapped.text,
     triggerSource: isTryout ? "new_tryout" : "new_registration",
+    from: tenantFrom,
+    replyTo,
   });
 }
