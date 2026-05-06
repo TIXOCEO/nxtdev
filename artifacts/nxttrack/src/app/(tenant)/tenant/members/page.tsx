@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Archive, ArchiveRestore, ArrowUp, ArrowDown } from "lucide-react";
+import { Users, Archive, ArchiveRestore, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -118,6 +118,20 @@ export default async function TenantMembersPage({
   const activePlans = allPlans
     .filter((p) => p.is_active)
     .map((p) => ({ id: p.id, name: p.name }));
+
+  // Build CSV-export URL die hetzelfde filter + sortering meeneemt.
+  const buildExportHref = (): string => {
+    const params = new URLSearchParams();
+    if (showArchived) params.set("status", "archived");
+    if (memberSinceFrom) params.set("since_from", memberSinceFrom);
+    if (memberSinceTo) params.set("since_to", memberSinceTo);
+    params.set("sort", sortBy);
+    params.set("order", sortOrder);
+    const qs = params.toString();
+    return qs
+      ? `/tenant/members/export?${qs}`
+      : "/tenant/members/export";
+  };
 
   // Helper to build sort-toggle URLs that preserve other query params.
   const buildSortHref = (key: MemberSortKey): string => {
@@ -250,6 +264,18 @@ export default async function TenantMembersPage({
             Wis filter
           </Link>
         )}
+        <a
+          href={buildExportHref()}
+          className="ml-auto inline-flex h-9 items-center gap-1.5 self-end rounded-lg border px-3 text-xs font-semibold transition-colors"
+          style={{
+            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--surface-soft)",
+            color: "var(--text-primary)",
+          }}
+        >
+          <Download className="h-3.5 w-3.5" />
+          Exporteer CSV
+        </a>
       </form>
 
       {members.length === 0 ? (
