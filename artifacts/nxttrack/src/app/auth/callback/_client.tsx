@@ -53,7 +53,6 @@ export function AuthCallbackClient() {
           }
           return;
         }
-
         const hashRaw = window.location.hash.startsWith("#")
           ? window.location.hash.slice(1)
           : window.location.hash;
@@ -69,54 +68,65 @@ export function AuthCallbackClient() {
           return;
         }
 
+        // De browser-client heeft `detectSessionInUrl: true` (default) en
+        // parseert tokens uit de URL automatisch tijdens instantiatie.
+        // Onze taak: wachten tot de sessie is opgeslagen, dan doorsturen.
         const supabase = createClient();
 
-        // Drie ondersteunde varianten:
-        // 1. PKCE / code flow: `?code=<authcode>`
-        // 2. Query-style implicit: `?access_token=...&refresh_token=...`
-        // 3. Hash-style implicit:  `#access_token=...&refresh_token=...`
-        const code = params.get("code");
-        const accessToken =
-          fragment.get("access_token") ?? params.get("access_token");
-        const refreshToken =
-          fragment.get("refresh_token") ?? params.get("refresh_token");
+        // Wacht eerst op een SIGNED_IN event (race-vrij). Als die binnen
+        // 5s niet komt, val terug op een polling-getSession (voor het
+        // geval detectSessionInUrl al klaar was vóór de listener stond).
+        const session = await new Promise<{ ok: true } | { ok: false; error: string }>(
+          (resolve) => {
+            let settled = false;
+            const finish = (r: { ok: true } | { ok: false; error: string }) => {
+              if (settled) return;
+              settled = true;
+              resolve(r);
+            };
 
-        let setSessionError: { message: string } | null = null;
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          setSessionError = error ? { message: error.message } : null;
-        } else if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          setSessionError = error ? { message: error.message } : null;
-        } else {
-          if (!cancelled) {
-            window.clearTimeout(watchdog);
-            setState("error");
-            setMessage(
-              "Geen sessie-tokens ontvangen. Controleer in Supabase dat https://nxttrack.nl/auth/callback in de Redirect URLs staat.",
-            );
-          }
-          return;
-        }
+            const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+              if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+                supabase.auth.getSession().then(({ data }) => {
+                  if (data.session) {
+                    sub.subscription.unsubscribe();
+                    finish({ ok: true });
+                  }
+                });
+              }
+            });
 
-        const error = setSessionError;
+            // Poll-fallback (max 6s) — vangt het geval waarin
+            // detectSessionInUrl al klaar was vóór onze listener.
+            let attempts = 0;
+            const poll = window.setInterval(async () => {
+              attempts += 1;
+              const { data } = await supabase.auth.getSession();
+              if (data.session) {
+                window.clearInterval(poll);
+                sub.subscription.unsubscribe();
+                finish({ ok: true });
+              } else if (attempts >= 12) {
+                window.clearInterval(poll);
+                sub.subscription.unsubscribe();
+                finish({ ok: false, error: "Sessie kon niet worden opgeslagen." });
+              }
+            }, 500);
+          },
+        );
+
         window.clearTimeout(watchdog);
-        if (error) {
+        if (!session.ok) {
           if (!cancelled) {
             setState("error");
-            setMessage(error.message);
+            setMessage(session.error);
           }
           return;
         }
 
         // Schoon de fragment weg uit de URL voordat we doorsturen.
         window.history.replaceState(null, "", window.location.pathname);
-        // Gebruik hard navigate i.p.v. router.push omdat de doelroute
-        // (`/tenant/switch`) een Route Handler is die cookies set en
-        // direct redirect — Next router cachet daar minder netjes mee.
+        // Hard navigate naar de Route Handler die cookies set + redirect.
         window.location.replace(safeNext);
       } catch (e) {
         window.clearTimeout(watchdog);
