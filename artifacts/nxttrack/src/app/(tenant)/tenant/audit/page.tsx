@@ -7,6 +7,7 @@ import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getAuditLogs, getDistinctAuditActions } from "@/lib/db/audit-logs";
 import { getAuditRetentionMonths } from "@/lib/db/audit-retention";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { RetentionForm } from "./_retention-form";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ const ACTION_LABELS: Record<string, string> = {
   "role.delete": "Rol verwijderd",
   "role.assign": "Rollen toegewezen aan lid",
   "tenant_profile.update": "Vereniging-profiel bijgewerkt",
+  "tenant_profile.audit_retention.update": "Bewaartermijn audit-log bijgewerkt",
   "news.delete": "Nieuwsbericht verwijderd",
 };
 
@@ -243,6 +245,8 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
         </span>
         {retentionLabel}
       </div>
+
+      <RetentionForm tenantId={tenantId} currentMonths={retentionMonths} />
 
       <form
         method="get"
