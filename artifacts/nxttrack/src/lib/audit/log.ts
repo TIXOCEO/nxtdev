@@ -16,7 +16,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 
 export interface AuditEntry {
-  tenant_id: string;
+  /**
+   * Tenant context. `null` voor platform-niveau acties (bv. release notes
+   * beheer) — vereist dat `audit_logs.tenant_id` nullable is (zie
+   * `sprint31_release_notes.sql`).
+   */
+  tenant_id: string | null;
   actor_user_id: string;
   member_id?: string | null;
   action: string;

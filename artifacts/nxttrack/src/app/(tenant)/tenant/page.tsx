@@ -21,6 +21,8 @@ import {
   getTenantNewsOverview,
   getTenantRegistrationsOverview,
 } from "@/lib/db/tenant-admin";
+import { getLatestPublishedRelease } from "@/lib/db/releases";
+import { LatestReleaseCard } from "@/components/tenant/release-card";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +47,11 @@ export default async function TenantDashboardPage() {
   if (result.kind !== "ok") return null; // layout handled
 
   const tenantId = result.tenant.id;
-  const [stats, news, regs] = await Promise.all([
+  const [stats, news, regs, latestRelease] = await Promise.all([
     getTenantDashboardStats(tenantId),
     getTenantNewsOverview(tenantId, 5),
     getTenantRegistrationsOverview(tenantId, 5),
+    getLatestPublishedRelease(),
   ]);
 
   return (
@@ -66,6 +69,8 @@ export default async function TenantDashboardPage() {
           </Link>
         }
       />
+
+      <LatestReleaseCard release={latestRelease} />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <TenantStatCard label="News posts"   value={stats.newsTotal}          icon={Newspaper} />

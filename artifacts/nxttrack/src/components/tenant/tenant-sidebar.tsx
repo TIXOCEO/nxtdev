@@ -130,9 +130,16 @@ export interface TenantSidebarProps {
   primaryColor?: string | null;
   /** Query string (incl. leading `?`) preserved across nav links — used by platform admins. */
   queryString?: string;
+  /** Huidige (laatst gepubliceerde) NXTTRACK-versie, getoond onder "Powered by". */
+  currentVersion?: string | null;
 }
 
-export function TenantSidebar({ tenantName, primaryColor, queryString = "" }: TenantSidebarProps) {
+export function TenantSidebar({
+  tenantName,
+  primaryColor,
+  queryString = "",
+  currentVersion,
+}: TenantSidebarProps) {
   const pathname = usePathname();
   const swatch = primaryColor || "var(--accent)";
 
@@ -237,17 +244,30 @@ export function TenantSidebar({ tenantName, primaryColor, queryString = "" }: Te
         })}
       </nav>
 
-      <a
-        href="https://nxttrack.nl"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-auto flex items-center justify-center gap-2 border-t px-5 py-4 text-[11px] transition-opacity hover:opacity-80"
+      <div
+        className="mt-auto flex flex-col items-center gap-1 border-t px-5 py-4"
         style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
       >
-        <span>Powered by</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={NXTTRACK_LOGO} alt="NXTTRACK" className="h-4 w-auto" />
-      </a>
+        <a
+          href="https://nxttrack.nl"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-[11px] transition-opacity hover:opacity-80"
+        >
+          <span>Powered by</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={NXTTRACK_LOGO} alt="NXTTRACK" className="h-4 w-auto" />
+        </a>
+        {currentVersion ? (
+          <Link
+            href={`/tenant/releases${queryString}`}
+            className="font-mono text-[10px] tracking-wider transition-opacity hover:opacity-80"
+            title="Bekijk alle release notes"
+          >
+            v{currentVersion}
+          </Link>
+        ) : null}
+      </div>
     </aside>
   );
 }

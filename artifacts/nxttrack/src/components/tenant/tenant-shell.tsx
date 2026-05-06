@@ -13,6 +13,8 @@ export interface TenantShellProps {
   /** Slug + (optionele) custom domain — gebruikt voor "terug naar publieke site". */
   tenantSlug?: string;
   tenantDomain?: string | null;
+  /** Huidige (laatst gepubliceerde) NXTTRACK-versie, getoond onder "Powered by". */
+  currentVersion?: string | null;
 }
 
 export function TenantShell({
@@ -24,6 +26,7 @@ export function TenantShell({
   queryString = "",
   tenantSlug,
   tenantDomain,
+  currentVersion,
 }: TenantShellProps) {
   return (
     <div
@@ -38,6 +41,7 @@ export function TenantShell({
           tenantName={tenantName}
           primaryColor={primaryColor}
           queryString={queryString}
+          currentVersion={currentVersion}
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
