@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { UserRound, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { UserRound, Settings, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { signOutAction } from "@/lib/actions/auth";
+import { AdminHandoffButton } from "./admin-handoff-button";
 
 export interface ProfileMenuProps {
   slug: string;
@@ -36,11 +37,6 @@ export function ProfileMenu({ slug, email, displayName, isAdmin, tenantId }: Pro
   }
 
   const initials = initialsOf(displayName, email);
-  // Admin shell woont op het apex-domein, niet onder een tenant-subdomein.
-  // Daarom altijd absolute URL bouwen vanaf NEXT_PUBLIC_APP_URL.
-  const apex = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  const adminPath = tenantId ? `/tenant/switch?tenant=${tenantId}` : "/tenant";
-  const adminHref = `${apex}${adminPath}`;
 
   return (
     <DropdownMenu>
@@ -70,13 +66,10 @@ export function ProfileMenu({ slug, email, displayName, isAdmin, tenantId }: Pro
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {isAdmin && (
+        {isAdmin && tenantId && (
           <>
             <DropdownMenuItem asChild>
-              <Link href={adminHref} className="flex items-center gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                <span>Admin dashboard</span>
-              </Link>
+              <AdminHandoffButton tenantId={tenantId} next="/tenant" variant="menu" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>

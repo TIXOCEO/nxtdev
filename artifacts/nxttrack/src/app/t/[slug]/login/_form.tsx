@@ -28,26 +28,48 @@ export function TenantLoginForm({ slug }: TenantLoginFormProps) {
     setState("loading");
     setErrorMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error) {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        setState("error");
+        setErrorMessage(error.message);
+        return;
+      }
+      // Geef `next` mee zodat platform admins die via de tenant-login binnenkomen
+      // op de tenant-pagina blijven (en niet teruggestuurd worden naar /platform).
+      let sync: Awaited<ReturnType<typeof ensureProfileForCurrentUser>>;
+      try {
+        sync = await ensureProfileForCurrentUser(next);
+      } catch (e) {
+        console.error("[tenant-login] ensureProfileForCurrentUser threw", e);
+        setState("error");
+        setErrorMessage(
+          e instanceof Error
+            ? `Profielsynchronisatie mislukt: ${e.message}`
+            : "Profielsynchronisatie mislukt.",
+        );
+        return;
+      }
+      if (!sync.ok) {
+        setState("error");
+        setErrorMessage(sync.error ?? "Profielsynchronisatie mislukt.");
+        return;
+      }
+      // Hard navigate i.p.v. router.push — stabieler bij wisselen van
+      // route-group en voorkomt het zeldzame "blijft hangen" probleem
+      // wanneer router.push geen response triggert.
+      window.location.assign(sync.destination ?? next);
+    } catch (e) {
+      console.error("[tenant-login] unexpected error", e);
       setState("error");
-      setErrorMessage(error.message);
-      return;
+      setErrorMessage(
+        e instanceof Error ? e.message : "Onverwachte fout bij inloggen.",
+      );
     }
-    // Geef `next` mee zodat platform admins die via de tenant-login binnenkomen
-    // op de tenant-pagina blijven (en niet teruggestuurd worden naar /platform).
-    const sync = await ensureProfileForCurrentUser(next);
-    if (!sync.ok) {
-      setState("error");
-      setErrorMessage(sync.error ?? "Profielsynchronisatie mislukt.");
-      return;
-    }
-    router.push(sync.destination ?? next);
-    router.refresh();
   }
 
   return (

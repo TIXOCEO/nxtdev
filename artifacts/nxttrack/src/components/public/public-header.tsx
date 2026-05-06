@@ -6,6 +6,7 @@ import type { PublicNavKey } from "./public-sidebar";
 import { NotificationBell, type BellItem } from "./notification-bell";
 import { MessagesBell } from "./messages-bell";
 import { ProfileMenu } from "./profile-menu";
+import { AdminHandoffButton } from "./admin-handoff-button";
 import { getUser } from "@/lib/auth/get-user";
 import { getMemberships } from "@/lib/auth/get-memberships";
 import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
@@ -101,17 +102,7 @@ export async function PublicHeader({
         {isAuthenticated && user ? (
           <>
             {isAdmin && (
-              <Link
-                href={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/tenant/switch?tenant=${tenant.id}`}
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold"
-                style={{
-                  backgroundColor: "var(--accent)",
-                  color: "var(--text-primary)",
-                }}
-                title="Beheer deze tenant"
-              >
-                Admin
-              </Link>
+              <AdminHandoffButton tenantId={tenant.id} next="/tenant" />
             )}
             <MessagesBell slug={slug} unreadCount={messagesUnread} />
             <NotificationBell slug={slug} unreadCount={unread} items={bellItems} />

@@ -25,27 +25,46 @@ export function LoginForm() {
     setState("loading");
     setErrorMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        setState("error");
+        setErrorMessage(error.message);
+        return;
+      }
+
+      let sync: Awaited<ReturnType<typeof ensureProfileForCurrentUser>>;
+      try {
+        sync = await ensureProfileForCurrentUser(next || undefined);
+      } catch (e) {
+        console.error("[login] ensureProfileForCurrentUser threw", e);
+        setState("error");
+        setErrorMessage(
+          e instanceof Error
+            ? `Profielsynchronisatie mislukt: ${e.message}`
+            : "Failed to sync profile.",
+        );
+        return;
+      }
+      if (!sync.ok) {
+        setState("error");
+        setErrorMessage(sync.error ?? "Failed to sync profile.");
+        return;
+      }
+
+      window.location.assign(sync.destination ?? next ?? "/");
+    } catch (e) {
+      console.error("[login] unexpected error", e);
       setState("error");
-      setErrorMessage(error.message);
-      return;
+      setErrorMessage(
+        e instanceof Error ? e.message : "Unexpected error during login.",
+      );
     }
-
-    const sync = await ensureProfileForCurrentUser(next || undefined);
-    if (!sync.ok) {
-      setState("error");
-      setErrorMessage(sync.error ?? "Failed to sync profile.");
-      return;
-    }
-
-    router.push(sync.destination ?? next ?? "/");
-    router.refresh();
   }
 
   return (
