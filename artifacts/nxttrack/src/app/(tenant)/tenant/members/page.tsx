@@ -218,6 +218,7 @@ export default async function TenantMembersPage({
     if (memberSinceTo) params.set("since_to", memberSinceTo);
     for (const r of selectedRoles) params.append("role", r);
     if (selectedGroupId) params.set("group", selectedGroupId);
+    if (search) params.set("q", search);
     params.set("sort", sortBy);
     params.set("order", sortOrder);
     const qs = params.toString();

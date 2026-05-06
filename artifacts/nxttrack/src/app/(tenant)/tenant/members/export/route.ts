@@ -117,6 +117,7 @@ export async function GET(req: NextRequest) {
   );
   const groupParam = url.searchParams.get("group");
   const selectedGroupId = isUuid(groupParam) ? groupParam : null;
+  const searchQuery = (url.searchParams.get("q") ?? "").trim().slice(0, 100);
 
   const members = await getMembersByTenant(result.tenant.id, {
     onlyArchived: showArchived,
@@ -126,6 +127,7 @@ export async function GET(req: NextRequest) {
     sortOrder,
     roles: selectedRoles,
     groupId: selectedGroupId,
+    search: searchQuery || null,
   });
 
   const tenantSlug = result.tenant.slug ?? result.tenant.id;
