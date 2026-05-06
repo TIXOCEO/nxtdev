@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requirePlatformAdmin } from "@/lib/auth/require-platform-admin";
 import { recordAudit } from "@/lib/audit/log";
+import { notifyTenantsAboutRelease } from "@/lib/notifications/notify-release";
 import {
   createReleaseSchema,
   updateReleaseSchema,
@@ -74,6 +75,15 @@ export async function createRelease(
     },
   });
 
+  if (v.status === "published") {
+    try {
+      await notifyTenantsAboutRelease(data.id);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[releases] notify on create failed:", err);
+    }
+  }
+
   revalidateAll(data.id);
   return { ok: true, data };
 }
@@ -124,6 +134,15 @@ export async function updateRelease(
     },
   });
 
+  if (v.status === "published") {
+    try {
+      await notifyTenantsAboutRelease(v.id);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[releases] notify on update failed:", err);
+    }
+  }
+
   revalidateAll(v.id);
   return { ok: true, data };
 }
@@ -159,6 +178,15 @@ export async function setReleaseStatus(
     action: `platform.release.${parsed.data.status}`,
     meta: { release_id: parsed.data.id, status: parsed.data.status },
   });
+
+  if (parsed.data.status === "published") {
+    try {
+      await notifyTenantsAboutRelease(parsed.data.id);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[releases] notify on setStatus failed:", err);
+    }
+  }
 
   revalidateAll(parsed.data.id);
   return { ok: true, data: { id: parsed.data.id } };
