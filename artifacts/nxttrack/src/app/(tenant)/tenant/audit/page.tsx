@@ -6,6 +6,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getAuditLogs, getDistinctAuditActions } from "@/lib/db/audit-logs";
 import { getAuditRetentionMonths } from "@/lib/db/audit-retention";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -45,9 +46,80 @@ function fmtDateTime(iso: string): string {
   });
 }
 
-function fmtMeta(meta: Record<string, unknown>): string {
+function resolveRoleName(id: string, roleNames: Map<string, string>): string {
+  return roleNames.get(id) ?? id;
+}
+
+function formatRoleIdList(
+  raw: unknown,
+  roleNames: Map<string, string>,
+): string {
+  if (raw === null || raw === undefined || raw === "") return "—";
+  const ids = String(raw)
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  if (ids.length === 0) return "—";
+  return ids.map((id) => resolveRoleName(id, roleNames)).join(", ");
+}
+
+function fmtMeta(
+  action: string,
+  meta: Record<string, unknown>,
+  roleNames: Map<string, string>,
+): string {
   const keys = Object.keys(meta);
   if (keys.length === 0) return "";
+
+  // role.assign — meta has added/removed (comma-separated UUIDs) + total.
+  if (action === "role.assign") {
+    const parts: string[] = [];
+    if ("added" in meta) {
+      parts.push(`toegevoegd=${formatRoleIdList(meta.added, roleNames)}`);
+    }
+    if ("removed" in meta) {
+      parts.push(`verwijderd=${formatRoleIdList(meta.removed, roleNames)}`);
+    }
+    if ("total" in meta && meta.total !== null && meta.total !== undefined) {
+      parts.push(`totaal=${String(meta.total)}`);
+    }
+    // Append any other unknown keys verbatim so we don't silently drop info.
+    for (const k of keys) {
+      if (k === "added" || k === "removed" || k === "total") continue;
+      const v = meta[k];
+      parts.push(`${k}=${v === null ? "∅" : String(v)}`);
+    }
+    return parts.join(" · ");
+  }
+
+  // role.create / role.update / role.delete — show the role name, hide the id.
+  if (
+    action === "role.create" ||
+    action === "role.update" ||
+    action === "role.delete"
+  ) {
+    const parts: string[] = [];
+    const roleId = typeof meta.role_id === "string" ? meta.role_id : null;
+    const metaName =
+      typeof meta.role_name === "string" && meta.role_name.trim() !== ""
+        ? meta.role_name
+        : null;
+    const resolvedName = roleId
+      ? roleNames.get(roleId) ?? metaName ?? roleId
+      : metaName;
+    if (resolvedName) parts.push(`rol=${resolvedName}`);
+    else parts.push("rol=—");
+
+    for (const k of keys) {
+      if (k === "role_id" || k === "role_name") continue;
+      const v = meta[k];
+      if (v === null) parts.push(`${k}=∅`);
+      else if (typeof v === "boolean") parts.push(`${k}=${v ? "ja" : "nee"}`);
+      else parts.push(`${k}=${String(v)}`);
+    }
+    return parts.join(" · ");
+  }
+
   return keys
     .map((k) => {
       const v = meta[k];
@@ -56,6 +128,49 @@ function fmtMeta(meta: Record<string, unknown>): string {
       return `${k}=${String(v)}`;
     })
     .join(" · ");
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function collectRoleIdsFromRows(
+  rows: Array<{ action: string; meta: Record<string, unknown> }>,
+): string[] {
+  const ids = new Set<string>();
+  for (const r of rows) {
+    if (!r.action.startsWith("role.")) continue;
+    const m = r.meta;
+    if (typeof m.role_id === "string" && UUID_RE.test(m.role_id)) {
+      ids.add(m.role_id);
+    }
+    for (const key of ["added", "removed"] as const) {
+      const v = m[key];
+      if (typeof v !== "string" || v.length === 0) continue;
+      for (const part of v.split(",")) {
+        const id = part.trim();
+        if (UUID_RE.test(id)) ids.add(id);
+      }
+    }
+  }
+  return Array.from(ids);
+}
+
+async function fetchRoleNames(
+  tenantId: string,
+  ids: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (ids.length === 0) return map;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("tenant_roles")
+    .select("id, name")
+    .eq("tenant_id", tenantId)
+    .in("id", ids);
+  for (const row of (data ?? []) as Array<{ id: string; name: string }>) {
+    map.set(row.id, row.name);
+  }
+  return map;
 }
 
 interface PageProps {
@@ -90,6 +205,11 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
     getDistinctAuditActions(tenantId),
     getAuditRetentionMonths(tenantId),
   ]);
+
+  const roleNames = await fetchRoleNames(
+    tenantId,
+    collectRoleIdsFromRows(rows),
+  );
 
   const retentionLabel =
     retentionMonths === null
@@ -310,7 +430,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
                       className="px-4 py-2.5 text-xs"
                       style={{ color: "var(--text-secondary)" }}
                     >
-                      {fmtMeta(r.meta)}
+                      {fmtMeta(r.action, r.meta, roleNames)}
                     </td>
                   </tr>
                 ))}
