@@ -47,16 +47,19 @@ export function LatestReleaseCard({ release }: { release: PlatformRelease | null
           </div>
         </div>
         <Link
-          href="/tenant/releases"
+          href={release ? `/tenant/releases/${release.version}` : "/tenant/releases"}
           className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/5"
           style={{ color: "var(--text-secondary)" }}
         >
-          Alle releases <ArrowRight className="h-3 w-3" />
+          {release ? "Bekijk release" : "Alle releases"} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
 
       {release ? (
-        <>
+        <Link
+          href={`/tenant/releases/${release.version}`}
+          className="block rounded-lg transition-colors hover:bg-black/5"
+        >
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span
               className="rounded-md px-2 py-0.5 text-[11px] font-semibold"
@@ -74,7 +77,7 @@ export function LatestReleaseCard({ release }: { release: PlatformRelease | null
           <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>
             {release.summary}
           </p>
-        </>
+        </Link>
       ) : (
         <p className="mt-3 text-sm" style={{ color: "var(--text-secondary)" }}>
           Zodra het platform-team een release publiceert, zie je die hier terug.

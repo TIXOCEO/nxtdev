@@ -260,9 +260,9 @@ export function TenantSidebar({
         </a>
         {currentVersion ? (
           <Link
-            href={`/tenant/releases${queryString}`}
+            href={`/tenant/releases/${currentVersion}${queryString}`}
             className="font-mono text-[10px] tracking-wider transition-opacity hover:opacity-80"
-            title="Bekijk alle release notes"
+            title={`Bekijk release notes v${currentVersion}`}
           >
             v{currentVersion}
           </Link>

@@ -11,6 +11,10 @@ const RELEASE_EVENT_KEY = "platform_release_published";
 const NOTIFICATION_SOURCE = "platform_release_published";
 const RELEASE_PATH = "/tenant/releases";
 
+function releasePath(version: string): string {
+  return `${RELEASE_PATH}/${encodeURIComponent(version)}`;
+}
+
 function logErr(tag: string, err: unknown): void {
   // eslint-disable-next-line no-console
   console.error(
@@ -38,12 +42,15 @@ function buildContent(
   release: PlatformRelease,
   tenant: TenantInfo,
 ): { title: string; text: string; html: string; url: string } {
-  const url = tenantUrl({ slug: tenant.slug, domain: tenant.domain }, RELEASE_PATH);
+  const url = tenantUrl(
+    { slug: tenant.slug, domain: tenant.domain },
+    releasePath(release.version),
+  );
   const title = `Nieuwe release ${release.version}: ${release.title}`;
-  const text = `${release.summary}\n\nBekijk alle releases: ${url}`;
+  const text = `${release.summary}\n\nBekijk de release: ${url}`;
   const html =
     `<p>${escapeHtml(release.summary)}</p>` +
-    `<p><a href="${escapeHtml(url)}">Bekijk alle releases</a></p>`;
+    `<p><a href="${escapeHtml(url)}">Bekijk de release</a></p>`;
   return { title, text, html, url };
 }
 
