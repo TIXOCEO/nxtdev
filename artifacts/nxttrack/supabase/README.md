@@ -33,6 +33,7 @@ Draai in deze volgorde op een verse Supabase-database:
 | 22 | `sprint23c_public_registration.sql` | Aanvullingen voor publieke wizard |
 | 23 | `sprint24_admin_member_fields.sql` | `members.member_since` + `members.notes` (admin-only) |
 | 24 | `sprint25_rls_hardening.sql` | Belt-and-braces revoke voor anon op gevoelige tabellen |
+| 25 | `sprint26_audit_logs.sql` | `audit_logs` tabel + RLS (lezen door tenant-/platform-admin, schrijven via service-role) |
 
 ## Conventies
 

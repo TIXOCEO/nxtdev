@@ -27,6 +27,7 @@ import {
   Star,
   Rss,
   Send,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +117,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Algemeen",         icon: Settings,     href: "/tenant/settings" },
       { label: "Betaalmogelijkheden", icon: CreditCard, href: "/tenant/settings/betaalmogelijkheden" },
       { label: "Rollen & rechten", icon: ShieldCheck,  href: "/tenant/settings/roles" },
+      { label: "Audit-log",        icon: ScrollText,   href: "/tenant/audit" },
     ],
   },
 ];

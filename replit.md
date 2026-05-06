@@ -1,9 +1,64 @@
-# NXTTRACK Workspace
+# NXTTRACK
 
-## Overview
-NXTTRACK is a multi-tenant SaaS platform for managing sports academies. It provides a scalable and secure environment for public users, tenant administrators, and platform administrators. Key capabilities include public tenant pages (news, registration), tenant-specific administration (news, registration tracking, branding), and platform-level administration (tenant creation, management). The platform aims to streamline academy operations from public engagement to internal administration.
+NXTTRACK is a multi-tenant SaaS platform for managing sports academies, offering public, tenant, and platform administration features.
 
-## User Preferences
+## Run & Operate
+
+- **Run Dev**: `pnpm dev`
+- **Build**: `pnpm build`
+- **Typecheck**: `pnpm typecheck`
+- **Codegen**: `pnpm orval` (generates API clients)
+- **DB Push**: `pnpm drizzle-kit push:pg` (schema migrations)
+
+**Required Environment Variables**:
+- `DATABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SENDGRID_API_KEY`
+- `MAIL_DEFAULT_FROM_EMAIL`
+- `MARKETING_LEAD_RECIPIENT`
+
+## Stack
+
+- **Frameworks**: Next.js 15 (App Router), Express 5
+- **Runtime**: Node.js (latest LTS)
+- **ORM**: Drizzle ORM
+- **Validation**: Zod, React Hook Form
+- **Styling**: Tailwind CSS v4, shadcn/ui
+- **Build Tool**: pnpm (monorepo)
+- **Database**: PostgreSQL (Supabase)
+- **Authentication**: Supabase Auth
+
+## Where things live
+
+- **Frontend Application**: `artifacts/nxttrack/`
+- **Backend API Server**: `artifacts/api-server/`
+- **Database Schema**: `supabase/` (SQL migration files), `src/lib/db/schema.ts` (Drizzle schema)
+- **API Contracts**: `openapi.yaml` (for Orval codegen)
+- **Marketing Site Data**: `src/lib/marketing/site-data.ts`
+- **Theming**: CSS custom properties mapped to Tailwind v4, `src/components/theme-style-injector.tsx`
+- **Validation Schemas**: `src/lib/validation/`
+
+## Architecture decisions
+
+- **Monorepo Structure**: Centralized code and tooling using pnpm for `artifacts/nxttrack` (Next.js) and `artifacts/api-server` (Express).
+- **Tenant Resolution**: `middleware.ts` identifies tenants via subdomain or path, passing `x-tenant-slug` header.
+- **Role-Based Access Control (RBAC)**: Implemented with `isPlatformAdmin`, `isTenantAdmin`, `hasMembership`, enforced via SQL RLS and TypeScript helpers.
+- **Server Actions for Mutations**: Next.js Server Actions used for data mutations, secured with `assertTenantAccess` and Zod validation.
+- **Email Infrastructure**: SendGrid API for emails, with per-tenant sender resolution and customizable templates.
+
+## Product
+
+- **Public Tenant Pages**: Tenant-specific home, news, trial lessons, and registration with branding.
+- **Tenant Admin Dashboard**: Management for news, registrations, tenant profile, members, groups, and membership plans.
+- **Platform Admin Dashboard**: Tenant creation and management, master admin assignment.
+- **Marketing Site**: Apex domain public website for prospect acquisition with feature overviews, sector-specific pages, and contact forms.
+- **User Profile Management**: Users can manage general info, children, sports details, and financial information.
+- **Audit Logging**: Persistent `public.audit_logs` table for tracking key actions, viewable by tenant/platform admins.
+
+## User preferences
+
 I prefer the AI to
 - Focus on completing the tasks requested.
 - Use the existing libraries and frameworks.
@@ -12,58 +67,21 @@ I prefer the AI to
 - Not use many emojis.
 - Ask clarifying questions if something is unclear.
 
-## System Architecture
-NXTTRACK is a pnpm monorepo using Next.js 15 App Router, TypeScript, Tailwind CSS v4, shadcn/ui, and Supabase.
+## Gotchas
 
-### UI/UX Decisions
-- **Theming**: Uses CSS custom properties mapped to Tailwind v4 for consistent styling.
-- **Tenant Branding**: Tenants can apply a `primary_color` for custom branding on public pages.
-- **Responsiveness**: Implements mobile responsiveness using Tailwind and shadcn/ui components.
-- **Component Reusability**: Leverages shadcn/ui and custom components for consistent UI.
+- **Tenant-scoped Operations**: Always ensure tenant context is correctly applied to prevent data leakage. `assertTenantAccess` is crucial.
+- **RLS**: Supabase Row Level Security is fundamental for data isolation and access control; understand its implications before making schema changes.
+- **Email Templates**: New tenants lazily seed `staff_invite` email templates; ensure consistency if modifying default templates.
+- **Onboarding Rebuilds**: The onboarding flow has undergone significant rebuilds across multiple sprints; be aware of legacy paths vs. current implementations (e.g., `members` table is canonical for persons).
 
-### Technical Implementations
-- **Monorepo Structure**: Organized with `artifacts/nxttrack` (Next.js frontend) and `artifacts/api-server` (Express API).
-- **Database**: PostgreSQL with Drizzle ORM, hosted on Supabase.
-- **Authentication**: Email/password authentication managed by Supabase, with server-side and client-side session management. Platform admins create user accounts.
-- **Authorization & Permissions**: Role-Based Access Control (RBAC) with `isPlatformAdmin`, `isTenantAdmin`, `hasMembership`, enforced via SQL RLS and TypeScript helpers.
-- **Tenant Resolution**: `middleware.ts` identifies tenants from subdomain or path parameters, passing the slug via `x-tenant-slug` header.
-- **API Codegen**: Orval generates API clients from an OpenAPI specification.
-- **Data Access Layer**: Dedicated modules (`src/lib/db/*`) for specific database operations.
-- **Server Actions**: Next.js Server Actions handle data mutations, secured with `assertTenantAccess` and Zod validation.
-- **Rich Text Editor**: Integrated TipTap editor for news content creation, supporting rich formatting and image uploads.
+## Pointers
 
-### Feature Specifications
-- **Public Tenant Pages**: Routes for tenant home, news, trial lessons, and registration, with legacy redirects. Includes forms for trial lesson and membership registration, validated with RHF + Zod.
-- **Tenant Admin Dashboard**: Provides features for dashboard statistics, news management (CRUD, publish), tenant profile branding, and registration management. Includes member and group management with role-based access and membership plans.
-- **Email Infrastructure**: Supports email sending via the SendGrid API with per-tenant sender resolution and customizable templates. Email logs are maintained, and tenant domain verification is supported.
-- **Onboarding architectuur (Sprint 23 → Sprint G)**: Volledige rebuild van het onboarding-pad in 7 sprinten (A-G, Tasks #9-#15). Canonieke persoon-tabel is `members` (legacy `athletes` / `parent_athlete_links` blijven alleen voor reads). Belangrijke modellen: `members.account_type` (`athlete`/`minor_athlete`/`parent`/`trainer`/`staff`), uitgebreide `member_status` enum (incl. `invited`/`aspirant`/`archived`), soft-delete via `archived_at`+`archived_by` (list-queries excluden standaard), parent ↔ child via `member_links` (werkt vóór invite-acceptatie), invite-auto-link via `member_invites.child_member_id`. Financial-data is gescheiden in `member_financial_details` (1:1, IBAN + holder + payment_method_id) achter `members.financial.view/.manage`-permissies; tenants beheren `payment_methods` via `/tenant/settings/betaalmogelijkheden`. Onboarding-paden vragen géén IBAN/initialen/voorletters/rekeninghouder/payment-pref meer — dat staat alleen in de profiel-financiële tab. Migraties + run-volgorde in `artifacts/nxttrack/supabase/README.md`. Manueel testchecklist (14 scenario's): `artifacts/nxttrack/docs/onboarding-test-checklist.md`. RLS-hardening: `sprint25_rls_hardening.sql` revoket anon-grants op gevoelige tabellen (RLS doet het zware werk; revoke is belt-and-braces).
-- **Onboarding rebuild Sprint F (Task #14)**: Tenant-admin tooling. Nieuwe permissies `members.archive` + `settings.payment_methods.manage`. `updateMemberSchema` uitgebreid met first/last/birth/gender/player_type/adres/member_since/notes; nieuwe acties `unlinkParentChild`, `archiveMember`, `unarchiveMember`, en CRUD `payment-methods.ts` (allen via `assertTenantAccess` + `recordAudit`). `getMembersByTenant(tenantId, { includeArchived | onlyArchived })` en `getAllPaymentMethods()`. UI: members-lijst krijgt "Toon gearchiveerd"-toggle (`?status=archived`), member-detail is sections-based met admin-edit-form (alle Sprint 23/24-velden), archive-banner + knop, ouder/kind ontkoppelen, hergebruikte `FinancialTab` (admin-mode), nieuwe `/tenant/settings/betaalmogelijkheden` pagina met IBAN-validatie en archive-flow. Regressie-bescherming: `updateMember` veegt `archived_at` automatisch leeg als status terug naar non-archived gaat.
-- **Onboarding rebuild Sprint E (Task #13)**: User-shell profielpagina `/t/[slug]/profile` herbouwd met tabs (`_profile-shell.tsx` + shadcn `Tabs`, query-param `?tab=` zonder scroll-jump). Tabs: **Algemeen** (first/last/phone/birth/gender/adres), **Kinderen** (alleen voor parent — lijst + "voeg kind toe" zonder invite + bestaande koppelcode-flow via `linkMinorByCode`), **Sport** (player_type + read-only ATH-code afgeleid van member.id), **Financieel** (IBAN + tenaamstelling + payment_method, IBAN gemaskerd standaard, "Toon (30s)" reveal-flow met auto-mask). Server actions in `src/lib/actions/public/profile.ts`: `updateProfileGeneral`, `updateProfileSport`, `updateFinancialDetails`, `revealMemberIban`, `addChildAsParent` — allen achter `assertSelfOrTenantAdmin` gate (self via `members.user_id`, parent via `parentCanActForChild`, of platform/tenant-admin/explicit perm). IBAN-utility in `src/lib/iban.ts` (mod-97 validator, masker, NL-format check). Validatie in `src/lib/validation/profile.ts`. Permissie-catalog uitgebreid met `members.financial.view` + `members.financial.manage` (matchen RLS in `supabase/sprint23_onboarding_foundation.sql`). `addChildAsParent` is idempotent: dubbele submit met dezelfde voornaam+achternaam+geboortedatum geeft bestaand kind terug. Audit-shim `src/lib/audit/log.ts` (no-op, klaar voor Sprint F). Geen DDL — gebruikt enkel tabellen uit Sprint 23.
-- **Onboarding rebuild Sprint C (Task #11)**: Publieke onboarding-wizard op `/t/[slug]/inschrijven` (`RegistrationWizard` + primitives in `src/components/wizard/wizard.tsx`). Vier-stappen RHF-wizard (type → gegevens → kinderen (alleen voor parent) → bevestigen) met per-stap `trigger()`-validatie, geen URL-routing. Account-types: `parent`/`adult_athlete`/`trainer`/`staff` — trainer/staf alleen zichtbaar als `tenants.settings_json.public_staff_registration_enabled === true` (geen DDL). Server action `submitPublicRegistration` in `src/lib/actions/public/registrations.ts` schrijft via admin-client direct naar `members` (account_type + first_name/last_name + status `aspirant`/`pending`) + `member_roles`, voor parent ook één `members` per kind (account_type=`minor_athlete`) + `member_links`, of voor "koppel via koppelcode"-modus een `member_links`-rij naar `member_invites.child_member_id` (lookup tenant-scoped). Daarna één `member_invites` rij + fire-and-forget `dispatchInvite()` (geëxporteerd uit `src/lib/actions/tenant/invites.ts`) zodat de inschrijver een wachtwoord kan instellen. Validatie in `publicOnboardingSchema` (`src/lib/validation/public-registration.ts`). Legacy `submitPublicRegistration` hernoemd naar `submitLegacyPublicRegistration`. Oude `MembershipRegistrationForm` blijft in de codebase maar wordt niet meer gebruikt.
-- **Onboarding rebuild Sprint B (Task #10)**: `minor_parent_link` invites met `child_member_id` lopen via een nieuw direct pad (`AcceptMinorDirectForm` + server action `acceptMinorParentInvite`). De ouder voltooit naam+wachtwoord in één stap, krijgt een auth-account én wordt automatisch via `member_links` gekoppeld aan het kind — geen losse koppelcode of pre-login meer nodig. Schema `acceptMinorParentSchema` spiegelt `acceptAdultInviteSchema`. Legacy invites zonder `child_member_id` blijven via `AcceptMinorLinkForm` (login + klik) lopen; `linkMinorByCode` blijft als profiel-fallback bestaan. Defaults voor naam komen uit `member_invites.prefill_data` (helper `prefillName` in invite/page.tsx). Na succes redirect naar `/t/{slug}/login?next=/t/{slug}/profile` (admin-API maakt geen sessie aan).
-- **Staff/trainer invite flow (Sprint 21)**: Tenant-admin "lid toevoegen" form supports a dedicated `staff_account` invite type (next to the existing `trainer_account`). Both map to a new `staff_invite` email template that includes a `{{function_label}}` variable derived from the member's `member_roles` (trainer/staf, with fallback to the invite-type default). Acceptance flow re-uses the simple name+password `AcceptAdultInviteForm` — no player/keeper choice and no kids-add UI. Backward-compat: `dispatchInvite` lazily seeds the `staff_invite` template row from `DEFAULT_TEMPLATES` for tenants that were created before sprint 21 (idempotent insert before send). Optional bulk backfill SQL: `supabase/sprint21_staff_invite_template.sql`.
-- **Platform Admin Dashboard**: Allows platform administrators to manage tenants, including creation, editing, and master admin assignment. All actions are secured by `requirePlatformAdmin()`.
-- **Themes (Sprint 15)**: Platform-admin theme manager (light/dark sets, full CSS-var control, scope=platform|tenant). Tenants choose which themes are active for their members; users pick auto/light/dark. Runtime injection via `ThemeStyleInjector` (server-rendered `<style>` for both modes; wrapper class `theme-light`/`theme-dark`/`theme-auto` chosen from `nxt-mode` cookie or user preference; `theme-auto` uses `prefers-color-scheme`). Two seeded defaults: NXTTRACK Light/Dark.
-- **Custom Tenant Pages (Sprint 15)**: Tenant admins build menu + submenu pages with slug, optional auth-gate, on/off + show-in-menu flags. Routed at `/t/[slug]/p/[...path]`; reserved top-level slugs blocked. Renders inside `PublicTenantShell` and is auto-injected into the public sidebar under "Pagina's".
-- **Tenant SEO (Sprint 15)**: Per-tenant SEO defaults (title, template, description, og:image, og:site_name, twitter handle) plus per-page overrides keyed by `page_path`. News posts have their own `seo_*` columns for per-post automation. `composeMetadata()` builds Next.js `Metadata` from tenant + override + per-call hints; wired into `/t/[slug]/layout.tsx`, news index/detail, and custom pages.
-- **Apex Marketing Site (Dutch)**: Public marketing site at root domain (`nxttrack.nl`) for prospect acquisition. Built in `src/app/(marketing)/` route group, served alongside platform/tenant routes; `middleware.ts` skips apex/www so no rewrite conflict. Pages: home (`/`), features overview + 6 detail pages (`leerlingvolgsysteem`, `gamification`, `clubfeed`, `ledenbeheer`, `certificaten`, `communicatie`), voor-wie overview + 5 sector pages (`sportverenigingen`, `zwemscholen`, `sportscholen`, `academies`, `dansscholen`), `voor-sporters`, `prijzen` (op-maat tarieven), `roadmap`, `over-ons`, `contact`, `privacy`, `voorwaarden`. Shared data in `src/lib/marketing/site-data.ts` (FEATURES, SECTORS, PRIMARY_NAV, FOOTER_GROUPS, ROADMAP, STATS, TRUST_POINTS, HOW_IT_WORKS, SITE). Components in `src/components/marketing/`: `site-header` (NavigationMenu desktop + Sheet mobile, keyboard-a11y submenu), `site-footer`, `section`+`EyebrowHeading` (`as` prop voor h1/h2/h3), `scroll-reveal` (framer-motion met fallback), `icon-frame` (lucide-iconen als image-placeholders, lime/ivory/midnight tonen), `feature-card`, `cta-block`, `feature-detail` + `sector-detail` templates, `contact-form` (RHF + zodResolver). Stylering: lime accent #b6d83b (#3f5a08 voor tekst), rounded-3xl containers, light-mode only. Contactformulier via Server Action `src/lib/actions/marketing/contact.ts` met Zod-validatie (`src/lib/validation/marketing.ts`), honeypot `_company`, e-mail naar `MARKETING_LEAD_RECIPIENT` env (fallback `MAIL_DEFAULT_FROM_EMAIL` → `hallo@nxttrack.nl`) via bestaande `sendRawEmail`. SEO: per-page metadata, `sitemap.ts` + `robots.ts` op root. Logo geladen van `dgwebservices.nl` (toegevoegd aan `next.config.ts` `images.remotePatterns`). Root `<html lang="nl">`.
-
-### System Design Choices
-- **Monorepo**: Centralizes code and tooling.
-- **App Router**: Utilizes Next.js 15 for server components and routing.
-- **Supabase Integration**: Deep integration for Auth, Database, and Storage with extensive RLS.
-- **Server-Side Rendering (SSR) / Server Actions**: Enhances performance and security.
-- **Zod for Validation**: Ensures robust input validation.
-
-## External Dependencies
-- **Supabase**: Database (PostgreSQL), Authentication, Storage.
-- **Next.js 15**: Frontend framework.
-- **Express 5**: Backend API.
-- **Drizzle ORM**: PostgreSQL ORM.
-- **Tailwind CSS v4**: Styling.
-- **shadcn/ui**: Component library.
-- **lucide-react**: Icon library.
-- **Orval**: API client code generation.
-- **TipTap**: Rich text editor.
-- **@sendgrid/mail**: SendGrid HTTPS API client for outbound email.
-- **Zod**: Schema validation.
+- **Supabase Docs**: `https://supabase.com/docs`
+- **Next.js Docs**: `https://nextjs.org/docs`
+- **Drizzle ORM Docs**: `https://orm.drizzle.team/docs/overview`
+- **Tailwind CSS Docs**: `https://tailwindcss.com/docs`
+- **shadcn/ui Docs**: `https://ui.shadcn.com/docs`
+- **Zod Docs**: `https://zod.dev/`
+- **Orval Docs**: `https://orval.dev/docs`
+- **TipTap Docs**: `https://tiptap.dev/docs`
+- **SendGrid Docs**: `https://docs.sendgrid.com/`

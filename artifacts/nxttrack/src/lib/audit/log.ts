@@ -1,13 +1,18 @@
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
+
 /**
- * Sprint E — lightweight audit-log shim.
+ * Audit-log helper.
  *
- * There is no `audit_log` table in the schema yet. This helper provides a
- * stable API so future sprints can wire it to a real table without a
- * migration on every caller. For now it records to `req.log`-style
- * console output (server-side only) and returns void.
+ * Schrijft naar `public.audit_logs` (zie `supabase/sprint26_audit_logs.sql`)
+ * via de service-role client zodat RLS geen rol speelt op de write-pad.
+ * Lezen gebeurt onder authenticated met `has_tenant_access(tenant_id)`.
  *
- * Callers should NEVER include sensitive raw values (e.g. unmasked IBAN);
- * pass references instead (e.g. member id + action name).
+ * Best-effort: een falende insert mag de business-actie niet stuk maken.
+ * We loggen de fout naar de console en geven `void` terug.
+ *
+ * Callers mogen NOOIT gevoelige raw-waarden meegeven (bv. unmasked IBAN);
+ * geef referenties of booleans (`has_iban: true`).
  */
 
 export interface AuditEntry {
@@ -20,10 +25,28 @@ export interface AuditEntry {
 }
 
 export async function recordAudit(entry: AuditEntry): Promise<void> {
-  // Intentionally lightweight: server-side log line only.
-  // Sprint F/G can replace this body with a real DB insert without
-  // touching call sites.
-  if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
-    console.info("[audit]", JSON.stringify(entry));
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.from("audit_logs").insert({
+      tenant_id: entry.tenant_id,
+      actor_user_id: entry.actor_user_id,
+      member_id: entry.member_id ?? null,
+      action: entry.action,
+      meta: entry.meta ?? {},
+    });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error("[audit] insert failed:", error.message, {
+        action: entry.action,
+        tenant_id: entry.tenant_id,
+      });
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[audit] unexpected error:",
+      err instanceof Error ? err.message : err,
+      { action: entry.action, tenant_id: entry.tenant_id },
+    );
   }
 }
