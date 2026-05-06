@@ -3,14 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle } from "lucide-react";
-import { createBrowserClient } from "@supabase/ssr";
+import { applyAuthTokensAction } from "@/lib/actions/auth";
 
 type State = "working" | "error";
 
-// Module-level guard: voorkomt dat een dubbele mount (Next 15 / React
-// concurrent rendering / Suspense re-mount) twee gelijktijdige
-// setSession-calls afvuurt — die racen om dezelfde Supabase auth-lock
-// en geven "Lock was released because another request stole it".
 let didStart = false;
 
 export function AuthCallbackClient() {
@@ -25,24 +21,21 @@ export function AuthCallbackClient() {
     startedRef.current = true;
     didStart = true;
     let cancelled = false;
-    // Watchdog: als er na 8s nog niets gebeurd is, laat een error zien
-    // i.p.v. eindeloos spinnen (bv. wanneer Supabase magic-link uit staat
-    // en er geen tokens of error in fragment terechtkomen).
+
     const watchdog = window.setTimeout(() => {
       if (!cancelled) {
         setState("error");
         setMessage(
-          "Geen reactie van Supabase. Controleer of 'Magic Link' onder Auth → Providers → Email aanstaat, en dat https://nxttrack.nl/auth/callback in de Redirect URLs staat.",
+          "Geen reactie van de server. Controleer je internet en probeer opnieuw.",
         );
       }
-    }, 8000);
+    }, 12000);
+
     async function run() {
       try {
         const next = params.get("next");
         const safeNext = next && next.startsWith("/") ? next : "/tenant";
 
-        // Supabase kan errors zowel in de querystring als in de fragment
-        // zetten — afhankelijk van de auth-flow van het project.
         const queryError =
           params.get("error_description") ?? params.get("error");
         if (queryError) {
@@ -53,6 +46,7 @@ export function AuthCallbackClient() {
           }
           return;
         }
+
         const hashRaw = window.location.hash.startsWith("#")
           ? window.location.hash.slice(1)
           : window.location.hash;
@@ -68,10 +62,6 @@ export function AuthCallbackClient() {
           return;
         }
 
-        // Drie ondersteunde varianten:
-        // 1. PKCE / code flow: `?code=<authcode>`
-        // 2. Query implicit:   `?access_token=...&refresh_token=...`
-        // 3. Hash implicit:    `#access_token=...&refresh_token=...`
         const code = params.get("code");
         const accessToken =
           fragment.get("access_token") ?? params.get("access_token");
@@ -89,52 +79,34 @@ export function AuthCallbackClient() {
           return;
         }
 
-        // Speciale callback-client met detectSessionInUrl=false, zodat
-        // alleen onze handmatige set/exchange de auth-lock pakt — geen
-        // race meer met Supabase's eigen URL-parser.
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          { auth: { detectSessionInUrl: false } },
+        // Strip de fragment direct uit de URL — voorkomt dat eventuele
+        // andere browser-clients in de pagina hem alsnog proberen te
+        // parsen en op de auth-lock crashen.
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
         );
 
-        // Stale auth-state synchroon wegvegen uit storage — geen await,
-        // dus geen lock-conflict. setSession overschrijft daarna alles.
-        try {
-          for (let i = window.localStorage.length - 1; i >= 0; i--) {
-            const k = window.localStorage.key(i);
-            if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
-              window.localStorage.removeItem(k);
-            }
-          }
-        } catch {
-          /* private mode / disabled storage — negeren */
-        }
-
-        let setError: string | null = null;
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) setError = error.message;
-        } else if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) setError = error.message;
-        }
+        // Server-side de cookies wegschrijven. Geen browser-Supabase-client
+        // meer betrokken op deze pagina, dus geen lock-race meer mogelijk.
+        const result = await applyAuthTokensAction({
+          accessToken,
+          refreshToken,
+          code,
+        });
 
         window.clearTimeout(watchdog);
-        if (setError) {
+        if (!result.ok) {
           if (!cancelled) {
             setState("error");
-            setMessage(setError);
+            setMessage(result.error ?? "Sessie kon niet worden opgeslagen.");
           }
           return;
         }
 
-        // Schoon de fragment weg uit de URL voordat we doorsturen.
-        window.history.replaceState(null, "", window.location.pathname);
-        // Hard navigate naar de Route Handler die cookies set + redirect.
+        // Hard navigate naar de Route Handler die de active-tenant cookie
+        // set en doorstuurt naar de juiste pagina.
         window.location.replace(safeNext);
       } catch (e) {
         window.clearTimeout(watchdog);
@@ -156,42 +128,38 @@ export function AuthCallbackClient() {
       className="fixed inset-0 flex items-center justify-center p-6"
       style={{
         background:
-          "linear-gradient(135deg, var(--bg-viewport-start), var(--bg-viewport-end))",
+          "linear-gradient(180deg, var(--bg-viewport-start, #f5f7fb) 0%, var(--bg-viewport-end, #eef1f5) 100%)",
       }}
     >
-      <div
-        className="flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl p-8 text-center"
-        style={{
-          backgroundColor: "var(--bg-app)",
-          boxShadow: "0 8px 40px var(--shadow-color)",
-        }}
-      >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl text-center">
         {state === "working" ? (
           <>
-            <div
-              className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-              style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
-            />
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Bezig met inloggen…
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-gray-700" />
+            <h1 className="text-base font-semibold text-gray-900">
+              Bezig met inloggen...
+            </h1>
+            <p className="mt-1 text-xs text-gray-500">
+              Een ogenblik geduld, je wordt automatisch doorgestuurd.
             </p>
           </>
         ) : (
           <>
-            <AlertCircle className="h-6 w-6" style={{ color: "#b91c1c" }} />
-            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            <AlertCircle className="mx-auto mb-3 h-8 w-8 text-red-500" />
+            <h1 className="text-base font-semibold text-gray-900">
               Inloggen mislukt
-            </p>
-            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              {message || "Probeer het opnieuw."}
-            </p>
-            <a
-              href="/login"
-              className="mt-2 rounded-lg px-3 py-1.5 text-xs font-semibold"
-              style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+            </h1>
+            <p className="mt-2 text-xs text-gray-600">{message}</p>
+            <button
+              type="button"
+              onClick={() => router.replace("/login")}
+              className="mt-4 inline-flex items-center justify-center rounded-lg px-4 py-2 text-xs font-semibold"
+              style={{
+                backgroundColor: "var(--accent, #b6d83b)",
+                color: "var(--text-primary, #111)",
+              }}
             >
               Naar inlogpagina
-            </a>
+            </button>
           </>
         )}
       </div>

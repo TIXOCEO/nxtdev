@@ -78,3 +78,34 @@ export async function signOutAction(redirectTo?: string): Promise<void> {
   revalidatePath("/", "layout");
   redirect(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/");
 }
+
+/**
+ * Server-side handoff voor de /auth/callback pagina (zowel implicit-flow
+ * met fragment-tokens als PKCE met `?code=`).
+ *
+ * Volledig server-side om browser-lock-conflicten te vermijden: de
+ * callback-pagina heeft GEEN browser-Supabase-client meer nodig — wij
+ * schrijven de sessie-cookies hier server-side weg via @supabase/ssr,
+ * en middleware/server-componenten herkennen de sessie meteen daarna.
+ */
+export async function applyAuthTokensAction(input: {
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  code?: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  if (input.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(input.code);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+  if (input.accessToken && input.refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: input.accessToken,
+      refresh_token: input.refreshToken,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+  return { ok: false, error: "Geen sessie-tokens of code ontvangen." };
+}
