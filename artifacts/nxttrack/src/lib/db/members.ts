@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   Member,
   MemberRole,
@@ -13,17 +14,35 @@ import type {
 export interface MemberListRow extends Member {
   roles: string[];
   group_names: string[];
+  /** Sprint G — email of the admin who archived this member (only set on archived view). */
+  archived_by_email: string | null;
 }
 
 /**
  * List members for a tenant, with derived role names and group names.
  * Aggregations are done in JS to keep the SQL portable across PostgREST.
  */
+export type MemberSortKey =
+  | "name"
+  | "status"
+  | "member_since"
+  | "archived_at"
+  | "created_at";
+export type SortOrder = "asc" | "desc";
+
 export interface GetMembersOptions {
   /** Sprint F — when false (default) archived members are filtered out. */
   includeArchived?: boolean;
   /** Sprint F — when true, only archived members are returned. */
   onlyArchived?: boolean;
+  /** Sprint G — inclusive lower bound on `member_since` (ISO date yyyy-mm-dd). */
+  memberSinceFrom?: string | null;
+  /** Sprint G — inclusive upper bound on `member_since` (ISO date yyyy-mm-dd). */
+  memberSinceTo?: string | null;
+  /** Sprint G — column to sort by. */
+  sortBy?: MemberSortKey;
+  /** Sprint G — sort direction. */
+  sortOrder?: SortOrder;
 }
 
 export async function getMembersByTenant(
@@ -32,16 +51,35 @@ export async function getMembersByTenant(
 ): Promise<MemberListRow[]> {
   const supabase = await createClient();
 
+  const sortBy: MemberSortKey = opts.sortBy ?? "created_at";
+  const ascending = (opts.sortOrder ?? "desc") === "asc";
+  const sortColumn =
+    sortBy === "name"
+      ? "full_name"
+      : sortBy === "status"
+        ? "member_status"
+        : sortBy === "member_since"
+          ? "member_since"
+          : sortBy === "archived_at"
+            ? "archived_at"
+            : "created_at";
+
   const baseQuery = () => {
     let q = supabase
       .from("members")
       .select("*")
       .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false });
+      .order(sortColumn, { ascending, nullsFirst: false });
     if (opts.onlyArchived) {
       q = q.not("archived_at", "is", null);
     } else if (!opts.includeArchived) {
       q = q.is("archived_at", null);
+    }
+    if (opts.memberSinceFrom) {
+      q = q.gte("member_since", opts.memberSinceFrom);
+    }
+    if (opts.memberSinceTo) {
+      q = q.lte("member_since", opts.memberSinceTo);
     }
     return q;
   };
@@ -83,10 +121,42 @@ export async function getMembersByTenant(
     groupsByMember.set(gm.member_id, arr);
   }
 
-  return ((members ?? []) as Member[]).map((m) => ({
+  const memberRows = (members ?? []) as Member[];
+
+  // Sprint G — for the archived view, hydrate the email of the admin who
+  // archived each row. We only do this when explicitly requested, since it
+  // requires the admin client and N auth lookups.
+  const archivedByEmail = new Map<string, string>();
+  if (opts.onlyArchived) {
+    const actorIds = Array.from(
+      new Set(
+        memberRows
+          .map((m) => m.archived_by)
+          .filter((v): v is string => !!v),
+      ),
+    );
+    if (actorIds.length > 0) {
+      const admin = createAdminClient();
+      await Promise.all(
+        actorIds.map(async (id) => {
+          try {
+            const { data: u } = await admin.auth.admin.getUserById(id);
+            if (u?.user?.email) archivedByEmail.set(id, u.user.email);
+          } catch {
+            // Leave blank — UI falls back to "—".
+          }
+        }),
+      );
+    }
+  }
+
+  return memberRows.map((m) => ({
     ...m,
     roles: rolesByMember.get(m.id) ?? [],
     group_names: groupsByMember.get(m.id) ?? [],
+    archived_by_email: m.archived_by
+      ? archivedByEmail.get(m.archived_by) ?? null
+      : null,
   }));
 }
 

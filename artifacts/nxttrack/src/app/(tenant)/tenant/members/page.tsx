@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { Users, Archive, ArchiveRestore } from "lucide-react";
+import { Users, Archive, ArchiveRestore, ArrowUp, ArrowDown } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
-import { getMembersByTenant } from "@/lib/db/members";
+import {
+  getMembersByTenant,
+  type MemberSortKey,
+  type SortOrder,
+} from "@/lib/db/members";
 import { MemberCard } from "@/components/tenant/member-card";
 import { AddMemberWizard } from "./_add-member-wizard";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
@@ -23,6 +27,42 @@ const ROLE_LABELS: Record<string, string> = {
 
 interface Search {
   status?: string;
+  since_from?: string;
+  since_to?: string;
+  sort?: string;
+  order?: string;
+}
+
+const VALID_SORTS: MemberSortKey[] = [
+  "name",
+  "status",
+  "member_since",
+  "archived_at",
+  "created_at",
+];
+
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("nl-NL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function isValidIsoDate(s: string | undefined): s is string {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  // Reject niet-bestaande kalenderdata zoals 2026-99-99 voordat ze in de
+  // SQL-query terechtkomen.
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  );
 }
 
 export default async function TenantMembersPage({
@@ -33,12 +73,27 @@ export default async function TenantMembersPage({
   const sp = (await searchParams) ?? {};
   const showArchived = sp.status === "archived";
 
+  const memberSinceFrom = isValidIsoDate(sp.since_from) ? sp.since_from : null;
+  const memberSinceTo = isValidIsoDate(sp.since_to) ? sp.since_to : null;
+
+  const requestedSort = (sp.sort ?? "") as MemberSortKey;
+  const sortBy: MemberSortKey = VALID_SORTS.includes(requestedSort)
+    ? requestedSort
+    : showArchived
+      ? "archived_at"
+      : "created_at";
+  const sortOrder: SortOrder = sp.order === "asc" ? "asc" : "desc";
+
   const requested = await readActiveTenantCookie();
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
   const members = await getMembersByTenant(result.tenant.id, {
     onlyArchived: showArchived,
+    memberSinceFrom,
+    memberSinceTo,
+    sortBy,
+    sortOrder,
   });
   const existingParents = members
     .filter((m) => m.roles.includes("parent"))
@@ -63,6 +118,29 @@ export default async function TenantMembersPage({
   const activePlans = allPlans
     .filter((p) => p.is_active)
     .map((p) => ({ id: p.id, name: p.name }));
+
+  // Helper to build sort-toggle URLs that preserve other query params.
+  const buildSortHref = (key: MemberSortKey): string => {
+    const params = new URLSearchParams();
+    if (showArchived) params.set("status", "archived");
+    if (memberSinceFrom) params.set("since_from", memberSinceFrom);
+    if (memberSinceTo) params.set("since_to", memberSinceTo);
+    params.set("sort", key);
+    const nextOrder: SortOrder =
+      sortBy === key && sortOrder === "asc" ? "desc" : "asc";
+    params.set("order", nextOrder);
+    const qs = params.toString();
+    return qs ? `/tenant/members?${qs}` : "/tenant/members";
+  };
+
+  const SortIndicator = ({ col }: { col: MemberSortKey }) =>
+    sortBy === col ? (
+      sortOrder === "asc" ? (
+        <ArrowUp className="ml-1 inline h-3 w-3" />
+      ) : (
+        <ArrowDown className="ml-1 inline h-3 w-3" />
+      )
+    ) : null;
 
   return (
     <>
@@ -107,6 +185,73 @@ export default async function TenantMembersPage({
         }
       />
 
+      {/* Sprint G — datumfilter "Lid sinds". Plain GET-form zodat de URL
+          deelbaar/bookmarkbaar blijft en server-render snel is. */}
+      <form
+        method="get"
+        className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border p-3"
+        style={{
+          backgroundColor: "var(--surface-main)",
+          borderColor: "var(--surface-border)",
+        }}
+      >
+        {showArchived ? (
+          <input type="hidden" name="status" value="archived" />
+        ) : null}
+        {sortBy ? <input type="hidden" name="sort" value={sortBy} /> : null}
+        <input type="hidden" name="order" value={sortOrder} />
+        <label className="flex flex-col text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+          Lid sinds van
+          <input
+            type="date"
+            name="since_from"
+            defaultValue={memberSinceFrom ?? ""}
+            className="mt-1 h-9 rounded-lg border px-2 text-sm"
+            style={{
+              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--surface-soft)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </label>
+        <label className="flex flex-col text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+          tot
+          <input
+            type="date"
+            name="since_to"
+            defaultValue={memberSinceTo ?? ""}
+            className="mt-1 h-9 rounded-lg border px-2 text-sm"
+            style={{
+              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--surface-soft)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </label>
+        <button
+          type="submit"
+          className="h-9 rounded-lg border px-3 text-xs font-semibold"
+          style={{
+            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--accent)",
+            color: "var(--text-primary)",
+          }}
+        >
+          Filter
+        </button>
+        {(memberSinceFrom || memberSinceTo) && (
+          <Link
+            href={
+              showArchived ? "/tenant/members?status=archived" : "/tenant/members"
+            }
+            className="h-9 self-end rounded-lg px-3 text-xs font-medium leading-9"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Wis filter
+          </Link>
+        )}
+      </form>
+
       {members.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -129,6 +274,23 @@ export default async function TenantMembersPage({
                   groupNames={m.group_names}
                   href={`/tenant/members/${m.id}`}
                 />
+                {(m.member_since || (showArchived && m.archived_at)) && (
+                  <div
+                    className="mt-1 px-1 text-xs"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {m.member_since && (
+                      <span>Lid sinds {formatDate(m.member_since)}</span>
+                    )}
+                    {showArchived && m.archived_at && (
+                      <span>
+                        {m.member_since ? " · " : ""}
+                        Gearchiveerd {formatDate(m.archived_at)}
+                        {m.archived_by_email ? ` door ${m.archived_by_email}` : ""}
+                      </span>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -150,10 +312,38 @@ export default async function TenantMembersPage({
                   }}
                 >
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide">
-                    <th className="px-5 py-3">Naam</th>
+                    <th className="px-5 py-3">
+                      <Link href={buildSortHref("name")} className="inline-flex items-center hover:underline">
+                        Naam
+                        <SortIndicator col="name" />
+                      </Link>
+                    </th>
                     <th className="px-5 py-3">Rollen</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">Groepen</th>
+                    <th className="px-5 py-3">
+                      <Link href={buildSortHref("status")} className="inline-flex items-center hover:underline">
+                        Status
+                        <SortIndicator col="status" />
+                      </Link>
+                    </th>
+                    <th className="px-5 py-3">
+                      <Link href={buildSortHref("member_since")} className="inline-flex items-center hover:underline">
+                        Lid sinds
+                        <SortIndicator col="member_since" />
+                      </Link>
+                    </th>
+                    {showArchived ? (
+                      <>
+                        <th className="px-5 py-3">
+                          <Link href={buildSortHref("archived_at")} className="inline-flex items-center hover:underline">
+                            Gearchiveerd op
+                            <SortIndicator col="archived_at" />
+                          </Link>
+                        </th>
+                        <th className="px-5 py-3">Door</th>
+                      </>
+                    ) : (
+                      <th className="px-5 py-3">Groepen</th>
+                    )}
                     <th className="px-5 py-3 text-right">Acties</th>
                   </tr>
                 </thead>
@@ -183,11 +373,34 @@ export default async function TenantMembersPage({
                         <StatusBadge status={m.member_status} />
                       </td>
                       <td
-                        className="px-5 py-3 text-xs"
+                        className="px-5 py-3 text-xs whitespace-nowrap"
                         style={{ color: "var(--text-secondary)" }}
                       >
-                        {m.group_names.length > 0 ? m.group_names.join(", ") : "—"}
+                        {formatDate(m.member_since)}
                       </td>
+                      {showArchived ? (
+                        <>
+                          <td
+                            className="px-5 py-3 text-xs whitespace-nowrap"
+                            style={{ color: "var(--text-secondary)" }}
+                          >
+                            {formatDate(m.archived_at)}
+                          </td>
+                          <td
+                            className="px-5 py-3 text-xs"
+                            style={{ color: "var(--text-secondary)" }}
+                          >
+                            {m.archived_by_email ?? "—"}
+                          </td>
+                        </>
+                      ) : (
+                        <td
+                          className="px-5 py-3 text-xs"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {m.group_names.length > 0 ? m.group_names.join(", ") : "—"}
+                        </td>
+                      )}
                       <td className="px-5 py-3 text-right">
                         <a
                           href={`/tenant/members/${m.id}`}
