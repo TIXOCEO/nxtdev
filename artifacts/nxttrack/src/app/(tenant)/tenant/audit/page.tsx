@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getAuditLogs, getDistinctAuditActions } from "@/lib/db/audit-logs";
+import { getAuditRetentionMonths } from "@/lib/db/audit-retention";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +79,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
   const from = sp.from?.trim() ?? "";
   const to = sp.to?.trim() ?? "";
 
-  const [rows, distinctActions] = await Promise.all([
+  const [rows, distinctActions, retentionMonths] = await Promise.all([
     getAuditLogs({
       tenantId,
       action: action || null,
@@ -87,7 +88,17 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
       limit: 200,
     }),
     getDistinctAuditActions(tenantId),
+    getAuditRetentionMonths(tenantId),
   ]);
+
+  const retentionLabel =
+    retentionMonths === null
+      ? "Events worden nooit automatisch verwijderd."
+      : retentionMonths === 0
+        ? "Events worden bij de eerstvolgende nachtelijke opschoning verwijderd."
+        : `Events ouder dan ${retentionMonths} ${
+            retentionMonths === 1 ? "maand" : "maanden"
+          } worden nachtelijks automatisch verwijderd.`;
 
   return (
     <>
@@ -95,6 +106,23 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
         title="Audit-log"
         description="Laatste 200 acties op gevoelige gegevens binnen deze vereniging."
       />
+
+      <div
+        className="rounded-2xl border px-4 py-3 text-xs"
+        style={{
+          backgroundColor: "var(--surface-soft)",
+          borderColor: "var(--surface-border)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        <span
+          className="mr-1 font-semibold uppercase tracking-wide"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Bewaartermijn:
+        </span>
+        {retentionLabel}
+      </div>
 
       <form
         method="get"

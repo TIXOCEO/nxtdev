@@ -24,6 +24,8 @@ export interface Tenant {
   /** True once the tenant's `domain` is DKIM-verified with the email provider. */
   email_domain_verified: boolean;
   settings_json: Record<string, unknown>;
+  /** Per-tenant audit-log retentie in maanden. NULL = nooit opschonen. */
+  audit_retention_months: number | null;
   created_at: string;
   updated_at: string;
 }
