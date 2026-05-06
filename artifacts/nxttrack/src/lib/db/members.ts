@@ -210,6 +210,30 @@ export async function getMembersByTenant(
   }));
 }
 
+/**
+ * Count members for a tenant, respecting only the active/archived view.
+ * Used to render "X van Y leden" naast de filterbalk: Y is het totaal in de
+ * huidige view (actief of gearchiveerd) zonder verdere filters.
+ */
+export async function countMembersByTenant(
+  tenantId: string,
+  opts: { onlyArchived?: boolean } = {},
+): Promise<number> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("members")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+  if (opts.onlyArchived) {
+    q = q.not("archived_at", "is", null);
+  } else {
+    q = q.is("archived_at", null);
+  }
+  const { count, error } = await q;
+  if (error) throw new Error(`Failed to count members: ${error.message}`);
+  return count ?? 0;
+}
+
 export async function getMemberById(id: string, tenantId: string): Promise<Member | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

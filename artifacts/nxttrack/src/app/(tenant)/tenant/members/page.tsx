@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import {
+  countMembersByTenant,
   getMembersByTenant,
   type MemberSortKey,
   type SortOrder,
@@ -105,7 +106,7 @@ export default async function TenantMembersPage({
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const [members, allGroups] = await Promise.all([
+  const [members, allGroups, totalCount] = await Promise.all([
     getMembersByTenant(result.tenant.id, {
       onlyArchived: showArchived,
       memberSinceFrom,
@@ -116,6 +117,7 @@ export default async function TenantMembersPage({
       groupId: selectedGroupId,
     }),
     getGroupsByTenant(result.tenant.id),
+    countMembersByTenant(result.tenant.id, { onlyArchived: showArchived }),
   ]);
   const existingParents = members
     .filter((m) => m.roles.includes("parent"))
@@ -178,6 +180,11 @@ export default async function TenantMembersPage({
     !!memberSinceTo ||
     selectedRoles.length > 0 ||
     !!selectedGroupId;
+
+  const filteredCount = members.length;
+  const countLabel = hasFilter
+    ? `${filteredCount} van ${totalCount} ${totalCount === 1 ? "lid" : "leden"}`
+    : `${totalCount} ${totalCount === 1 ? "lid" : "leden"}`;
 
   const SortIndicator = ({ col }: { col: MemberSortKey }) =>
     sortBy === col ? (
@@ -353,6 +360,19 @@ export default async function TenantMembersPage({
           Exporteer CSV
         </a>
       </form>
+
+      <div
+        className="mb-3 flex items-center justify-between text-sm"
+        style={{ color: "var(--text-secondary)" }}
+        aria-live="polite"
+      >
+        <span>
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            {countLabel}
+          </span>
+          {hasFilter ? " (filters actief)" : ""}
+        </span>
+      </div>
 
       {members.length === 0 ? (
         <EmptyState
