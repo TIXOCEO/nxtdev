@@ -19,6 +19,15 @@ const ACTION_LABELS: Record<string, string> = {
   "payment_method.archive": "Betaalmethode gearchiveerd",
   "payment_method.unarchive": "Betaalmethode gedearchiveerd",
   "profile.child.add": "Kind toegevoegd via profiel",
+  "invite.create": "Uitnodiging verstuurd",
+  "invite.resend": "Uitnodiging opnieuw verstuurd",
+  "invite.revoke": "Uitnodiging ingetrokken",
+  "role.create": "Rol aangemaakt",
+  "role.update": "Rol bijgewerkt",
+  "role.delete": "Rol verwijderd",
+  "role.assign": "Rollen toegewezen aan lid",
+  "tenant_profile.update": "Vereniging-profiel bijgewerkt",
+  "news.delete": "Nieuwsbericht verwijderd",
 };
 
 function actionLabel(key: string): string {

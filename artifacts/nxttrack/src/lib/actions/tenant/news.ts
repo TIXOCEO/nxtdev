@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { assertTenantAccess } from "./_assert-access";
+import { recordAudit } from "@/lib/audit/log";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { getNotificationEvent } from "@/lib/db/notifications";
 import {
@@ -212,9 +213,17 @@ export async function deleteNewsPost(
   if (!/^[0-9a-f-]{36}$/i.test(id) || !/^[0-9a-f-]{36}$/i.test(tenantId)) {
     return fail("Invalid id");
   }
-  await assertTenantAccess(tenantId);
+  const user = await assertTenantAccess(tenantId);
 
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("news_posts")
+    .select("title, slug, status")
+    .eq("id", id)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("news_posts")
     .delete()
@@ -222,6 +231,19 @@ export async function deleteNewsPost(
     .eq("tenant_id", tenantId);
 
   if (error) return fail(error.message);
+
+  await recordAudit({
+    tenant_id: tenantId,
+    actor_user_id: user.id,
+    action: "news.delete",
+    meta: {
+      post_id: id,
+      title: (existing?.title as string | undefined) ?? null,
+      slug: (existing?.slug as string | undefined) ?? null,
+      status: (existing?.status as string | undefined) ?? null,
+    },
+  });
+
   revalidatePath("/tenant/news");
   return { ok: true, data: { id } };
 }

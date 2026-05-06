@@ -36,6 +36,7 @@ import {
 } from "./invite-statuses";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { ensureProfile } from "@/lib/auth/ensure-profile";
+import { recordAudit } from "@/lib/audit/log";
 import type {
   MemberInvite,
   Member,
@@ -600,6 +601,17 @@ export async function createMemberWithInvite(
       inviteId = ins.invite.id;
       const sent = await dispatchInvite(v.tenant_id, ins.invite, "manual_minor_invite");
       if (!sent.ok) return fail(sent.error ?? "Kon uitnodiging niet versturen.");
+      await recordAudit({
+        tenant_id: v.tenant_id,
+        actor_user_id: user.id,
+        member_id: created.id,
+        action: "invite.create",
+        meta: {
+          invite_id: ins.invite.id,
+          invite_type: ins.invite.invite_type,
+          email: ins.invite.email,
+        },
+      });
     }
   } else if (v.mode === "invite" && v.invite_type) {
     const settings = await loadInviteSettings(v.tenant_id);
@@ -616,6 +628,17 @@ export async function createMemberWithInvite(
     inviteId = ins.invite.id;
     const sent = await dispatchInvite(v.tenant_id, ins.invite, "manual_member_invite");
     if (!sent.ok) return fail(sent.error ?? "Kon uitnodiging niet versturen.");
+    await recordAudit({
+      tenant_id: v.tenant_id,
+      actor_user_id: user.id,
+      member_id: created.id,
+      action: "invite.create",
+      meta: {
+        invite_id: ins.invite.id,
+        invite_type: ins.invite.invite_type,
+        email: ins.invite.email,
+      },
+    });
   }
 
   revalidatePath("/tenant/members");
@@ -631,7 +654,7 @@ export async function resendInvite(
   const parsed = inviteIdSchema.safeParse(input);
   if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
 
-  await assertTenantAccess(parsed.data.tenant_id);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
   const admin = createAdminClient();
 
   const { data: inv } = await admin
@@ -682,6 +705,19 @@ export async function resendInvite(
   );
   if (!sent.ok) return fail(sent.error ?? "Kon uitnodiging niet versturen.");
 
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: invite.member_id ?? null,
+    action: "invite.resend",
+    meta: {
+      invite_id: invite.id,
+      invite_type: invite.invite_type,
+      email: invite.email,
+      resend_count: invite.resend_count + 1,
+    },
+  });
+
   revalidatePath("/tenant/invites");
   return { ok: true, data: { id: invite.id } };
 }
@@ -694,7 +730,7 @@ export async function revokeInvite(
   const parsed = inviteIdSchema.safeParse(input);
   if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
 
-  await assertTenantAccess(parsed.data.tenant_id);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -702,9 +738,21 @@ export async function revokeInvite(
     .update({ status: "revoked" })
     .eq("id", parsed.data.invite_id)
     .eq("tenant_id", parsed.data.tenant_id)
-    .select("id")
+    .select("id, member_id, invite_type, email")
     .single();
   if (error || !data) return fail(error?.message ?? "Kon uitnodiging niet intrekken.");
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: (data.member_id as string | null) ?? null,
+    action: "invite.revoke",
+    meta: {
+      invite_id: data.id as string,
+      invite_type: data.invite_type as string,
+      email: data.email as string,
+    },
+  });
 
   revalidatePath("/tenant/invites");
   return { ok: true, data: { id: data.id } };
@@ -1368,6 +1416,20 @@ export async function generateMinorLinkCode(
     parentName: (parent.full_name as string | null) ?? null,
   });
 
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: parsed.data.parent_member_id,
+    action: "invite.create",
+    meta: {
+      invite_id: ins.invite.id,
+      invite_type: ins.invite.invite_type,
+      email: ins.invite.email,
+      child_member_id: parsed.data.child_member_id,
+      source: "minor_link_code",
+    },
+  });
+
   revalidatePath(`/tenant/members/${parsed.data.parent_member_id}`);
   revalidatePath(`/tenant/members/${parsed.data.child_member_id}`);
   revalidatePath("/tenant/invites");
@@ -1511,6 +1573,19 @@ export async function convertRegistrationToMember(
     if (!("error" in ins)) {
       inviteId = ins.invite.id;
       await dispatchInvite(parsed.data.tenant_id, ins.invite, "registration_converted");
+      await recordAudit({
+        tenant_id: parsed.data.tenant_id,
+        actor_user_id: user.id,
+        member_id: parentMemberId,
+        action: "invite.create",
+        meta: {
+          invite_id: ins.invite.id,
+          invite_type: ins.invite.invite_type,
+          email: ins.invite.email,
+          source: "registration_converted",
+          registration_id: parsed.data.registration_id,
+        },
+      });
     }
 
     // Notification template (best-effort).

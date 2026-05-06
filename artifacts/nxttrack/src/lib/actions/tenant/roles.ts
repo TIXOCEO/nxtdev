@@ -6,6 +6,7 @@ import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidPermissionKey } from "@/lib/permissions/catalog";
 import { isSuperAdminRole } from "@/lib/roles/is-super-admin";
+import { recordAudit } from "@/lib/audit/log";
 import type { TenantRoleScope } from "@/types/database";
 
 export type ActionResult<T = void> =
@@ -38,13 +39,19 @@ interface ExistingRoleMin {
 export async function upsertTenantRole(
   input: z.infer<typeof upsertSchema>,
 ): Promise<ActionResult<{ id: string }>> {
-  await requireTenantAdmin(input.tenant_id);
+  const user = await requireTenantAdmin(input.tenant_id);
   const parsed = upsertSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldige invoer" };
   }
   const cleanPerms = Array.from(new Set(parsed.data.permissions.filter(isValidPermissionKey)));
   const admin = createAdminClient();
+
+  // Track what to audit; emit only after all writes (incl. permissions)
+  // have succeeded so a failed permission insert doesn't leave a misleading
+  // "completed" entry in the audit-log.
+  let auditAction: "role.create" | "role.update" | null = null;
+  let auditMeta: Record<string, string | number | boolean | null> = {};
 
   let roleId = parsed.data.id;
   if (roleId) {
@@ -67,6 +74,16 @@ export async function upsertTenantRole(
 
       // Garandeer dat super admin alle huidige permissies heeft.
       await syncSuperAdminPermissions(parsed.data.tenant_id, roleId);
+      await recordAudit({
+        tenant_id: parsed.data.tenant_id,
+        actor_user_id: user.id,
+        action: "role.update",
+        meta: {
+          role_id: roleId,
+          role_name: existingRow.name,
+          super_admin: true,
+        },
+      });
       revalidatePath("/tenant/settings/roles");
       return { ok: true, data: { id: roleId } };
     }
@@ -81,6 +98,12 @@ export async function upsertTenantRole(
       .eq("id", roleId)
       .eq("tenant_id", parsed.data.tenant_id);
     if (error) return { ok: false, error: error.message };
+    auditAction = "role.update";
+    auditMeta = {
+      role_id: roleId,
+      role_name: parsed.data.name,
+      permission_count: cleanPerms.length,
+    };
   } else {
     const newScope: TenantRoleScope = parsed.data.scope ?? "admin";
     const newSuperAdmin =
@@ -104,9 +127,28 @@ export async function upsertTenantRole(
 
     if (newSuperAdmin) {
       await syncSuperAdminPermissions(parsed.data.tenant_id, roleId);
+      await recordAudit({
+        tenant_id: parsed.data.tenant_id,
+        actor_user_id: user.id,
+        action: "role.create",
+        meta: {
+          role_id: roleId,
+          role_name: parsed.data.name,
+          scope: newScope,
+          super_admin: true,
+        },
+      });
       revalidatePath("/tenant/settings/roles");
       return { ok: true, data: { id: roleId } };
     }
+
+    auditAction = "role.create";
+    auditMeta = {
+      role_id: roleId,
+      role_name: parsed.data.name,
+      scope: newScope,
+      permission_count: cleanPerms.length,
+    };
   }
 
   // Replace permissions wholesale (niet voor super admin).
@@ -115,6 +157,15 @@ export async function upsertTenantRole(
     const rows = cleanPerms.map((p) => ({ role_id: roleId, permission: p }));
     const { error } = await admin.from("tenant_role_permissions").insert(rows);
     if (error) return { ok: false, error: error.message };
+  }
+
+  if (auditAction) {
+    await recordAudit({
+      tenant_id: parsed.data.tenant_id,
+      actor_user_id: user.id,
+      action: auditAction,
+      meta: auditMeta,
+    });
   }
 
   revalidatePath("/tenant/settings/roles");
@@ -128,18 +179,18 @@ const deleteSchema = z.object({
 export async function deleteTenantRole(
   input: z.infer<typeof deleteSchema>,
 ): Promise<ActionResult<void>> {
-  await requireTenantAdmin(input.tenant_id);
+  const user = await requireTenantAdmin(input.tenant_id);
   const parsed = deleteSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige id" };
   const admin = createAdminClient();
   const { data: row } = await admin
     .from("tenant_roles")
-    .select("is_system, is_super_admin")
+    .select("name, is_system, is_super_admin")
     .eq("id", parsed.data.id)
     .eq("tenant_id", parsed.data.tenant_id)
     .maybeSingle();
   if (!row) return { ok: false, error: "Rol niet gevonden." };
-  const r = row as { is_system: boolean; is_super_admin: boolean };
+  const r = row as { name: string; is_system: boolean; is_super_admin: boolean };
   if (r.is_super_admin) {
     return { ok: false, error: "Super admin rol kan niet verwijderd worden." };
   }
@@ -152,6 +203,12 @@ export async function deleteTenantRole(
     .eq("id", parsed.data.id)
     .eq("tenant_id", parsed.data.tenant_id);
   if (error) return { ok: false, error: error.message };
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    action: "role.delete",
+    meta: { role_id: parsed.data.id, role_name: r.name },
+  });
   revalidatePath("/tenant/settings/roles");
   return { ok: true, data: undefined };
 }
@@ -164,10 +221,20 @@ const assignSchema = z.object({
 export async function setMemberRoles(
   input: z.infer<typeof assignSchema>,
 ): Promise<ActionResult<void>> {
-  await requireTenantAdmin(input.tenant_id);
+  const user = await requireTenantAdmin(input.tenant_id);
   const parsed = assignSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige invoer" };
   const admin = createAdminClient();
+
+  const { data: priorRows } = await admin
+    .from("tenant_member_roles")
+    .select("role_id")
+    .eq("tenant_id", parsed.data.tenant_id)
+    .eq("member_id", parsed.data.member_id);
+  const priorIds = ((priorRows ?? []) as Array<{ role_id: string }>).map(
+    (r) => r.role_id,
+  );
+
   await admin
     .from("tenant_member_roles")
     .delete()
@@ -182,6 +249,25 @@ export async function setMemberRoles(
     const { error } = await admin.from("tenant_member_roles").insert(rows);
     if (error) return { ok: false, error: error.message };
   }
+
+  const priorSet = new Set(priorIds);
+  const nextSet = new Set(parsed.data.role_ids);
+  const added = parsed.data.role_ids.filter((r) => !priorSet.has(r));
+  const removed = priorIds.filter((r) => !nextSet.has(r));
+  if (added.length > 0 || removed.length > 0) {
+    await recordAudit({
+      tenant_id: parsed.data.tenant_id,
+      actor_user_id: user.id,
+      member_id: parsed.data.member_id,
+      action: "role.assign",
+      meta: {
+        added: added.join(",") || null,
+        removed: removed.join(",") || null,
+        total: parsed.data.role_ids.length,
+      },
+    });
+  }
+
   revalidatePath("/tenant/settings/roles");
   revalidatePath("/tenant/members");
   return { ok: true, data: undefined };

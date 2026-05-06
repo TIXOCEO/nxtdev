@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { assertTenantAccess } from "./_assert-access";
+import { recordAudit } from "@/lib/audit/log";
 import type { Tenant } from "@/types/database";
 
 export type ActionResult<T = void> =
@@ -60,10 +61,18 @@ export async function updateTenantProfile(
     return { ok: false, error: "Invalid input", fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  await assertTenantAccess(parsed.data.id);
+  const user = await assertTenantAccess(parsed.data.id);
 
   const supabase = await createClient();
   const { id, ...patch } = parsed.data;
+
+  // Snapshot prior values for change-diff in the audit-log.
+  const { data: priorRow } = await supabase
+    .from("tenants")
+    .select("name, logo_url, primary_color, contact_email, domain")
+    .eq("id", id)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from("tenants")
     .update(patch)
@@ -73,6 +82,31 @@ export async function updateTenantProfile(
 
   if (error || !data) {
     return { ok: false, error: error?.message ?? "Failed to update profile." };
+  }
+
+  const prior = (priorRow ?? {}) as Partial<Record<keyof typeof patch, unknown>>;
+  const changedKeys = (Object.keys(patch) as Array<keyof typeof patch>).filter(
+    (k) => (prior[k] ?? null) !== (patch[k] ?? null),
+  );
+  if (changedKeys.length > 0) {
+    const meta: Record<string, string | number | boolean | null> = {
+      changed: changedKeys.join(","),
+    };
+    if (changedKeys.includes("primary_color")) {
+      meta.primary_color = patch.primary_color ?? null;
+    }
+    if (changedKeys.includes("logo_url")) {
+      meta.logo_url_set = patch.logo_url !== null;
+    }
+    if (changedKeys.includes("name")) {
+      meta.name = patch.name;
+    }
+    await recordAudit({
+      tenant_id: id,
+      actor_user_id: user.id,
+      action: "tenant_profile.update",
+      meta,
+    });
   }
 
   revalidatePath("/tenant");
