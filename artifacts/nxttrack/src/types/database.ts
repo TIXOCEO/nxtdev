@@ -270,6 +270,9 @@ export interface Member {
   city: string | null;
   archived_at: string | null;
   archived_by: string | null;
+  // Sprint 24 / Sprint F — admin-only velden.
+  member_since: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

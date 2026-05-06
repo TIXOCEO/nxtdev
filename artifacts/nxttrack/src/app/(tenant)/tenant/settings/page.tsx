@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Share2,
   Rss,
+  CreditCard,
 } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 
@@ -69,6 +70,12 @@ const SECTIONS = [
     icon: Rss,
     title: "Social feed",
     description: "Bepaal welke onderdelen van de community-feed actief zijn.",
+  },
+  {
+    href: "/tenant/settings/betaalmogelijkheden",
+    icon: CreditCard,
+    title: "Betaalmogelijkheden",
+    description: "Beheer welke betaalmethoden leden kunnen kiezen voor contributie.",
   },
 ];
 

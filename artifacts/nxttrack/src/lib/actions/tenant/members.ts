@@ -17,6 +17,7 @@ import {
 } from "@/lib/validation/membership-plans";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { getNotificationEvent } from "@/lib/db/notifications";
+import { recordAudit } from "@/lib/audit/log";
 import type {
   Member,
   Group,
@@ -92,6 +93,17 @@ export async function updateMember(
   for (const [k, v] of Object.entries(patch)) {
     if (v !== undefined) cleanPatch[k] = v;
   }
+  // Sprint F — keep archived_at consistent with member_status. If the admin
+  // flips the status back to anything non-"archived" via this form we must
+  // also clear archived_at/archived_by, otherwise the row stays hidden from
+  // the default members list (which filters on archived_at IS NULL).
+  if (
+    typeof cleanPatch.member_status === "string" &&
+    cleanPatch.member_status !== "archived"
+  ) {
+    cleanPatch.archived_at = null;
+    cleanPatch.archived_by = null;
+  }
 
   const { data, error } = await supabase
     .from("members")
@@ -162,6 +174,108 @@ export async function linkParentChild(
   revalidatePath(`/tenant/members/${parsed.data.parent_member_id}`);
   revalidatePath(`/tenant/members/${parsed.data.child_member_id}`);
   return { ok: true, data };
+}
+
+// Sprint F — verwijder een ouder ↔ kind koppeling.
+export async function unlinkParentChild(
+  input: z.infer<typeof linkParentChildSchema>,
+): Promise<ActionResult<{ removed: number }>> {
+  const parsed = linkParentChildSchema.safeParse(input);
+  if (!parsed.success) return fail("Invalid input", parsed.error.flatten().fieldErrors);
+
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+
+  const { error, count } = await supabase
+    .from("member_links")
+    .delete({ count: "exact" })
+    .eq("tenant_id", parsed.data.tenant_id)
+    .eq("parent_member_id", parsed.data.parent_member_id)
+    .eq("child_member_id", parsed.data.child_member_id);
+  if (error) return fail(error.message);
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    action: "member.unlink_parent_child",
+    meta: {
+      parent: parsed.data.parent_member_id,
+      child: parsed.data.child_member_id,
+    },
+  });
+
+  revalidatePath(`/tenant/members/${parsed.data.parent_member_id}`);
+  revalidatePath(`/tenant/members/${parsed.data.child_member_id}`);
+  return { ok: true, data: { removed: count ?? 0 } };
+}
+
+// ── archive / unarchive (soft-delete) ─────────────────────
+
+const archiveMemberSchema = z.object({
+  tenant_id: z.string().uuid(),
+  id: z.string().uuid(),
+});
+
+export async function archiveMember(
+  input: z.infer<typeof archiveMemberSchema>,
+): Promise<ActionResult<Member>> {
+  const parsed = archiveMemberSchema.safeParse(input);
+  if (!parsed.success) return fail("Invalid input");
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("members")
+    .update({
+      archived_at: new Date().toISOString(),
+      archived_by: user.id,
+      member_status: "archived",
+    })
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id)
+    .select()
+    .single();
+  if (error || !data) return fail(error?.message ?? "Kon lid niet archiveren.");
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: parsed.data.id,
+    action: "member.archive",
+  });
+  revalidatePath("/tenant/members");
+  revalidatePath(`/tenant/members/${parsed.data.id}`);
+  return { ok: true, data: data as Member };
+}
+
+export async function unarchiveMember(
+  input: z.infer<typeof archiveMemberSchema>,
+): Promise<ActionResult<Member>> {
+  const parsed = archiveMemberSchema.safeParse(input);
+  if (!parsed.success) return fail("Invalid input");
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("members")
+    .update({
+      archived_at: null,
+      archived_by: null,
+      member_status: "active",
+    })
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id)
+    .select()
+    .single();
+  if (error || !data) return fail(error?.message ?? "Kon lid niet dearchiveren.");
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: parsed.data.id,
+    action: "member.unarchive",
+  });
+  revalidatePath("/tenant/members");
+  revalidatePath(`/tenant/members/${parsed.data.id}`);
+  return { ok: true, data: data as Member };
 }
 
 // ── groups ─────────────────────────────────────────────────

@@ -114,6 +114,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Clubprofiel",      icon: Building2,    href: "/tenant/profile" },
       { label: "Algemeen",         icon: Settings,     href: "/tenant/settings" },
+      { label: "Betaalmogelijkheden", icon: CreditCard, href: "/tenant/settings/betaalmogelijkheden" },
       { label: "Rollen & rechten", icon: ShieldCheck,  href: "/tenant/settings/roles" },
     ],
   },

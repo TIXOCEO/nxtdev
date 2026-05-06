@@ -31,6 +31,8 @@ export const PERMISSION_CATALOG: PermissionGroup[] = [
       { key: "members.create", label: "Leden uitnodigen / toevoegen" },
       { key: "members.edit", label: "Leden bewerken" },
       { key: "members.remove", label: "Leden verwijderen / deactiveren" },
+      // Sprint F — soft-delete (archiveren) van leden.
+      { key: "members.archive", label: "Leden archiveren / dearchiveren" },
       // Sprint E — financiële gegevens (IBAN / payment method) bekijken/bewerken.
       { key: "members.financial.view", label: "Financiële gegevens bekijken (IBAN)" },
       { key: "members.financial.manage", label: "Financiële gegevens bewerken" },
@@ -123,6 +125,8 @@ export const PERMISSION_CATALOG: PermissionGroup[] = [
       { key: "settings.training", label: "Training instellingen" },
       { key: "settings.push", label: "Push instellingen" },
       { key: "settings.profile_pictures", label: "Profielfoto templates" },
+      // Sprint F — beheer van betaalmogelijkheden (per-tenant CRUD).
+      { key: "settings.payment_methods.manage", label: "Betaalmogelijkheden beheren" },
     ],
   },
   {

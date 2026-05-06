@@ -19,16 +19,36 @@ export interface MemberListRow extends Member {
  * List members for a tenant, with derived role names and group names.
  * Aggregations are done in JS to keep the SQL portable across PostgREST.
  */
-export async function getMembersByTenant(tenantId: string): Promise<MemberListRow[]> {
+export interface GetMembersOptions {
+  /** Sprint F — when false (default) archived members are filtered out. */
+  includeArchived?: boolean;
+  /** Sprint F — when true, only archived members are returned. */
+  onlyArchived?: boolean;
+}
+
+export async function getMembersByTenant(
+  tenantId: string,
+  opts: GetMembersOptions = {},
+): Promise<MemberListRow[]> {
   const supabase = await createClient();
+
+  const baseQuery = () => {
+    let q = supabase
+      .from("members")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false });
+    if (opts.onlyArchived) {
+      q = q.not("archived_at", "is", null);
+    } else if (!opts.includeArchived) {
+      q = q.is("archived_at", null);
+    }
+    return q;
+  };
 
   const [{ data: members, error: mErr }, { data: roles }, { data: groupMems }, { data: groups }] =
     await Promise.all([
-      supabase
-        .from("members")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false }),
+      baseQuery(),
       supabase
         .from("member_roles")
         .select("member_id, role, members!inner(tenant_id)")

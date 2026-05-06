@@ -1,4 +1,5 @@
-import { Users } from "lucide-react";
+import Link from "next/link";
+import { Users, Archive, ArchiveRestore } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -20,12 +21,25 @@ const ROLE_LABELS: Record<string, string> = {
   volunteer: "Vrijwilliger",
 };
 
-export default async function TenantMembersPage() {
+interface Search {
+  status?: string;
+}
+
+export default async function TenantMembersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Search>;
+}) {
+  const sp = (await searchParams) ?? {};
+  const showArchived = sp.status === "archived";
+
   const requested = await readActiveTenantCookie();
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const members = await getMembersByTenant(result.tenant.id);
+  const members = await getMembersByTenant(result.tenant.id, {
+    onlyArchived: showArchived,
+  });
   const existingParents = members
     .filter((m) => m.roles.includes("parent"))
     .map((m) => ({ id: m.id, full_name: m.full_name }));
@@ -33,8 +47,6 @@ export default async function TenantMembersPage() {
   // Sprint D: gate "Voeg toe". Alleen platform_admin, tenant_admin
   // (enum-membership) of een gebruiker met expliciete
   // `members.create` / `members.write` permissie krijgt de knop te zien.
-  // Een generieke admin-scope tenant-rol zonder expliciete rechten
-  // mag deze module dus NIET zien (zero-permission staff/trainer).
   const isTenantAdminEnum = result.membership?.role === "tenant_admin";
   const explicitPerms = result.isPlatformAdmin || isTenantAdminEnum
     ? []
@@ -58,21 +70,52 @@ export default async function TenantMembersPage() {
         title="Leden"
         description="Beheer ouders, sporters, trainers en staf van deze vereniging."
         actions={
-          canAdd ? (
-            <AddMemberWizard
-              tenantId={result.tenant.id}
-              existingParents={existingParents}
-              membershipPlans={activePlans}
-            />
-          ) : null
+          <div className="flex items-center gap-2">
+            <Link
+              href={
+                showArchived
+                  ? "/tenant/members"
+                  : "/tenant/members?status=archived"
+              }
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors"
+              style={{
+                borderColor: "var(--surface-border)",
+                backgroundColor: showArchived
+                  ? "var(--accent)"
+                  : "transparent",
+                color: "var(--text-primary)",
+              }}
+            >
+              {showArchived ? (
+                <>
+                  <ArchiveRestore className="h-3.5 w-3.5" /> Toon actieve leden
+                </>
+              ) : (
+                <>
+                  <Archive className="h-3.5 w-3.5" /> Toon gearchiveerd
+                </>
+              )}
+            </Link>
+            {canAdd && !showArchived ? (
+              <AddMemberWizard
+                tenantId={result.tenant.id}
+                existingParents={existingParents}
+                membershipPlans={activePlans}
+              />
+            ) : null}
+          </div>
         }
       />
 
       {members.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Nog geen leden"
-          description="Klik rechtsboven op 'Voeg toe' om het eerste lid aan te maken."
+          title={showArchived ? "Geen gearchiveerde leden" : "Nog geen leden"}
+          description={
+            showArchived
+              ? "Er zijn momenteel geen gearchiveerde leden in deze vereniging."
+              : "Klik rechtsboven op 'Voeg toe' om het eerste lid aan te maken."
+          }
         />
       ) : (
         <>
