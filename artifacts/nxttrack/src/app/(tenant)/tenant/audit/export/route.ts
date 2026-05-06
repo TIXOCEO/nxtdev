@@ -47,6 +47,8 @@ export async function GET(req: NextRequest) {
   const action = url.searchParams.get("action")?.trim() || null;
   const from = url.searchParams.get("from")?.trim() || null;
   const to = url.searchParams.get("to")?.trim() || null;
+  const actor = url.searchParams.get("actor")?.trim() || null;
+  const member = url.searchParams.get("member")?.trim() || null;
 
   const tenantId = result.tenant.id;
   const tenantSlug = result.tenant.slug ?? tenantId;
@@ -66,6 +68,8 @@ export async function GET(req: NextRequest) {
           action,
           fromDate: from,
           toDate: to,
+          actorQuery: actor,
+          memberQuery: member,
         })) {
           controller.enqueue(encoder.encode(rowToCsv(row)));
         }

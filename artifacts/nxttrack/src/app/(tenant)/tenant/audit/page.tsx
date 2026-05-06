@@ -180,6 +180,8 @@ interface PageProps {
     action?: string;
     from?: string;
     to?: string;
+    actor?: string;
+    member?: string;
   }>;
 }
 
@@ -195,6 +197,8 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
   const action = sp.action?.trim() ?? "";
   const from = sp.from?.trim() ?? "";
   const to = sp.to?.trim() ?? "";
+  const actor = sp.actor?.trim() ?? "";
+  const member = sp.member?.trim() ?? "";
 
   const [rows, distinctActions, retentionMonths] = await Promise.all([
     getAuditLogs({
@@ -202,6 +206,8 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
       action: action || null,
       fromDate: from || null,
       toDate: to || null,
+      actorQuery: actor || null,
+      memberQuery: member || null,
       limit: 200,
     }),
     getDistinctAuditActions(tenantId),
@@ -285,6 +291,50 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
 
         <div className="flex flex-col gap-1">
           <label
+            htmlFor="actor"
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Actor (e-mail)
+          </label>
+          <input
+            id="actor"
+            name="actor"
+            type="search"
+            defaultValue={actor}
+            placeholder="bv. naam@club.nl"
+            className="h-9 min-w-[14rem] rounded-md border bg-transparent px-2 text-sm"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="member"
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Lid (naam)
+          </label>
+          <input
+            id="member"
+            name="member"
+            type="search"
+            defaultValue={member}
+            placeholder="zoek op naam"
+            className="h-9 min-w-[14rem] rounded-md border bg-transparent px-2 text-sm"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-primary)",
+            }}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label
             htmlFor="from"
             className="text-xs font-semibold uppercase tracking-wide"
             style={{ color: "var(--text-secondary)" }}
@@ -336,7 +386,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
           >
             Filter
           </button>
-          {(action || from || to) && (
+          {(action || from || to || actor || member) && (
             <a
               href="/tenant/audit"
               className="h-9 rounded-md px-3 text-sm font-medium leading-9"
@@ -347,10 +397,10 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
           )}
           <a
             href={`/tenant/audit/export${
-              action || from || to
+              action || from || to || actor || member
                 ? "?" +
                   new URLSearchParams(
-                    Object.entries({ action, from, to }).filter(
+                    Object.entries({ action, from, to, actor, member }).filter(
                       ([, v]) => v !== "",
                     ) as [string, string][],
                   ).toString()
@@ -373,7 +423,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
           icon={ScrollText}
           title="Geen audit-events"
           description={
-            action || from || to
+            action || from || to || actor || member
               ? "Geen events gevonden voor de gekozen filter."
               : "Acties zoals archiveren, IBAN-reveals en wijzigingen aan betaalmogelijkheden verschijnen hier zodra ze plaatsvinden."
           }
