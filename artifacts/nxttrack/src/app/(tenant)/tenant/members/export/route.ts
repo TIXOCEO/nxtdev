@@ -26,6 +26,12 @@ const VALID_SORTS: MemberSortKey[] = [
   "created_at",
 ];
 
+const VALID_ROLES = ["parent", "athlete", "trainer", "staff", "volunteer"];
+
+function isUuid(s: string | null): s is string {
+  return !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
 function isValidIsoDate(s: string | null): s is string {
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
   const [y, m, d] = s.split("-").map(Number);
@@ -104,12 +110,22 @@ export async function GET(req: NextRequest) {
   const sortOrder: SortOrder =
     url.searchParams.get("order") === "asc" ? "asc" : "desc";
 
+  const selectedRoles = Array.from(
+    new Set(
+      url.searchParams.getAll("role").filter((r) => VALID_ROLES.includes(r)),
+    ),
+  );
+  const groupParam = url.searchParams.get("group");
+  const selectedGroupId = isUuid(groupParam) ? groupParam : null;
+
   const members = await getMembersByTenant(result.tenant.id, {
     onlyArchived: showArchived,
     memberSinceFrom,
     memberSinceTo,
     sortBy,
     sortOrder,
+    roles: selectedRoles,
+    groupId: selectedGroupId,
   });
 
   const tenantSlug = result.tenant.slug ?? result.tenant.id;

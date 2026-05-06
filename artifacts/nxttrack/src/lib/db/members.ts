@@ -43,6 +43,10 @@ export interface GetMembersOptions {
   sortBy?: MemberSortKey;
   /** Sprint G — sort direction. */
   sortOrder?: SortOrder;
+  /** Filter: only members that have any of the given roles (OR). */
+  roles?: string[] | null;
+  /** Filter: only members that are part of this group. */
+  groupId?: string | null;
 }
 
 export async function getMembersByTenant(
@@ -64,6 +68,49 @@ export async function getMembersByTenant(
             ? "archived_at"
             : "created_at";
 
+  // Pre-fetch member-id sets for role/group filters and intersect them so the
+  // final `members` query only returns rows that match every active filter.
+  const filterIdSets: string[][] = [];
+  const wantedRoles = (opts.roles ?? []).filter((r) => r.length > 0);
+  if (wantedRoles.length > 0) {
+    const { data: rIds } = await supabase
+      .from("member_roles")
+      .select("member_id, members!inner(tenant_id)")
+      .eq("members.tenant_id", tenantId)
+      .in("role", wantedRoles);
+    const ids = Array.from(
+      new Set(
+        ((rIds ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+      ),
+    );
+    filterIdSets.push(ids);
+  }
+  if (opts.groupId) {
+    const { data: gIds } = await supabase
+      .from("group_members")
+      .select("member_id, groups!inner(tenant_id)")
+      .eq("groups.tenant_id", tenantId)
+      .eq("group_id", opts.groupId);
+    const ids = Array.from(
+      new Set(
+        ((gIds ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+      ),
+    );
+    filterIdSets.push(ids);
+  }
+
+  let restrictIds: string[] | null = null;
+  if (filterIdSets.length > 0) {
+    restrictIds = filterIdSets.reduce<string[]>((acc, set, i) => {
+      if (i === 0) return set;
+      const s = new Set(set);
+      return acc.filter((id) => s.has(id));
+    }, []);
+    // No matches — short-circuit and return empty list to avoid an `.in("id", [])`
+    // call which PostgREST treats as "no constraint" on some versions.
+    if (restrictIds.length === 0) return [];
+  }
+
   const baseQuery = () => {
     let q = supabase
       .from("members")
@@ -80,6 +127,9 @@ export async function getMembersByTenant(
     }
     if (opts.memberSinceTo) {
       q = q.lte("member_since", opts.memberSinceTo);
+    }
+    if (restrictIds) {
+      q = q.in("id", restrictIds);
     }
     return q;
   };

@@ -10,6 +10,7 @@ import {
   type MemberSortKey,
   type SortOrder,
 } from "@/lib/db/members";
+import { getGroupsByTenant } from "@/lib/db/groups";
 import { MemberCard } from "@/components/tenant/member-card";
 import { AddMemberWizard } from "./_add-member-wizard";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
@@ -31,6 +32,8 @@ interface Search {
   since_to?: string;
   sort?: string;
   order?: string;
+  role?: string | string[];
+  group?: string;
 }
 
 const VALID_SORTS: MemberSortKey[] = [
@@ -40,6 +43,18 @@ const VALID_SORTS: MemberSortKey[] = [
   "archived_at",
   "created_at",
 ];
+
+const VALID_ROLES = ["parent", "athlete", "trainer", "staff", "volunteer"];
+
+function isUuid(s: string | undefined): s is string {
+  return !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+function normalizeRoles(raw: string | string[] | undefined): string[] {
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : [raw];
+  return Array.from(new Set(arr.filter((r) => VALID_ROLES.includes(r))));
+}
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -75,6 +90,8 @@ export default async function TenantMembersPage({
 
   const memberSinceFrom = isValidIsoDate(sp.since_from) ? sp.since_from : null;
   const memberSinceTo = isValidIsoDate(sp.since_to) ? sp.since_to : null;
+  const selectedRoles = normalizeRoles(sp.role);
+  const selectedGroupId = isUuid(sp.group) ? sp.group : null;
 
   const requestedSort = (sp.sort ?? "") as MemberSortKey;
   const sortBy: MemberSortKey = VALID_SORTS.includes(requestedSort)
@@ -88,13 +105,18 @@ export default async function TenantMembersPage({
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const members = await getMembersByTenant(result.tenant.id, {
-    onlyArchived: showArchived,
-    memberSinceFrom,
-    memberSinceTo,
-    sortBy,
-    sortOrder,
-  });
+  const [members, allGroups] = await Promise.all([
+    getMembersByTenant(result.tenant.id, {
+      onlyArchived: showArchived,
+      memberSinceFrom,
+      memberSinceTo,
+      sortBy,
+      sortOrder,
+      roles: selectedRoles,
+      groupId: selectedGroupId,
+    }),
+    getGroupsByTenant(result.tenant.id),
+  ]);
   const existingParents = members
     .filter((m) => m.roles.includes("parent"))
     .map((m) => ({ id: m.id, full_name: m.full_name }));
@@ -119,12 +141,18 @@ export default async function TenantMembersPage({
     .filter((p) => p.is_active)
     .map((p) => ({ id: p.id, name: p.name }));
 
-  // Build CSV-export URL die hetzelfde filter + sortering meeneemt.
-  const buildExportHref = (): string => {
-    const params = new URLSearchParams();
+  const appendSharedFilters = (params: URLSearchParams) => {
     if (showArchived) params.set("status", "archived");
     if (memberSinceFrom) params.set("since_from", memberSinceFrom);
     if (memberSinceTo) params.set("since_to", memberSinceTo);
+    for (const r of selectedRoles) params.append("role", r);
+    if (selectedGroupId) params.set("group", selectedGroupId);
+  };
+
+  // Build CSV-export URL die hetzelfde filter + sortering meeneemt.
+  const buildExportHref = (): string => {
+    const params = new URLSearchParams();
+    appendSharedFilters(params);
     params.set("sort", sortBy);
     params.set("order", sortOrder);
     const qs = params.toString();
@@ -136,9 +164,7 @@ export default async function TenantMembersPage({
   // Helper to build sort-toggle URLs that preserve other query params.
   const buildSortHref = (key: MemberSortKey): string => {
     const params = new URLSearchParams();
-    if (showArchived) params.set("status", "archived");
-    if (memberSinceFrom) params.set("since_from", memberSinceFrom);
-    if (memberSinceTo) params.set("since_to", memberSinceTo);
+    appendSharedFilters(params);
     params.set("sort", key);
     const nextOrder: SortOrder =
       sortBy === key && sortOrder === "asc" ? "desc" : "asc";
@@ -146,6 +172,12 @@ export default async function TenantMembersPage({
     const qs = params.toString();
     return qs ? `/tenant/members?${qs}` : "/tenant/members";
   };
+
+  const hasFilter =
+    !!memberSinceFrom ||
+    !!memberSinceTo ||
+    selectedRoles.length > 0 ||
+    !!selectedGroupId;
 
   const SortIndicator = ({ col }: { col: MemberSortKey }) =>
     sortBy === col ? (
@@ -242,6 +274,50 @@ export default async function TenantMembersPage({
             }}
           />
         </label>
+        <fieldset
+          className="flex flex-col text-xs font-medium"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <legend className="mb-1">Rollen</legend>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {VALID_ROLES.map((role) => (
+              <label
+                key={role}
+                className="inline-flex items-center gap-1.5"
+                style={{ color: "var(--text-primary)" }}
+              >
+                <input
+                  type="checkbox"
+                  name="role"
+                  value={role}
+                  defaultChecked={selectedRoles.includes(role)}
+                  className="h-3.5 w-3.5"
+                />
+                <span>{ROLE_LABELS[role] ?? role}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label className="flex flex-col text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+          Groep
+          <select
+            name="group"
+            defaultValue={selectedGroupId ?? ""}
+            className="mt-1 h-9 rounded-lg border px-2 text-sm"
+            style={{
+              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--surface-soft)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <option value="">Alle groepen</option>
+            {allGroups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           type="submit"
           className="h-9 rounded-lg border px-3 text-xs font-semibold"
@@ -253,7 +329,7 @@ export default async function TenantMembersPage({
         >
           Filter
         </button>
-        {(memberSinceFrom || memberSinceTo) && (
+        {hasFilter && (
           <Link
             href={
               showArchived ? "/tenant/members?status=archived" : "/tenant/members"
