@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@supabase/ssr";
 
 type State = "working" | "error";
 
@@ -68,58 +68,61 @@ export function AuthCallbackClient() {
           return;
         }
 
-        // De browser-client heeft `detectSessionInUrl: true` (default) en
-        // parseert tokens uit de URL automatisch tijdens instantiatie.
-        // Onze taak: wachten tot de sessie is opgeslagen, dan doorsturen.
-        const supabase = createClient();
+        // Drie ondersteunde varianten:
+        // 1. PKCE / code flow: `?code=<authcode>`
+        // 2. Query implicit:   `?access_token=...&refresh_token=...`
+        // 3. Hash implicit:    `#access_token=...&refresh_token=...`
+        const code = params.get("code");
+        const accessToken =
+          fragment.get("access_token") ?? params.get("access_token");
+        const refreshToken =
+          fragment.get("refresh_token") ?? params.get("refresh_token");
 
-        // Wacht eerst op een SIGNED_IN event (race-vrij). Als die binnen
-        // 5s niet komt, val terug op een polling-getSession (voor het
-        // geval detectSessionInUrl al klaar was vóór de listener stond).
-        const session = await new Promise<{ ok: true } | { ok: false; error: string }>(
-          (resolve) => {
-            let settled = false;
-            const finish = (r: { ok: true } | { ok: false; error: string }) => {
-              if (settled) return;
-              settled = true;
-              resolve(r);
-            };
+        if (!code && !(accessToken && refreshToken)) {
+          if (!cancelled) {
+            window.clearTimeout(watchdog);
+            setState("error");
+            setMessage(
+              "Geen sessie-tokens ontvangen. Controleer in Supabase dat https://nxttrack.nl/auth/callback in de Redirect URLs staat.",
+            );
+          }
+          return;
+        }
 
-            const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-              if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-                supabase.auth.getSession().then(({ data }) => {
-                  if (data.session) {
-                    sub.subscription.unsubscribe();
-                    finish({ ok: true });
-                  }
-                });
-              }
-            });
-
-            // Poll-fallback (max 6s) — vangt het geval waarin
-            // detectSessionInUrl al klaar was vóór onze listener.
-            let attempts = 0;
-            const poll = window.setInterval(async () => {
-              attempts += 1;
-              const { data } = await supabase.auth.getSession();
-              if (data.session) {
-                window.clearInterval(poll);
-                sub.subscription.unsubscribe();
-                finish({ ok: true });
-              } else if (attempts >= 12) {
-                window.clearInterval(poll);
-                sub.subscription.unsubscribe();
-                finish({ ok: false, error: "Sessie kon niet worden opgeslagen." });
-              }
-            }, 500);
-          },
+        // Speciale callback-client met detectSessionInUrl=false, zodat
+        // alleen onze handmatige set/exchange de auth-lock pakt — geen
+        // race meer met Supabase's eigen URL-parser.
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          { auth: { detectSessionInUrl: false } },
         );
 
+        // Eventuele stale sessie wegruimen — voorkomt lock-conflicten
+        // na uitloggen+inloggen-als-andere-gebruiker in dezelfde tab.
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {
+          // negeer; we proberen meteen daarna een nieuwe sessie te zetten
+        }
+
+        let setError: string | null = null;
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) setError = error.message;
+        } else if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) setError = error.message;
+        }
+
         window.clearTimeout(watchdog);
-        if (!session.ok) {
+        if (setError) {
           if (!cancelled) {
             setState("error");
-            setMessage(session.error);
+            setMessage(setError);
           }
           return;
         }
