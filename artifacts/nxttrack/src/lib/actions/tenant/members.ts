@@ -7,6 +7,7 @@ import { assertTenantAccess } from "./_assert-access";
 import {
   createMemberSchema,
   updateMemberSchema,
+  MEMBER_ROLES,
   type CreateMemberInput,
   type UpdateMemberInput,
 } from "@/lib/validation/members";
@@ -182,6 +183,119 @@ export async function updateMember(
   revalidatePath("/tenant/members");
   revalidatePath(`/tenant/members/${id}`);
   return { ok: true, data: data as Member };
+}
+
+// ── individual member roles (Sprint 39) ────────────────────
+//
+// `member_roles` is een multi-row tabel (sprint8) zodat een lid meerdere
+// rollen tegelijk kan hebben. De bestaande `updateMember` action vervangt
+// de hele set in één keer; voor de chip-UI op de admin-detail pagina
+// hebben we expliciete add/remove acties die idempotent zijn en duidelijke
+// foutmeldingen teruggeven.
+
+const memberRoleMutationSchema = z.object({
+  tenant_id: z.string().uuid(),
+  member_id: z.string().uuid(),
+  role: z.enum(MEMBER_ROLES),
+});
+
+async function ensureMemberInTenant(
+  tenantId: string,
+  memberId: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("members")
+    .select("id")
+    .eq("id", memberId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  return !!data;
+}
+
+export async function addMemberRole(
+  input: z.infer<typeof memberRoleMutationSchema>,
+): Promise<ActionResult<{ role: string }>> {
+  const parsed = memberRoleMutationSchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer");
+
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  if (!(await ensureMemberInTenant(parsed.data.tenant_id, parsed.data.member_id))) {
+    return fail("Lid niet gevonden in deze vereniging.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("member_roles")
+    .insert({ member_id: parsed.data.member_id, role: parsed.data.role });
+  if (error) {
+    if (error.code === "23505") {
+      return fail("Dit lid heeft deze rol al.");
+    }
+    return fail(error.message);
+  }
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: parsed.data.member_id,
+    action: "member.role.add",
+    meta: { role: parsed.data.role },
+  });
+
+  revalidatePath("/tenant/members");
+  revalidatePath(`/tenant/members/${parsed.data.member_id}`);
+  return { ok: true, data: { role: parsed.data.role } };
+}
+
+export async function removeMemberRole(
+  input: z.infer<typeof memberRoleMutationSchema>,
+): Promise<ActionResult<{ remaining: number }>> {
+  const parsed = memberRoleMutationSchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer");
+
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  if (!(await ensureMemberInTenant(parsed.data.tenant_id, parsed.data.member_id))) {
+    return fail("Lid niet gevonden in deze vereniging.");
+  }
+
+  const supabase = await createClient();
+
+  // Tel huidige rollen om te kunnen waarschuwen voor "laatste rol".
+  const { data: currentRows, error: countErr } = await supabase
+    .from("member_roles")
+    .select("role")
+    .eq("member_id", parsed.data.member_id);
+  if (countErr) return fail(countErr.message);
+
+  const current = ((currentRows ?? []) as Array<{ role: string }>).map((r) => r.role);
+  if (!current.includes(parsed.data.role)) {
+    return fail("Dit lid heeft deze rol niet.");
+  }
+  if (current.length <= 1) {
+    return fail(
+      "Een lid moet minstens één rol behouden. Voeg eerst een andere rol toe.",
+    );
+  }
+
+  const { error: delErr } = await supabase
+    .from("member_roles")
+    .delete()
+    .eq("member_id", parsed.data.member_id)
+    .eq("role", parsed.data.role);
+  if (delErr) return fail(delErr.message);
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: parsed.data.member_id,
+    action: "member.role.remove",
+    meta: { role: parsed.data.role },
+  });
+
+  revalidatePath("/tenant/members");
+  revalidatePath(`/tenant/members/${parsed.data.member_id}`);
+  return { ok: true, data: { remaining: current.length - 1 } };
 }
 
 // ── parent ↔ child links ───────────────────────────────────

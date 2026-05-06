@@ -1,19 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  ArrowLeft,
-  Mail,
-  Phone,
-  UsersRound,
-  CreditCard,
-  Receipt,
-  Tag,
-  Link2,
-  Pencil,
-  AlertTriangle,
-} from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { TabShell, type TabShellTab } from "@/components/ui/tab-shell";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getMemberWithRelations, getMembersByTenant } from "@/lib/db/members";
@@ -22,36 +11,21 @@ import { getPlansByTenant } from "@/lib/db/membership-plans";
 import { getMemberFinancialDetails } from "@/lib/db/financial-details";
 import { getActivePaymentMethods } from "@/lib/db/payment-methods";
 import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
-import { GroupSelector } from "@/components/tenant/group-selector";
-import { MembershipCard } from "@/components/tenant/membership-card";
-import { PaymentsTable } from "@/components/tenant/payments-table";
-import { EndMembershipButton } from "@/components/tenant/end-membership-button";
-import { UpcomingPaymentCard } from "@/components/tenant/upcoming-payment-card";
 import { getTenantDefaults } from "@/lib/actions/tenant/payments";
+import { getAuditLogs } from "@/lib/db/audit-logs";
+import { getEmailLogsByMemberEmail } from "@/lib/db/email-logs";
+import { ArchiveButton } from "./_archive-controls";
 import {
-  computeUpcomingPayment,
-  pickVisibleUpcoming,
-} from "@/lib/payments/upcoming";
-import { TrainerPublicSettings } from "@/components/tenant/members/trainer-public-settings";
-import { FinancialTab } from "@/app/t/[slug]/profile/_financial-tab";
-import { maskIban } from "@/lib/iban";
-import { AdminMemberEditForm } from "./_admin-edit-form";
-import { ArchiveButton, UnlinkChildButton } from "./_archive-controls";
-import {
-  LinkChildForm,
-  AssignPlanForm,
-  GenerateMinorCodeButton,
-} from "./_member-detail-actions";
+  OverviewTab,
+  PersonalTab,
+  SportTab,
+  FamilyTab,
+  BillingTab,
+  CommunicationTab,
+  AuditTab,
+} from "./_detail-tabs";
 
 export const dynamic = "force-dynamic";
-
-const ROLE_LABELS: Record<string, string> = {
-  parent: "Ouder",
-  athlete: "Speler",
-  trainer: "Trainer",
-  staff: "Staf",
-  volunteer: "Vrijwilliger",
-};
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -77,41 +51,139 @@ export default async function MemberDetailPage({ params }: PageProps) {
   const canArchive = isAdmin || explicitPerms.includes("members.archive");
   const canViewFinancial = isAdmin || explicitPerms.includes("members.financial.view");
   const canManageFinancial = isAdmin || explicitPerms.includes("members.financial.manage");
+  const canEditRoles = isAdmin || explicitPerms.includes("members.write");
 
-  const [allGroups, allPlans, allMembers, financialRow, paymentMethods, defaults] =
-    await Promise.all([
-      getGroupsByTenant(result.tenant.id),
-      getPlansByTenant(result.tenant.id),
-      getMembersByTenant(result.tenant.id),
-      canViewFinancial
-        ? getMemberFinancialDetails(data.member.id, result.tenant.id)
-        : Promise.resolve(null),
-      // Sprint 30 — payments table mag altijd de actieve methoden zien zodat
-      // tenant-admins een betaling kunnen koppelen, ook zonder financial-perm.
-      getActivePaymentMethods(result.tenant.id),
-      getTenantDefaults(result.tenant.id),
-    ]);
+  const [
+    allGroups,
+    allPlans,
+    allMembers,
+    financialRow,
+    paymentMethods,
+    defaults,
+    emailLogs,
+    auditRows,
+  ] = await Promise.all([
+    getGroupsByTenant(result.tenant.id),
+    getPlansByTenant(result.tenant.id),
+    getMembersByTenant(result.tenant.id),
+    canViewFinancial
+      ? getMemberFinancialDetails(data.member.id, result.tenant.id)
+      : Promise.resolve(null),
+    getActivePaymentMethods(result.tenant.id),
+    getTenantDefaults(result.tenant.id),
+    getEmailLogsByMemberEmail(result.tenant.id, data.member.email, 50),
+    getAuditLogs({
+      tenantId: result.tenant.id,
+      memberId: data.member.id,
+      limit: 200,
+    }),
+  ]);
 
-  const isParentRole = data.roles.some((r) => r.role === "parent");
-  const isAthleteRole = data.roles.some((r) => r.role === "athlete");
-  const isTrainerRole = data.roles.some((r) => r.role === "trainer");
+  const roleNames = data.roles.map((r) => r.role);
+  const isParentRole = roleNames.includes("parent");
+  const isAthleteRole = roleNames.includes("athlete");
+  const isTrainerRole = roleNames.includes("trainer");
 
-  const linkableChildren = allMembers.filter(
-    (m) =>
-      m.id !== data.member.id &&
-      !data.children.some((c) => c.id === m.id),
-  );
+  const linkableChildren = allMembers
+    .filter(
+      (m) =>
+        m.id !== data.member.id &&
+        !data.children.some((c) => c.id === m.id),
+    )
+    .map((m) => ({ id: m.id, full_name: m.full_name }));
 
-  const activePlans = allPlans.filter((p) => p.is_active);
+  const activePlans = allPlans
+    .filter((p) => p.is_active)
+    .map((p) => ({ id: p.id, name: p.name }));
+
   const archived = !!data.member.archived_at;
 
-  // Sprint E — afgeleide athlete-code (geen DB-kolom, identiek aan de
-  // user-shell). Tonen we ook in de admin-detail zodat trainers/admins
-  // dezelfde referentie-string zien als de sporter zelf.
   const athleteCodeDisplay =
     isAthleteRole || isTrainerRole
       ? `ATH-${data.member.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`
       : null;
+
+  const tabs: TabShellTab[] = [
+    {
+      key: "overview",
+      label: "Overzicht",
+      content: (
+        <OverviewTab
+          tenantId={result.tenant.id}
+          member={data.member}
+          roles={roleNames}
+          athleteCodeDisplay={athleteCodeDisplay}
+          canEditRoles={canEditRoles}
+        />
+      ),
+    },
+    {
+      key: "personal",
+      label: "Persoonlijk",
+      content: (
+        <PersonalTab tenantId={result.tenant.id} member={data.member} />
+      ),
+    },
+    {
+      key: "sport",
+      label: "Sport",
+      content: (
+        <SportTab
+          tenantId={result.tenant.id}
+          member={data.member}
+          allGroups={allGroups}
+          currentGroups={data.groups}
+          isTrainerRole={isTrainerRole}
+          athleteCodeDisplay={athleteCodeDisplay}
+        />
+      ),
+    },
+    {
+      key: "family",
+      label: "Familie",
+      content: (
+        <FamilyTab
+          tenantId={result.tenant.id}
+          member={data.member}
+          parents={data.parents.map((p) => ({ id: p.id, full_name: p.full_name }))}
+          children={data.children.map((c) => ({ id: c.id, full_name: c.full_name }))}
+          isAthleteRole={isAthleteRole}
+          isParentRole={isParentRole}
+          linkableChildren={linkableChildren}
+        />
+      ),
+    },
+    {
+      key: "billing",
+      label: "Abonnement & Betalingen",
+      content: (
+        <BillingTab
+          tenantId={result.tenant.id}
+          member={data.member}
+          memberships={data.memberships}
+          payments={data.payments}
+          paymentMethods={paymentMethods}
+          defaultPaymentMethodId={defaults.payment_method?.id ?? null}
+          activePlans={activePlans}
+          financial={financialRow}
+          canViewFinancial={canViewFinancial}
+          canManageFinancial={canManageFinancial}
+        />
+      ),
+    },
+    {
+      key: "communication",
+      label: "Communicatie",
+      badge: emailLogs.length > 0 ? emailLogs.length : undefined,
+      content: <CommunicationTab logs={emailLogs} />,
+    },
+    {
+      key: "audit",
+      label: "Logboek",
+      badge: auditRows.length > 0 ? auditRows.length : undefined,
+      content: <AuditTab logs={auditRows} />,
+    },
+  ];
 
   return (
     <>
@@ -162,331 +234,7 @@ export default async function MemberDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Section 1: Basic info */}
-      <Section title="Basisinformatie">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Stat label="Status">
-            <StatusBadge status={data.member.member_status} />
-          </Stat>
-          <Stat label="E-mail" icon={<Mail className="h-3.5 w-3.5" />}>
-            {data.member.email ?? "—"}
-          </Stat>
-          <Stat label="Telefoon" icon={<Phone className="h-3.5 w-3.5" />}>
-            {data.member.phone ?? "—"}
-          </Stat>
-          <Stat label="Aangemaakt">
-            {new Date(data.member.created_at).toLocaleDateString("nl-NL")}
-          </Stat>
-          {data.member.member_since && (
-            <Stat label="Lid sinds">
-              {new Date(data.member.member_since).toLocaleDateString("nl-NL")}
-            </Stat>
-          )}
-          {athleteCodeDisplay && (
-            <Stat label="Persoonlijke code">
-              <span className="font-mono">{athleteCodeDisplay}</span>
-            </Stat>
-          )}
-        </div>
-      </Section>
-
-      {/* Section 2: Bewerk profiel */}
-      <Section title="Bewerk profiel" icon={<Pencil className="h-4 w-4" />}>
-        <AdminMemberEditForm
-          tenantId={result.tenant.id}
-          member={data.member}
-        />
-      </Section>
-
-      {/* Section 3: Roles */}
-      <Section title="Rollen" icon={<Tag className="h-4 w-4" />}>
-        {data.roles.length === 0 ? (
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            Geen rollen toegewezen.
-          </p>
-        ) : (
-          <ul className="flex flex-wrap gap-2">
-            {data.roles.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                style={{
-                  backgroundColor: "var(--surface-soft)",
-                  color: "var(--text-primary)",
-                }}
-              >
-                {ROLE_LABELS[r.role] ?? r.role}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
-
-      {/* Section 4: Groups */}
-      <Section title="Groepen" icon={<UsersRound className="h-4 w-4" />}>
-        <GroupSelector
-          tenantId={result.tenant.id}
-          memberId={data.member.id}
-          currentGroups={data.groups}
-          allGroups={allGroups}
-        />
-      </Section>
-
-      {/* Section 5: Parent / child relations */}
-      <Section title="Ouders & kinderen" icon={<Link2 className="h-4 w-4" />}>
-        {isAthleteRole && (
-          <div className="space-y-2">
-            <h3
-              className="text-xs font-semibold uppercase tracking-wide"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Ouder(s)
-            </h3>
-            {data.parents.length === 0 ? (
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                Nog geen ouder gekoppeld.
-              </p>
-            ) : (
-              <ul className="flex flex-wrap gap-2">
-                {data.parents.map((p) => (
-                  <li key={p.id} className="flex flex-col items-start gap-0.5">
-                    <Link
-                      href={`/tenant/members/${p.id}`}
-                      className="rounded-full border px-3 py-1 text-xs hover:bg-black/5"
-                      style={{
-                        borderColor: "var(--surface-border)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {p.full_name}
-                    </Link>
-                    <UnlinkChildButton
-                      tenantId={result.tenant.id}
-                      parentMemberId={p.id}
-                      childMemberId={data.member.id}
-                      childName={data.member.full_name}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {(isParentRole || data.children.length > 0) && (
-          <div className="mt-4 space-y-2">
-            <h3
-              className="text-xs font-semibold uppercase tracking-wide"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Kind(eren)
-            </h3>
-            {data.children.length === 0 ? (
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                Nog geen kind gekoppeld.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {data.children.map((c) => (
-                  <li key={c.id} className="flex flex-col gap-1">
-                    <Link
-                      href={`/tenant/members/${c.id}`}
-                      className="self-start rounded-full border px-3 py-1 text-xs hover:bg-black/5"
-                      style={{
-                        borderColor: "var(--surface-border)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {c.full_name}
-                    </Link>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <GenerateMinorCodeButton
-                        tenantId={result.tenant.id}
-                        parentMemberId={data.member.id}
-                        childMemberId={c.id}
-                        childName={c.full_name}
-                      />
-                      <UnlinkChildButton
-                        tenantId={result.tenant.id}
-                        parentMemberId={data.member.id}
-                        childMemberId={c.id}
-                        childName={c.full_name}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <LinkChildForm
-              tenantId={result.tenant.id}
-              parentMemberId={data.member.id}
-              candidates={linkableChildren.map((m) => ({
-                id: m.id,
-                full_name: m.full_name,
-              }))}
-            />
-          </div>
-        )}
-      </Section>
-
-      {/* Section 6: Financieel (Sprint E component, admin-mode) */}
-      {canViewFinancial && (
-        <Section title="Financieel" icon={<CreditCard className="h-4 w-4" />}>
-          <FinancialTab
-            tenantId={result.tenant.id}
-            memberId={data.member.id}
-            initial={
-              financialRow
-                ? {
-                    has_iban: !!financialRow.iban,
-                    iban_masked: financialRow.iban
-                      ? maskIban(financialRow.iban)
-                      : null,
-                    account_holder_name: financialRow.account_holder_name,
-                    payment_method_id: financialRow.payment_method_id,
-                  }
-                : null
-            }
-            paymentMethods={paymentMethods}
-            canViewIban={canViewFinancial}
-            canManageIban={canManageFinancial}
-          />
-        </Section>
-      )}
-
-      {/* Section 7: Membership */}
-      <Section title="Abonnement" icon={<CreditCard className="h-4 w-4" />}>
-        {data.memberships.length === 0 ? (
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            Nog geen abonnement toegewezen.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {data.memberships.map((m) => (
-              <li key={m.id} className="space-y-2">
-                <MembershipCard membership={m} plan={m.plan} />
-                {m.status === "active" && (
-                  <div className="flex justify-end">
-                    <EndMembershipButton
-                      tenantId={result.tenant.id}
-                      memberMembershipId={m.id}
-                    />
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="mt-4">
-          <AssignPlanForm
-            tenantId={result.tenant.id}
-            memberId={data.member.id}
-            plans={activePlans.map((p) => ({ id: p.id, name: p.name }))}
-          />
-        </div>
-      </Section>
-
-      {/* Section 8: Public trainer profile (Sprint 18) */}
-      {isTrainerRole && (
-        <Section title="Publiek trainer profiel" icon={<Tag className="h-4 w-4" />}>
-          <TrainerPublicSettings
-            tenantId={result.tenant.id}
-            memberId={data.member.id}
-            initialShowInPublic={data.member.show_in_public ?? false}
-            initialBio={data.member.public_bio ?? ""}
-          />
-        </Section>
-      )}
-
-      {/* Section 9: Payments (Sprint 30) — aankomend + historie */}
-      <Section title="Betalingen" icon={<Receipt className="h-4 w-4" />}>
-        {(() => {
-          // Aankomende-betaling tegels per actief abonnement, zelfde helper
-          // als de speler-zelf zijn profiel ziet, maar getoond in de admin-
-          // detail zodat tenant-admins zowel toekomstige als historische
-          // boekingen op één plek vinden.
-          const upcomingList = pickVisibleUpcoming(
-            data.memberships.map((m) =>
-              computeUpcomingPayment({
-                membership: m,
-                plan: m.plan ?? null,
-                paymentMethods,
-                payments: data.payments,
-              }),
-            ),
-          );
-          if (upcomingList.length === 0) return null;
-          return (
-            <div className="mb-4 space-y-2">
-              {upcomingList.map((u) => (
-                <UpcomingPaymentCard key={u.member_membership_id} upcoming={u} />
-              ))}
-            </div>
-          );
-        })()}
-        <PaymentsTable
-          tenantId={result.tenant.id}
-          memberId={data.member.id}
-          memberships={data.memberships}
-          payments={data.payments}
-          paymentMethods={paymentMethods}
-          defaultPaymentMethodId={defaults.payment_method?.id ?? null}
-        />
-      </Section>
+      <TabShell tabs={tabs} defaultKey="overview" />
     </>
-  );
-}
-
-function Section({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section
-      className="rounded-2xl border p-4 sm:p-6"
-      style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
-      }}
-    >
-      <h2
-        className="mb-3 inline-flex items-center gap-2 text-sm font-semibold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        {icon}
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Stat({
-  label,
-  icon,
-  children,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p
-        className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        {icon}
-        {label}
-      </p>
-      <div className="mt-1 text-sm" style={{ color: "var(--text-primary)" }}>
-        {children}
-      </div>
-    </div>
   );
 }

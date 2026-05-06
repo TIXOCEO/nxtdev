@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMemo } from "react";
+import { TabShell, type TabShellTab } from "@/components/ui/tab-shell";
 import { GeneralTab, type GeneralMemberVM } from "./_general-tab";
 import { SportTab, type SportMemberVM } from "./_sport-tab";
 import { FinancialTab, type FinancialVM } from "./_financial-tab";
@@ -46,78 +45,64 @@ export interface ProfileShellProps {
   payments: MembershipPaymentLog[];
 }
 
-type TabKey =
-  | "general"
-  | "children"
-  | "sport"
-  | "financial"
-  | "trainer_bio"
-  | "payments";
-
 export function ProfileShell(props: ProfileShellProps) {
-  const router = useRouter();
-  const params = useSearchParams();
-  const initial = (params.get("tab") as TabKey | null) ?? "general";
-  const [tab, setTab] = useState<TabKey>(initial);
-
-  // Keep the URL in sync without scroll-jumping.
-  useEffect(() => {
-    const current = params.get("tab") ?? "general";
-    if (current === tab) return;
-    const next = new URLSearchParams(params.toString());
-    if (tab === "general") next.delete("tab");
-    else next.set("tab", tab);
-    const qs = next.toString();
-    router.replace(qs ? `?${qs}` : "?", { scroll: false });
-  }, [tab, params, router]);
-
-  const onChange = useCallback((value: string) => {
-    setTab(value as TabKey);
-  }, []);
-
   const showSport = props.isAthleteOrTrainer || props.sportMember !== null;
-  const showFinancial = true; // self-or-admin gate is enforced server-side
   const showChildren = props.isParent;
   const showTrainerBio = props.isTrainer && props.trainerBio !== null;
   const showPayments = props.memberships.length > 0 || props.payments.length > 0;
 
-  return (
-    <Tabs value={tab} onValueChange={onChange} className="w-full">
-      <TabsList className="flex w-full flex-wrap gap-1 bg-transparent p-0">
-        <Trigger value="general" label="Algemeen" />
-        {showChildren && <Trigger value="children" label="Kinderen" />}
-        {showSport && <Trigger value="sport" label="Sport" />}
-        {showFinancial && <Trigger value="financial" label="Financieel" />}
-        {showTrainerBio && <Trigger value="trainer_bio" label="Trainersbio" />}
-        {showPayments && <Trigger value="payments" label="Betalingen" />}
-      </TabsList>
-
-      <TabsContent value="general" className="mt-4">
-        <GeneralTab tenantId={props.tenantId} member={props.primaryMember} />
-      </TabsContent>
-
-      {showChildren && (
-        <TabsContent value="children" className="mt-4">
+  const tabs: TabShellTab[] = useMemo(
+    () => [
+      {
+        key: "general",
+        label: "Algemeen",
+        content: (
+          <GeneralTab tenantId={props.tenantId} member={props.primaryMember} />
+        ),
+      },
+      {
+        key: "children",
+        label: "Kinderen",
+        hidden: !showChildren,
+        content: (
           <ChildrenTab
             tenantId={props.tenantId}
             parentMemberId={props.primaryMember.id}
             children={props.children}
           />
-        </TabsContent>
-      )}
-
-      {showSport && (
-        <TabsContent value="sport" className="mt-4">
+        ),
+      },
+      {
+        key: "sport",
+        label: "Sportprofiel",
+        hidden: !showSport,
+        content: (
           <SportTab
             tenantId={props.tenantId}
             member={props.sportMember ?? toSportVM(props.primaryMember)}
             athleteCode={props.athleteCodeDisplay}
           />
-        </TabsContent>
-      )}
-
-      {showFinancial && (
-        <TabsContent value="financial" className="mt-4">
+        ),
+      },
+      {
+        key: "trainer_bio",
+        label: "Trainersbio",
+        hidden: !showTrainerBio,
+        content:
+          showTrainerBio && props.trainerBio ? (
+            <TrainerBioTab
+              tenantId={props.tenantId}
+              memberId={props.primaryMember.id}
+              sections={props.trainerBio.sections}
+              fields={props.trainerBio.fields}
+              answers={props.trainerBio.answers}
+            />
+          ) : null,
+      },
+      {
+        key: "financial",
+        label: "Financieel",
+        content: (
           <FinancialTab
             tenantId={props.tenantId}
             memberId={props.primaryMember.id}
@@ -126,48 +111,25 @@ export function ProfileShell(props: ProfileShellProps) {
             canViewIban={props.canViewIban}
             canManageIban={props.canManageIban}
           />
-        </TabsContent>
-      )}
-
-      {showTrainerBio && props.trainerBio && (
-        <TabsContent value="trainer_bio" className="mt-4">
-          <TrainerBioTab
-            tenantId={props.tenantId}
-            memberId={props.primaryMember.id}
-            sections={props.trainerBio.sections}
-            fields={props.trainerBio.fields}
-            answers={props.trainerBio.answers}
-          />
-        </TabsContent>
-      )}
-
-      {showPayments && (
-        <TabsContent value="payments" className="mt-4">
+        ),
+      },
+      {
+        key: "payments",
+        label: "Betalingen",
+        hidden: !showPayments,
+        content: (
           <PaymentsTab
             memberships={props.memberships}
             payments={props.payments}
             paymentMethods={props.paymentMethods}
           />
-        </TabsContent>
-      )}
-    </Tabs>
+        ),
+      },
+    ],
+    [props, showChildren, showSport, showTrainerBio, showPayments],
   );
-}
 
-function Trigger({ value, label }: { value: string; label: string }) {
-  return (
-    <TabsTrigger
-      value={value}
-      className="rounded-xl border px-3 py-1.5 text-sm font-medium data-[state=active]:shadow-sm"
-      style={{
-        borderColor: "var(--surface-border)",
-        backgroundColor: "var(--surface-soft)",
-        color: "var(--text-primary)",
-      }}
-    >
-      {label}
-    </TabsTrigger>
-  );
+  return <TabShell tabs={tabs} defaultKey="general" />;
 }
 
 function toSportVM(g: GeneralMemberVM): SportMemberVM {

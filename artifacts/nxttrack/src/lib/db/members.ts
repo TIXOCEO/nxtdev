@@ -47,6 +47,16 @@ export interface GetMembersOptions {
   roles?: string[] | null;
   /** Filter: only members that are part of this group. */
   groupId?: string | null;
+  /** Sprint 39 — vrije tekst, matcht op naam/e-mail (case-insensitive). */
+  search?: string | null;
+  /** Sprint 39 — filter op specifieke member_status waarden. */
+  statuses?: string[] | null;
+  /** Sprint 39 — alleen leden met een actieve membership voor dit plan. */
+  planId?: string | null;
+  /** Sprint 39 — paginatie offset (0-based). */
+  offset?: number | null;
+  /** Sprint 39 — paginatie limiet. */
+  limit?: number | null;
 }
 
 export async function getMembersByTenant(
@@ -98,6 +108,21 @@ export async function getMembersByTenant(
     );
     filterIdSets.push(ids);
   }
+  if (opts.planId) {
+    // Members met een actieve (status='active') koppeling aan dit plan.
+    const { data: pIds } = await supabase
+      .from("member_memberships")
+      .select("member_id, members!inner(tenant_id)")
+      .eq("members.tenant_id", tenantId)
+      .eq("membership_plan_id", opts.planId)
+      .eq("status", "active");
+    const ids = Array.from(
+      new Set(
+        ((pIds ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+      ),
+    );
+    filterIdSets.push(ids);
+  }
 
   let restrictIds: string[] | null = null;
   if (filterIdSets.length > 0) {
@@ -130,6 +155,28 @@ export async function getMembersByTenant(
     }
     if (restrictIds) {
       q = q.in("id", restrictIds);
+    }
+    // Sprint 39 — vrije zoek-filter op naam of e-mail.
+    if (opts.search && opts.search.trim()) {
+      // Escapeer wildcards in user-input om PostgREST `or` injectie te voorkomen.
+      const raw = opts.search.trim().replace(/[\\%,()]/g, " ").trim();
+      if (raw) {
+        const pat = `%${raw}%`;
+        q = q.or(
+          `full_name.ilike.${pat},first_name.ilike.${pat},last_name.ilike.${pat},email.ilike.${pat}`,
+        );
+      }
+    }
+    // Sprint 39 — meerdere statuses toelaten (multi-select).
+    if (opts.statuses && opts.statuses.length > 0) {
+      q = q.in("member_status", opts.statuses);
+    }
+    // Sprint 39 — paginatie. We range-en op offset+limit; PostgREST gebruikt
+    // inclusive bounds, dus `to = from + limit - 1`.
+    if (opts.limit && opts.limit > 0) {
+      const from = Math.max(0, opts.offset ?? 0);
+      const to = from + opts.limit - 1;
+      q = q.range(from, to);
     }
     return q;
   };
@@ -231,6 +278,108 @@ export async function countMembersByTenant(
   }
   const { count, error } = await q;
   if (error) throw new Error(`Failed to count members: ${error.message}`);
+  return count ?? 0;
+}
+
+/**
+ * Sprint 39 — Telling die alle filters mee neemt zodat de ledenlijst-paginatie
+ * "X van Y resultaten" kan tonen los van de huidige page-window. Hergebruikt
+ * dezelfde restrict-logic als `getMembersByTenant` (op een fractie van de
+ * kosten omdat we count head-only doen). We voeren paginatie nadrukkelijk
+ * NIET door — dit is het filtered totaal.
+ */
+export async function countFilteredMembersByTenant(
+  tenantId: string,
+  opts: GetMembersOptions = {},
+): Promise<number> {
+  const supabase = await createClient();
+
+  const filterIdSets: string[][] = [];
+  const wantedRoles = (opts.roles ?? []).filter((r) => r.length > 0);
+  if (wantedRoles.length > 0) {
+    const { data: rIds } = await supabase
+      .from("member_roles")
+      .select("member_id, members!inner(tenant_id)")
+      .eq("members.tenant_id", tenantId)
+      .in("role", wantedRoles);
+    filterIdSets.push(
+      Array.from(
+        new Set(
+          ((rIds ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+        ),
+      ),
+    );
+  }
+  if (opts.groupId) {
+    const { data: gIds } = await supabase
+      .from("group_members")
+      .select("member_id, groups!inner(tenant_id)")
+      .eq("groups.tenant_id", tenantId)
+      .eq("group_id", opts.groupId);
+    filterIdSets.push(
+      Array.from(
+        new Set(
+          ((gIds ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+        ),
+      ),
+    );
+  }
+  if (opts.planId) {
+    const { data: pIds } = await supabase
+      .from("member_memberships")
+      .select("member_id, members!inner(tenant_id)")
+      .eq("members.tenant_id", tenantId)
+      .eq("membership_plan_id", opts.planId)
+      .eq("status", "active");
+    filterIdSets.push(
+      Array.from(
+        new Set(
+          ((pIds ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+        ),
+      ),
+    );
+  }
+
+  let restrictIds: string[] | null = null;
+  if (filterIdSets.length > 0) {
+    restrictIds = filterIdSets.reduce<string[]>((acc, set, i) => {
+      if (i === 0) return set;
+      const s = new Set(set);
+      return acc.filter((id) => s.has(id));
+    }, []);
+    if (restrictIds.length === 0) return 0;
+  }
+
+  let q = supabase
+    .from("members")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenantId);
+
+  if (opts.onlyArchived) {
+    q = q.not("archived_at", "is", null);
+  } else if (!opts.includeArchived) {
+    q = q.is("archived_at", null);
+  }
+  if (opts.memberSinceFrom) q = q.gte("member_since", opts.memberSinceFrom);
+  if (opts.memberSinceTo) q = q.lte("member_since", opts.memberSinceTo);
+  if (restrictIds) q = q.in("id", restrictIds);
+  if (opts.search && opts.search.trim()) {
+    const raw = opts.search.trim().replace(/[\\%,()]/g, " ").trim();
+    if (raw) {
+      const pat = `%${raw}%`;
+      q = q.or(
+        `full_name.ilike.${pat},first_name.ilike.${pat},last_name.ilike.${pat},email.ilike.${pat}`,
+      );
+    }
+  }
+  if (opts.statuses && opts.statuses.length > 0) {
+    q = q.in("member_status", opts.statuses);
+  }
+
+  const { count, error } = await q;
+  if (error) {
+    throw new Error(`Failed to count filtered members: ${error.message}`);
+  }
   return count ?? 0;
 }
 

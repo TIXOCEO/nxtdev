@@ -1,12 +1,19 @@
 import Link from "next/link";
-import { Users, Archive, ArchiveRestore, ArrowUp, ArrowDown, Download } from "lucide-react";
+import {
+  Users,
+  Archive,
+  ArchiveRestore,
+  ArrowUp,
+  ArrowDown,
+  Download,
+} from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import {
-  countMembersByTenant,
+  countFilteredMembersByTenant,
   getMembersByTenant,
   type MemberSortKey,
   type SortOrder,
@@ -16,6 +23,10 @@ import { MemberCard } from "@/components/tenant/member-card";
 import { AddMemberWizard } from "./_add-member-wizard";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
 import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
+import {
+  MembersFilterSheet,
+  ActiveFiltersStrip,
+} from "./_filter-sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +46,11 @@ interface Search {
   order?: string;
   role?: string | string[];
   group?: string;
+  plan?: string;
+  q?: string;
+  st?: string | string[];
+  page?: string;
+  size?: string;
 }
 
 const VALID_SORTS: MemberSortKey[] = [
@@ -44,19 +60,27 @@ const VALID_SORTS: MemberSortKey[] = [
   "archived_at",
   "created_at",
 ];
-
 const VALID_ROLES = ["parent", "athlete", "trainer", "staff", "volunteer"];
+const VALID_STATUSES = [
+  "prospect",
+  "invited",
+  "aspirant",
+  "pending",
+  "active",
+  "paused",
+  "inactive",
+  "cancelled",
+];
+const VALID_PAGE_SIZES = [25, 50, 100] as const;
 
 function isUuid(s: string | undefined): s is string {
   return !!s && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
-
-function normalizeRoles(raw: string | string[] | undefined): string[] {
+function normalizeMulti(raw: string | string[] | undefined, allowed: string[]): string[] {
   if (!raw) return [];
   const arr = Array.isArray(raw) ? raw : [raw];
-  return Array.from(new Set(arr.filter((r) => VALID_ROLES.includes(r))));
+  return Array.from(new Set(arr.filter((r) => allowed.includes(r))));
 }
-
 function formatDate(value: string | null): string {
   if (!value) return "—";
   const d = new Date(value);
@@ -67,11 +91,8 @@ function formatDate(value: string | null): string {
     year: "numeric",
   });
 }
-
 function isValidIsoDate(s: string | undefined): s is string {
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  // Reject niet-bestaande kalenderdata zoals 2026-99-99 voordat ze in de
-  // SQL-query terechtkomen.
   const [y, m, d] = s.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   return (
@@ -91,8 +112,11 @@ export default async function TenantMembersPage({
 
   const memberSinceFrom = isValidIsoDate(sp.since_from) ? sp.since_from : null;
   const memberSinceTo = isValidIsoDate(sp.since_to) ? sp.since_to : null;
-  const selectedRoles = normalizeRoles(sp.role);
+  const selectedRoles = normalizeMulti(sp.role, VALID_ROLES);
+  const selectedStatuses = normalizeMulti(sp.st, VALID_STATUSES);
   const selectedGroupId = isUuid(sp.group) ? sp.group : null;
+  const selectedPlanId = isUuid(sp.plan) ? sp.plan : null;
+  const search = (sp.q ?? "").toString().slice(0, 120);
 
   const requestedSort = (sp.sort ?? "") as MemberSortKey;
   const sortBy: MemberSortKey = VALID_SORTS.includes(requestedSort)
@@ -102,30 +126,55 @@ export default async function TenantMembersPage({
       : "created_at";
   const sortOrder: SortOrder = sp.order === "asc" ? "asc" : "desc";
 
+  const requestedSize = Number.parseInt(sp.size ?? "", 10);
+  const pageSize: number = (VALID_PAGE_SIZES as readonly number[]).includes(requestedSize)
+    ? requestedSize
+    : 25;
+  const requestedPage = Number.parseInt(sp.page ?? "", 10);
+  const requestedPageSafe =
+    Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
   const requested = await readActiveTenantCookie();
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const [members, allGroups, totalCount] = await Promise.all([
-    getMembersByTenant(result.tenant.id, {
-      onlyArchived: showArchived,
-      memberSinceFrom,
-      memberSinceTo,
-      sortBy,
-      sortOrder,
-      roles: selectedRoles,
-      groupId: selectedGroupId,
-    }),
-    getGroupsByTenant(result.tenant.id),
-    countMembersByTenant(result.tenant.id, { onlyArchived: showArchived }),
-  ]);
-  const existingParents = members
-    .filter((m) => m.roles.includes("parent"))
-    .map((m) => ({ id: m.id, full_name: m.full_name }));
+  const filterOpts = {
+    onlyArchived: showArchived,
+    memberSinceFrom,
+    memberSinceTo,
+    sortBy,
+    sortOrder,
+    roles: selectedRoles,
+    groupId: selectedGroupId,
+    planId: selectedPlanId,
+    search,
+    statuses: selectedStatuses,
+  };
 
-  // Sprint D: gate "Voeg toe". Alleen platform_admin, tenant_admin
-  // (enum-membership) of een gebruiker met expliciete
-  // `members.create` / `members.write` permissie krijgt de knop te zien.
+  // First clamp page using the count, then fetch the page itself.
+  const [allGroups, allPlans, totalCount, parentsAll] = await Promise.all([
+    getGroupsByTenant(result.tenant.id),
+    getPlansByTenant(result.tenant.id),
+    countFilteredMembersByTenant(result.tenant.id, filterOpts),
+    // Unpaginated parent set for AddMemberWizard — must not depend on
+    // current page/filter state so the wizard always shows all parents.
+    getMembersByTenant(result.tenant.id, { roles: ["parent"] }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const page = Math.min(Math.max(1, requestedPageSafe), totalPages);
+
+  const members = await getMembersByTenant(result.tenant.id, {
+    ...filterOpts,
+    offset: (page - 1) * pageSize,
+    limit: pageSize,
+  });
+
+  const existingParents = parentsAll.map((m) => ({
+    id: m.id,
+    full_name: m.full_name,
+  }));
+
   const isTenantAdminEnum = result.membership?.role === "tenant_admin";
   const explicitPerms = result.isPlatformAdmin || isTenantAdminEnum
     ? []
@@ -136,55 +185,54 @@ export default async function TenantMembersPage({
     explicitPerms.includes("members.create") ||
     explicitPerms.includes("members.write");
 
-  // Optionele subscription-keuze tijdens aanmaken: alleen tonen als
-  // de tenant lidmaatschapsplannen heeft.
-  const allPlans = canAdd ? await getPlansByTenant(result.tenant.id) : [];
   const activePlans = allPlans
     .filter((p) => p.is_active)
     .map((p) => ({ id: p.id, name: p.name }));
 
-  const appendSharedFilters = (params: URLSearchParams) => {
+  const buildHref = (overrides: Record<string, string | null>): string => {
+    const params = new URLSearchParams();
+    if (showArchived) params.set("status", "archived");
+    if (memberSinceFrom) params.set("since_from", memberSinceFrom);
+    if (memberSinceTo) params.set("since_to", memberSinceTo);
+    for (const r of selectedRoles) params.append("role", r);
+    for (const s of selectedStatuses) params.append("st", s);
+    if (selectedGroupId) params.set("group", selectedGroupId);
+    if (selectedPlanId) params.set("plan", selectedPlanId);
+    if (search) params.set("q", search);
+    params.set("sort", sortBy);
+    params.set("order", sortOrder);
+    if (pageSize !== 25) params.set("size", String(pageSize));
+    if (page !== 1) params.set("page", String(page));
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v === null) params.delete(k);
+      else params.set(k, v);
+    }
+    const qs = params.toString();
+    return qs ? `/tenant/members?${qs}` : "/tenant/members";
+  };
+
+  const buildExportHref = (): string => {
+    const params = new URLSearchParams();
     if (showArchived) params.set("status", "archived");
     if (memberSinceFrom) params.set("since_from", memberSinceFrom);
     if (memberSinceTo) params.set("since_to", memberSinceTo);
     for (const r of selectedRoles) params.append("role", r);
     if (selectedGroupId) params.set("group", selectedGroupId);
-  };
-
-  // Build CSV-export URL die hetzelfde filter + sortering meeneemt.
-  const buildExportHref = (): string => {
-    const params = new URLSearchParams();
-    appendSharedFilters(params);
     params.set("sort", sortBy);
     params.set("order", sortOrder);
     const qs = params.toString();
-    return qs
-      ? `/tenant/members/export?${qs}`
-      : "/tenant/members/export";
+    return qs ? `/tenant/members/export?${qs}` : "/tenant/members/export";
   };
 
-  // Helper to build sort-toggle URLs that preserve other query params.
   const buildSortHref = (key: MemberSortKey): string => {
-    const params = new URLSearchParams();
-    appendSharedFilters(params);
-    params.set("sort", key);
     const nextOrder: SortOrder =
       sortBy === key && sortOrder === "asc" ? "desc" : "asc";
-    params.set("order", nextOrder);
-    const qs = params.toString();
-    return qs ? `/tenant/members?${qs}` : "/tenant/members";
+    return buildHref({ sort: key, order: nextOrder, page: null });
   };
 
-  const hasFilter =
-    !!memberSinceFrom ||
-    !!memberSinceTo ||
-    selectedRoles.length > 0 ||
-    !!selectedGroupId;
-
-  const filteredCount = members.length;
-  const countLabel = hasFilter
-    ? `${filteredCount} van ${totalCount} ${totalCount === 1 ? "lid" : "leden"}`
-    : `${totalCount} ${totalCount === 1 ? "lid" : "leden"}`;
+  const safePage = page;
+  const fromIdx = totalCount === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const toIdx = totalCount === 0 ? 0 : Math.min(totalCount, safePage * pageSize);
 
   const SortIndicator = ({ col }: { col: MemberSortKey }) =>
     sortBy === col ? (
@@ -202,6 +250,22 @@ export default async function TenantMembersPage({
         description="Beheer ouders, sporters, trainers en staf van deze vereniging."
         actions={
           <div className="flex items-center gap-2">
+            <MembersFilterSheet
+              groups={allGroups.map((g) => ({ id: g.id, name: g.name }))}
+              plans={activePlans}
+              showArchived={showArchived}
+            />
+            <a
+              href={buildExportHref()}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors"
+              style={{
+                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--surface-soft)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <Download className="h-3.5 w-3.5" /> Exporteer CSV
+            </a>
             <Link
               href={
                 showArchived
@@ -238,150 +302,51 @@ export default async function TenantMembersPage({
         }
       />
 
-      {/* Sprint G — datumfilter "Lid sinds". Plain GET-form zodat de URL
-          deelbaar/bookmarkbaar blijft en server-render snel is. */}
-      <form
-        method="get"
-        className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border p-3"
-        style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-        }}
-      >
-        {showArchived ? (
-          <input type="hidden" name="status" value="archived" />
-        ) : null}
-        {sortBy ? <input type="hidden" name="sort" value={sortBy} /> : null}
-        <input type="hidden" name="order" value={sortOrder} />
-        <label className="flex flex-col text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-          Lid sinds van
-          <input
-            type="date"
-            name="since_from"
-            defaultValue={memberSinceFrom ?? ""}
-            className="mt-1 h-9 rounded-lg border px-2 text-sm"
-            style={{
-              borderColor: "var(--surface-border)",
-              backgroundColor: "var(--surface-soft)",
-              color: "var(--text-primary)",
-            }}
-          />
-        </label>
-        <label className="flex flex-col text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-          tot
-          <input
-            type="date"
-            name="since_to"
-            defaultValue={memberSinceTo ?? ""}
-            className="mt-1 h-9 rounded-lg border px-2 text-sm"
-            style={{
-              borderColor: "var(--surface-border)",
-              backgroundColor: "var(--surface-soft)",
-              color: "var(--text-primary)",
-            }}
-          />
-        </label>
-        <fieldset
-          className="flex flex-col text-xs font-medium"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          <legend className="mb-1">Rollen</legend>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {VALID_ROLES.map((role) => (
-              <label
-                key={role}
-                className="inline-flex items-center gap-1.5"
-                style={{ color: "var(--text-primary)" }}
-              >
-                <input
-                  type="checkbox"
-                  name="role"
-                  value={role}
-                  defaultChecked={selectedRoles.includes(role)}
-                  className="h-3.5 w-3.5"
-                />
-                <span>{ROLE_LABELS[role] ?? role}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <label className="flex flex-col text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-          Groep
-          <select
-            name="group"
-            defaultValue={selectedGroupId ?? ""}
-            className="mt-1 h-9 rounded-lg border px-2 text-sm"
-            style={{
-              borderColor: "var(--surface-border)",
-              backgroundColor: "var(--surface-soft)",
-              color: "var(--text-primary)",
-            }}
-          >
-            <option value="">Alle groepen</option>
-            {allGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="h-9 rounded-lg border px-3 text-xs font-semibold"
-          style={{
-            borderColor: "var(--surface-border)",
-            backgroundColor: "var(--accent)",
-            color: "var(--text-primary)",
-          }}
-        >
-          Filter
-        </button>
-        {hasFilter && (
-          <Link
-            href={
-              showArchived ? "/tenant/members?status=archived" : "/tenant/members"
-            }
-            className="h-9 self-end rounded-lg px-3 text-xs font-medium leading-9"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Wis filter
-          </Link>
-        )}
-        <a
-          href={buildExportHref()}
-          className="ml-auto inline-flex h-9 items-center gap-1.5 self-end rounded-lg border px-3 text-xs font-semibold transition-colors"
-          style={{
-            borderColor: "var(--surface-border)",
-            backgroundColor: "var(--surface-soft)",
-            color: "var(--text-primary)",
-          }}
-        >
-          <Download className="h-3.5 w-3.5" />
-          Exporteer CSV
-        </a>
-      </form>
+      <ActiveFiltersStrip
+        groups={allGroups.map((g) => ({ id: g.id, name: g.name }))}
+        plans={activePlans}
+      />
 
       <div
-        className="mb-3 flex items-center justify-between text-sm"
+        className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm"
         style={{ color: "var(--text-secondary)" }}
         aria-live="polite"
       >
         <span>
           <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
-            {countLabel}
+            {totalCount === 0
+              ? "Geen resultaten"
+              : `${fromIdx}–${toIdx} van ${totalCount}`}
           </span>
-          {hasFilter ? " (filters actief)" : ""}
+          {totalCount > 0 ? (totalCount === 1 ? " lid" : " leden") : ""}
         </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs">Per pagina:</span>
+          {VALID_PAGE_SIZES.map((s) => (
+            <Link
+              key={s}
+              href={buildHref({ size: String(s), page: null })}
+              className="rounded-lg border px-2 py-0.5 text-xs"
+              style={{
+                borderColor: "var(--surface-border)",
+                backgroundColor: pageSize === s ? "var(--accent)" : "transparent",
+                color: "var(--text-primary)",
+              }}
+            >
+              {s}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {members.length === 0 ? (
         <EmptyState
           icon={Users}
-          title={showArchived ? "Geen gearchiveerde leden" : "Nog geen leden"}
+          title={showArchived ? "Geen gearchiveerde leden" : "Geen leden gevonden"}
           description={
             showArchived
               ? "Er zijn momenteel geen gearchiveerde leden in deze vereniging."
-              : "Klik rechtsboven op 'Voeg toe' om het eerste lid aan te maken."
+              : "Pas de filters aan of voeg een nieuw lid toe via de knop rechtsboven."
           }
         />
       ) : (
@@ -538,8 +503,63 @@ export default async function TenantMembersPage({
               </table>
             </div>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <nav
+              aria-label="Paginatie"
+              className="mt-4 flex items-center justify-center gap-1"
+            >
+              <PaginationLink
+                href={safePage > 1 ? buildHref({ page: String(safePage - 1) }) : null}
+                label="Vorige"
+              />
+              <span
+                className="px-3 text-xs"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Pagina {safePage} van {totalPages}
+              </span>
+              <PaginationLink
+                href={
+                  safePage < totalPages
+                    ? buildHref({ page: String(safePage + 1) })
+                    : null
+                }
+                label="Volgende"
+              />
+            </nav>
+          )}
         </>
       )}
     </>
+  );
+}
+
+function PaginationLink({ href, label }: { href: string | null; label: string }) {
+  if (!href) {
+    return (
+      <span
+        className="rounded-lg border px-3 py-1 text-xs opacity-50"
+        style={{
+          borderColor: "var(--surface-border)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        {label}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5"
+      style={{
+        borderColor: "var(--surface-border)",
+        color: "var(--text-primary)",
+      }}
+    >
+      {label}
+    </Link>
   );
 }

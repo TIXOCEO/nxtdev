@@ -21,6 +21,8 @@ export interface AuditQuery {
   /** ISO date (yyyy-mm-dd) inclusive upper bound. */
   toDate?: string | null;
   limit?: number;
+  /** Sprint 39 — beperk op één lid (voor het Logboek-tab). */
+  memberId?: string | null;
 }
 
 /**
@@ -41,6 +43,9 @@ export async function getAuditLogs(q: AuditQuery): Promise<AuditLogRow[]> {
 
   if (q.action && q.action.trim() !== "") {
     query = query.eq("action", q.action.trim());
+  }
+  if (q.memberId) {
+    query = query.eq("member_id", q.memberId);
   }
   if (q.fromDate) {
     query = query.gte("created_at", `${q.fromDate}T00:00:00Z`);

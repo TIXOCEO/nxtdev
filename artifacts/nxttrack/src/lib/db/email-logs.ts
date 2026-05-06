@@ -27,6 +27,34 @@ export interface EmailLogWithTenant extends EmailLog {
   tenant_name: string | null;
 }
 
+/**
+ * Sprint 39 — Haal email-historie op voor één lid via diens e-mailadres.
+ * `email_logs` heeft (nog) geen member_id-kolom; e-mail is hier de natural
+ * key. Case-insensitive vergelijken voorkomt false negatives bij verschillen
+ * in casing tussen Supabase Auth en `members.email`.
+ */
+export async function getEmailLogsByMemberEmail(
+  tenantId: string,
+  email: string | null,
+  limit = 50,
+): Promise<EmailLog[]> {
+  if (!email) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("email_logs")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .ilike("recipient_email", email)
+    .order("sent_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error("[email-logs] member query failed:", error.message);
+    return [];
+  }
+  return (data ?? []) as EmailLog[];
+}
+
 export async function getAllEmailLogs(limit = 200): Promise<EmailLogWithTenant[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
