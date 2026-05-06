@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertTenantAccess } from "./_assert-access";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { createMediaWallItemSchema } from "@/lib/validation/media-wall";
 import type { z } from "zod";
 
@@ -15,14 +15,15 @@ function revalidate() {
   revalidatePath("/t", "layout");
 }
 
+// Autorisatie via RLS (`mwall_admin_all` met has_tenant_access).
 export async function createMediaWallItem(
   input: z.infer<typeof createMediaWallItemSchema>,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = createMediaWallItemSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldig" };
   await assertTenantAccess(parsed.data.tenant_id);
-  const admin = createAdminClient();
-  const { data: maxRow } = await admin
+  const supabase = await createClient();
+  const { data: maxRow } = await supabase
     .from("media_wall_items")
     .select("position")
     .eq("tenant_id", parsed.data.tenant_id)
@@ -30,7 +31,7 @@ export async function createMediaWallItem(
     .limit(1)
     .maybeSingle();
   const nextPos = ((maxRow as { position: number } | null)?.position ?? -1) + 1;
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("media_wall_items")
     .insert({
       tenant_id: parsed.data.tenant_id,
@@ -56,14 +57,14 @@ export async function updateMediaWallItem(input: {
   is_active?: boolean;
 }): Promise<ActionResult<void>> {
   await assertTenantAccess(input.tenant_id);
-  const admin = createAdminClient();
+  const supabase = await createClient();
   const patch: Record<string, unknown> = {};
   if (input.title !== undefined) patch.title = input.title;
   if (input.media_url !== undefined) patch.media_url = input.media_url;
   if (input.media_type !== undefined) patch.media_type = input.media_type;
   if (input.is_active !== undefined) patch.is_active = input.is_active;
   if (Object.keys(patch).length === 0) return { ok: true, data: undefined };
-  const { error } = await admin
+  const { error } = await supabase
     .from("media_wall_items")
     .update(patch)
     .eq("id", input.id)
@@ -78,8 +79,8 @@ export async function deleteMediaWallItem(input: {
   id: string;
 }): Promise<ActionResult<void>> {
   await assertTenantAccess(input.tenant_id);
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("media_wall_items")
     .delete()
     .eq("id", input.id)
@@ -94,9 +95,9 @@ export async function reorderMediaWallItems(input: {
   ordered_ids: string[];
 }): Promise<ActionResult<void>> {
   await assertTenantAccess(input.tenant_id);
-  const admin = createAdminClient();
+  const supabase = await createClient();
   for (let i = 0; i < input.ordered_ids.length; i++) {
-    const { error } = await admin
+    const { error } = await supabase
       .from("media_wall_items")
       .update({ position: i })
       .eq("id", input.ordered_ids[i])

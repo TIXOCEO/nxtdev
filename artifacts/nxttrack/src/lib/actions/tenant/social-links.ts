@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { SOCIAL_PLATFORM_KEYS } from "@/lib/social/catalog";
 
 export type ActionResult<T = void> =
@@ -18,6 +18,7 @@ const upsertSchema = z.object({
   sort_order: z.number().int().default(0),
 });
 
+// Autorisatie via RLS (`tsl_admin_all` met has_tenant_access).
 export async function upsertSocialLink(
   input: z.infer<typeof upsertSchema>,
 ): Promise<ActionResult<void>> {
@@ -32,8 +33,8 @@ export async function upsertSocialLink(
   if (url && !/^(https?:|mailto:|tel:)/i.test(url)) {
     return { ok: false, error: "URL moet beginnen met http(s)://, mailto: of tel:" };
   }
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("tenant_social_links")
     .upsert(
       {
@@ -59,8 +60,8 @@ export async function deleteSocialLink(
   input: z.infer<typeof removeSchema>,
 ): Promise<ActionResult<void>> {
   await requireTenantAdmin(input.tenant_id);
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("tenant_social_links")
     .delete()
     .eq("tenant_id", input.tenant_id)

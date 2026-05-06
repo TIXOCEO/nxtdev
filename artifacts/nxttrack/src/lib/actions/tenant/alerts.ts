@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertTenantAccess } from "./_assert-access";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { createAlertSchema, updateAlertSchema } from "@/lib/validation/alerts";
 import type { z } from "zod";
 
@@ -15,14 +15,16 @@ function revalidate() {
   revalidatePath("/t", "layout");
 }
 
+// Autorisatie via RLS (`alerts_admin_all` met has_tenant_access).
+// `assertTenantAccess` blijft als nettere foutmelding/early-exit.
 export async function createAlert(
   input: z.infer<typeof createAlertSchema>,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = createAlertSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldig" };
   const user = await assertTenantAccess(parsed.data.tenant_id);
-  const admin = createAdminClient();
-  const { data, error } = await admin
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from("alerts")
     .insert({
       tenant_id: parsed.data.tenant_id,
@@ -47,14 +49,14 @@ export async function updateAlert(
   const parsed = updateAlertSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldig" };
   await assertTenantAccess(parsed.data.tenant_id);
-  const admin = createAdminClient();
+  const supabase = await createClient();
   const { id, tenant_id, ...rest } = parsed.data;
   const patch: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(rest)) {
     if (v !== undefined) patch[k] = v;
   }
   patch.updated_at = new Date().toISOString();
-  const { error } = await admin
+  const { error } = await supabase
     .from("alerts")
     .update(patch)
     .eq("id", id)
@@ -69,8 +71,8 @@ export async function deleteAlert(input: {
   id: string;
 }): Promise<ActionResult<void>> {
   await assertTenantAccess(input.tenant_id);
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("alerts")
     .delete()
     .eq("id", input.id)
@@ -86,8 +88,8 @@ export async function toggleAlertActive(input: {
   is_active: boolean;
 }): Promise<ActionResult<void>> {
   await assertTenantAccess(input.tenant_id);
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("alerts")
     .update({ is_active: input.is_active, updated_at: new Date().toISOString() })
     .eq("id", input.id)

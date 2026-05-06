@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
 
 export type ActionResult<T = void> =
@@ -25,6 +25,7 @@ function blankToNull<T extends string | null | undefined>(v: T): string | null {
   return t.length === 0 ? null : t;
 }
 
+// Autorisatie via RLS (`tss_tenant_all` / `tps_tenant_all` met has_tenant_access).
 export async function saveTenantSeoSettings(
   input: z.infer<typeof settingsSchema>,
 ): Promise<ActionResult<void>> {
@@ -33,8 +34,8 @@ export async function saveTenantSeoSettings(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldige invoer" };
   }
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("tenant_seo_settings")
     .upsert(
       {
@@ -71,7 +72,7 @@ export async function upsertPageSeo(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldige invoer" };
   }
-  const admin = createAdminClient();
+  const supabase = await createClient();
   const payload = {
     tenant_id: parsed.data.tenant_id,
     page_path: parsed.data.page_path.replace(/^\/+|\/+$/g, ""),
@@ -80,7 +81,7 @@ export async function upsertPageSeo(
     image_url: blankToNull(parsed.data.image_url),
     noindex: parsed.data.noindex,
   };
-  const { error } = await admin
+  const { error } = await supabase
     .from("tenant_page_seo")
     .upsert(payload, { onConflict: "tenant_id,page_path" });
   if (error) return { ok: false, error: error.message };
@@ -98,8 +99,8 @@ export async function deletePageSeo(
   await requireTenantAdmin(input.tenant_id);
   const parsed = deletePageSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige id" };
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("tenant_page_seo")
     .delete()
     .eq("id", parsed.data.id)

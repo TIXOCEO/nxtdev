@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
 import { slugify, findUniqueSlug } from "@/lib/utils/slug";
 
@@ -54,6 +54,7 @@ const RESERVED_SLUGS = new Set([
   "p",
 ]);
 
+// Autorisatie via RLS (`tcp_tenant_all` met has_tenant_access).
 export async function upsertCustomPage(
   input: z.infer<typeof upsertSchema>,
 ): Promise<ActionResult<{ id: string }>> {
@@ -62,12 +63,12 @@ export async function upsertCustomPage(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Ongeldige invoer" };
   }
-  const admin = createAdminClient();
+  const supabase = await createClient();
 
   // Auto-fix uniekheid binnen (tenant, parent_id). Bouwt de set van bestaande
   // slugs op die overlappen met de gewenste basis en kiest een vrije variant.
   const baseSlug = parsed.data.slug;
-  const sameLevel = admin
+  const sameLevel = supabase
     .from("tenant_custom_pages")
     .select("id, slug")
     .eq("tenant_id", parsed.data.tenant_id)
@@ -101,15 +102,16 @@ export async function upsertCustomPage(
   };
 
   if (parsed.data.id) {
-    const { error } = await admin
+    const { error } = await supabase
       .from("tenant_custom_pages")
       .update(payload)
-      .eq("id", parsed.data.id);
+      .eq("id", parsed.data.id)
+      .eq("tenant_id", parsed.data.tenant_id);
     if (error) return { ok: false, error: error.message };
     revalidatePath("/tenant/pages");
     return { ok: true, data: { id: parsed.data.id } };
   }
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("tenant_custom_pages")
     .insert(payload)
     .select("id")
@@ -129,8 +131,8 @@ export async function deleteCustomPage(
   await requireTenantAdmin(input.tenant_id);
   const parsed = deleteSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige id" };
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("tenant_custom_pages")
     .delete()
     .eq("id", parsed.data.id)
@@ -151,11 +153,11 @@ export async function reorderCustomPages(
   await requireTenantAdmin(input.tenant_id);
   const parsed = reorderSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige invoer" };
-  const admin = createAdminClient();
+  const supabase = await createClient();
   // Update sort_order in declared sequence.
   let i = 0;
   for (const id of parsed.data.ids) {
-    const q = admin
+    const q = supabase
       .from("tenant_custom_pages")
       .update({ sort_order: i })
       .eq("id", id)
@@ -185,8 +187,8 @@ export async function toggleCustomPageFlag(
   await requireTenantAdmin(input.tenant_id);
   const parsed = toggleSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Ongeldige invoer" };
-  const admin = createAdminClient();
-  const { error } = await admin
+  const supabase = await createClient();
+  const { error } = await supabase
     .from("tenant_custom_pages")
     .update({ [parsed.data.field]: parsed.data.value })
     .eq("id", parsed.data.id)
