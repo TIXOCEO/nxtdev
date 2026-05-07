@@ -23,6 +23,13 @@ export interface Terminology {
   session_plural: string;
   program_singular: string;
   program_plural: string;
+  /**
+   * Page-title voor het programmabeheer-scherm. Apart van `program_plural`
+   * omdat de bestaande NL-UI hier "Abonnementen" gebruikt terwijl de
+   * sidebar "Lidmaatschappen" toont — discrepantie blijft tot een
+   * vervolgsprint die deze samenvoegt.
+   */
+  program_page_title: string;
   attendance_label: string;
   registration_singular: string;
   registration_plural: string;

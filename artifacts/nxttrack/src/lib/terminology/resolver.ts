@@ -2,26 +2,11 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_TERMINOLOGY } from "./defaults";
+import { resolveTerminology } from "./merge";
 import type { Terminology, TerminologyKey } from "./types";
 
-/**
- * Merge een onbekende JSON-blob in op een Terminology baseline.
- * Niet-string waardes worden genegeerd (geen UI-breuk bij vervuilde data).
- */
-function mergeIntoTerminology(
-  base: Terminology,
-  raw: unknown,
-): Terminology {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return base;
-  const out: Terminology = { ...base };
-  for (const key of Object.keys(base) as TerminologyKey[]) {
-    const v = (raw as Record<string, unknown>)[key];
-    if (typeof v === "string" && v.trim().length > 0) {
-      out[key] = v;
-    }
-  }
-  return out;
-}
+export { mergeIntoTerminology, resolveTerminology } from "./merge";
+export type { Terminology, TerminologyKey };
 
 /**
  * Server-side resolver. Per-request gememoiseerd via React `cache()`,
@@ -65,16 +50,12 @@ export const getTenantTerminology = cache(async function getTenantTerminology(
     const byKey = new Map<string, unknown>();
     for (const t of templates ?? []) byKey.set(t.key, t.terminology_json);
 
-    let result: Terminology = DEFAULT_TERMINOLOGY;
-    result = mergeIntoTerminology(result, byKey.get("generic"));
-    if (sectorKey) {
-      result = mergeIntoTerminology(result, byKey.get(sectorKey));
-    }
-    result = mergeIntoTerminology(result, overrides);
-    return result;
+    return resolveTerminology({
+      generic:   byKey.get("generic"),
+      sector:    sectorKey ? byKey.get(sectorKey) : undefined,
+      overrides,
+    });
   } catch {
-    return DEFAULT_TERMINOLOGY;
+    return { ...DEFAULT_TERMINOLOGY };
   }
 });
-
-export type { Terminology, TerminologyKey };

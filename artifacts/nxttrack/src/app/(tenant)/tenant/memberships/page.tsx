@@ -36,7 +36,7 @@ export default async function TenantMembershipsPage() {
   return (
     <>
       <PageHeading
-        title="Abonnementen"
+        title={terminology.program_page_title}
         description="Definieer lidmaatschapsabonnementen voor deze vereniging."
       />
 

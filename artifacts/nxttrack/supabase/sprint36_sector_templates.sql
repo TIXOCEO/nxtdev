@@ -74,6 +74,7 @@ values
      'session_plural',        'Trainingen',
      'program_singular',      'Lidmaatschap',
      'program_plural',        'Lidmaatschappen',
+     'program_page_title',    'Abonnementen',
      'attendance_label',      'Aanwezigheid',
      'registration_singular', 'Inschrijving',
      'registration_plural',   'Inschrijvingen',
@@ -98,6 +99,7 @@ values
      'session_plural',        'Zwemlessen',
      'program_singular',      'Lespakket',
      'program_plural',        'Lespakketten',
+     'program_page_title',    'Lespakketten',
      'attendance_label',      'Lesaanwezigheid',
      'registration_singular', 'Aanmelding',
      'registration_plural',   'Aanmeldingen',
@@ -122,6 +124,7 @@ values
      'session_plural',        'Sessies',
      'program_singular',      'Programma',
      'program_plural',        'Programma''s',
+     'program_page_title',    'Programma''s',
      'attendance_label',      'Aanwezigheid',
      'registration_singular', 'Aanmelding',
      'registration_plural',   'Aanmeldingen',
@@ -149,13 +152,14 @@ create index if not exists tenants_sector_template_key_idx
   on public.tenants (sector_template_key);
 
 -- ═════════════════════════════════════════════════════════
--- 4. Backfill: bestaande tenants → 'football_school'
---    Idempotent: alleen tenants zonder template krijgen er één.
---    Hierdoor blijft de UI voor Voetbalschool Houtrust en alle
---    overige bestaande tenants tekstueel exact hetzelfde.
+-- 4. Backfill: alleen Voetbalschool Houtrust → 'football_school'.
+--    Idempotent (alleen waar key null is). Andere bestaande tenants
+--    blijven NULL en krijgen via de resolver de generic-fallback —
+--    veilig omdat generic alle keys vult.
 -- ═════════════════════════════════════════════════════════
 update public.tenants
    set sector_template_key = 'football_school'
- where sector_template_key is null;
+ where sector_template_key is null
+   and slug = 'houtrust';
 
 -- Einde sprint36.

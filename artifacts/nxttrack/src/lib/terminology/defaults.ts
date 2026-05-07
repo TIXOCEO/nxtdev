@@ -21,6 +21,7 @@ export const DEFAULT_TERMINOLOGY: Terminology = {
   session_plural: "Sessies",
   program_singular: "Programma",
   program_plural: "Programma's",
+  program_page_title: "Programma's",
   attendance_label: "Aanwezigheid",
   registration_singular: "Aanmelding",
   registration_plural: "Aanmeldingen",

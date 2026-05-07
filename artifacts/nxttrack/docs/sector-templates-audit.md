@@ -123,7 +123,7 @@ Bestand: `artifacts/nxttrack/supabase/sprint36_sector_templates.sql`
 | Members page-title | Leden | **Leden** | Leden |
 | Groups page-title | Groepen | **Groepen** | Lesgroepen |
 | Trainings page-title | Trainingen | **Trainingen** | Zwemlessen |
-| Memberships page-title | Abonnementen | **Abonnementen** (hardcoded gelaten) | Abonnementen |
+| Memberships page-title | Abonnementen | **Abonnementen** (via terminology key `program_page_title`) | Lespakketten |
 | Dashboard "Coming soon" — Players | "Players" (EN) | **Sporters** | Leerlingen |
 | Dashboard "Coming soon" — Trainers | "Trainers" (EN) | **Trainers** | Zweminstructeurs |
 
@@ -131,7 +131,7 @@ Bestand: `artifacts/nxttrack/supabase/sprint36_sector_templates.sql`
 
 * Alléén korte koplabels (page-title + sidebar-item + dashboard-card-label) zijn dynamisch via de resolver.
 * Lopende NL-zinnen (page-`description`s zoals *"Maak teams of trainingsgroepen aan en koppel leden eraan."*, *"Beheer ouders, sporters, trainers en staf van deze vereniging."*, *"Plan trainingen voor groepen, beheer status en aanwezigheid."*, *"Definieer lidmaatschapsabonnementen voor deze vereniging."*) en knop-teksten (*"Nieuwe training"*) blijven **hardcoded NL**, omdat machinaal componeren met `toLowerCase()` snel rare grammatica oplevert (capitalisatie, lidwoorden, samenstellingen). Deze worden in een vervolgsprint via aparte volzin-keys per sector ingevuld.
-* Memberships-page-title blijft hardcoded `"Abonnementen"` om de bestaande page-title vs sidebar-label discrepantie ongewijzigd te laten — opgenomen als vervolgstap in §7.
+* Memberships-page-title is dynamisch via een **aparte** key `program_page_title` (apart van `program_plural`) zodat football_school exact "Abonnementen" toont terwijl de sidebar `program_plural`="Lidmaatschappen" gebruikt — de bestaande NL-discrepantie blijft daarmee bewust ongewijzigd. Een vervolgsprint kan deze samenvoegen (zie §7).
 
 > **Houtrust-regressie**: alle zichtbare strings die vóór sprint 36 NL waren blijven exact gelijk. De **enige** zichtbare wijziging voor Houtrust is dat het dashboard "Coming soon"-blok nu de label *"Sporters"* toont (in plaats van *"Players"*) — dit is een impliciete NL-isering en wordt in de release-notes benoemd.
 
