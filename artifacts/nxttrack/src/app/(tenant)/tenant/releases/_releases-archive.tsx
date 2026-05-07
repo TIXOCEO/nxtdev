@@ -36,12 +36,19 @@ const FILTERS: { value: "all" | ReleaseType; label: string }[] = [
   { value: "patch", label: "Patch" },
 ];
 
-export function ReleasesArchive({ releases }: { releases: PlatformRelease[] }) {
+export function ReleasesArchive({
+  releases,
+  unseenVersions,
+}: {
+  releases: PlatformRelease[];
+  unseenVersions: string[];
+}) {
   const [filter, setFilter] = useState<"all" | ReleaseType>("all");
   const filtered = useMemo(
     () => (filter === "all" ? releases : releases.filter((r) => r.release_type === filter)),
     [filter, releases],
   );
+  const unseen = useMemo(() => new Set(unseenVersions), [unseenVersions]);
 
   return (
     <div className="space-y-4">
@@ -86,6 +93,20 @@ export function ReleasesArchive({ releases }: { releases: PlatformRelease[] }) {
               <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
                 · {fmt(r.published_at)}
               </span>
+              {unseen.has(r.version) ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+                  aria-label="Nieuw — nog niet gelezen"
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: "currentColor" }}
+                  />
+                  Nieuw
+                </span>
+              ) : null}
             </header>
             <h3 className="mt-2 text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
               {r.title}

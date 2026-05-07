@@ -2,7 +2,11 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
-import { getPublishedReleases, markReleaseSeen } from "@/lib/db/releases";
+import {
+  getPublishedReleases,
+  getSeenReleaseVersions,
+  markReleaseSeen,
+} from "@/lib/db/releases";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { ReleasesArchive } from "./_releases-archive";
 
@@ -13,6 +17,17 @@ export default async function TenantReleasesPage() {
     getPublishedReleases(),
     requireAuth(),
   ]);
+
+  // Bepaal welke versies de gebruiker nog niet heeft gezien voordat we de
+  // laatste release als gezien markeren — anders zou de "nieuw"-badge op de
+  // nieuwste versie nooit zichtbaar zijn op de eerste archief-bezoek.
+  const seen = await getSeenReleaseVersions(
+    user.id,
+    releases.map((r) => r.version),
+  );
+  const unseenVersions = releases
+    .filter((r) => !seen.has(r.version))
+    .map((r) => r.version);
 
   // Bezoek aan het archief telt als "ik heb de laatste release gezien".
   if (releases[0]) {
@@ -39,7 +54,7 @@ export default async function TenantReleasesPage() {
           description="Zodra er een release is gepubliceerd zie je die hier terug."
         />
       ) : (
-        <ReleasesArchive releases={releases} />
+        <ReleasesArchive releases={releases} unseenVersions={unseenVersions} />
       )}
     </>
   );

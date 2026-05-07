@@ -135,6 +135,26 @@ export async function hasUserSeenRelease(
 }
 
 /**
+ * Geef de subset van `versions` terug die de gebruiker al heeft gezien.
+ * Eén query; bij fouten geven we een lege set terug zodat de UI eerder
+ * "nieuw" toont dan de pagina te crashen.
+ */
+export async function getSeenReleaseVersions(
+  userId: string,
+  versions: string[],
+): Promise<Set<string>> {
+  if (versions.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("release_reads")
+    .select("version")
+    .eq("user_id", userId)
+    .in("version", versions);
+  if (error) return new Set();
+  return new Set((data ?? []).map((row) => (row as { version: string }).version));
+}
+
+/**
  * Markeer een release als gezien voor de huidige gebruiker. Idempotent;
  * een tweede bezoek aan dezelfde versie houdt de oorspronkelijke `seen_at`.
  */
