@@ -4,7 +4,14 @@
  * which kinds of mails / pushes they want to receive.
  *
  * Unknown keys fall back to a humanized version of the key itself.
+ *
+ * Sprint 38 — `labelFor` accepts an optional `Terminology` so the
+ * training_ and attendance_ labels render sector-aware (e.g. "Nieuwe
+ * zwemles" voor swimming_school i.p.v. "Nieuwe training"). Zonder
+ * terminology valt het terug op de generic-defaults.
  */
+import type { Terminology } from "@/lib/terminology/types";
+
 export interface EventLabel {
   label: string;
   description: string;
@@ -90,8 +97,69 @@ export const EVENT_LABELS: Record<string, EventLabel> = {
   },
 };
 
-export function labelFor(eventKey: string): EventLabel {
-  if (EVENT_LABELS[eventKey]) return EVENT_LABELS[eventKey];
+function lower(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+/**
+ * Render a sector-aware version of the static label/description for the
+ * keys waar dat zinvol is. Houdt grammatica simpel: woorden worden
+ * gewoon ingesubstitueerd, geen verbuiging — dat is goed genoeg voor
+ * NL-zinnen als "Nieuwe zwemles" of "Lesaanwezigheid bijgewerkt".
+ */
+function applyTerminology(
+  eventKey: string,
+  base: EventLabel,
+  t: Terminology,
+): EventLabel {
+  const session = t.session_singular;
+  const sessionLower = lower(session);
+  const attendance = t.attendance_label;
+
+  switch (eventKey) {
+    case "training_created":
+      return {
+        label: `Nieuwe ${sessionLower}`,
+        description: `Wanneer er een ${sessionLower} wordt ingepland voor jouw ${lower(t.group_singular)}.`,
+      };
+    case "training_updated":
+      return {
+        label: `Wijziging in ${sessionLower}`,
+        description: `Wanneer een geplande ${sessionLower} wordt aangepast.`,
+      };
+    case "training_cancelled":
+      return {
+        label: `${session} afgelast`,
+        description: `Wanneer een ${sessionLower} wordt geannuleerd.`,
+      };
+    case "training_reminder":
+      return {
+        label: `Herinnering ${sessionLower}`,
+        description: "Korte reminder vlak voor aanvang.",
+      };
+    case "trainer_attendance_updated":
+      return {
+        label: `${attendance} bijgewerkt`,
+        description: `Wanneer de ${lower(t.instructor_singular)} jouw ${lower(attendance)} heeft genoteerd.`,
+      };
+    case "social_training_recap":
+      return {
+        label: `${session}verslag`,
+        description: `Wanneer er een verslag van een ${sessionLower} wordt geplaatst.`,
+      };
+    default:
+      return base;
+  }
+}
+
+export function labelFor(
+  eventKey: string,
+  terminology?: Terminology,
+): EventLabel {
+  const base = EVENT_LABELS[eventKey];
+  if (base) {
+    return terminology ? applyTerminology(eventKey, base, terminology) : base;
+  }
   return {
     label: eventKey
       .replace(/_/g, " ")

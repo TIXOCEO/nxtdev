@@ -31,13 +31,23 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const ROLE_LABELS: Record<string, string> = {
-  parent: "Ouder",
-  athlete: "Speler",
-  trainer: "Trainer",
-  staff: "Staf",
-  volunteer: "Vrijwilliger",
-};
+// Sprint 38 — `athlete` haalt zijn label uit terminology zodat
+// niet-voetbal sectoren (zwemschool → "Leerling", generic → "Deelnemer")
+// niet langer "Speler" te zien krijgen. Andere rol-labels blijven NL
+// generiek; instructor-naam wordt ook sector-aware gerenderd.
+function buildRoleLabels(t: {
+  participant_singular: string;
+  guardian_singular: string;
+  instructor_singular: string;
+}): Record<string, string> {
+  return {
+    parent: t.guardian_singular,
+    athlete: t.participant_singular,
+    trainer: t.instructor_singular,
+    staff: "Staf",
+    volunteer: "Vrijwilliger",
+  };
+}
 
 interface Search {
   status?: string;
@@ -139,6 +149,7 @@ export default async function TenantMembersPage({
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
   const terminology = await getTenantTerminology(result.tenant.id);
+  const roleLabels = buildRoleLabels(terminology);
 
   const filterOpts = {
     onlyArchived: showArchived,
@@ -456,7 +467,7 @@ export default async function TenantMembersPage({
                       </td>
                       <td className="px-5 py-3 text-xs">
                         {m.roles.length > 0
-                          ? m.roles.map((r) => ROLE_LABELS[r] ?? r).join(", ")
+                          ? m.roles.map((r) => roleLabels[r] ?? r).join(", ")
                           : "—"}
                       </td>
                       <td className="px-5 py-3">

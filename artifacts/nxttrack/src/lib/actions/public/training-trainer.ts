@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/require-auth";
 import { trainerInSessionGroup } from "@/lib/auth/trainer-rules";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { getNotificationEvent } from "@/lib/db/notifications";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import {
   setAttendanceSchema,
   createObservationSchema,
@@ -93,9 +94,10 @@ export async function setAttendanceAsTrainer(
       };
       const memberVisibleNote =
         parsed.data.note_visibility === "member" ? parsed.data.note : null;
+      const t = await getTenantTerminology(parsed.data.tenant_id);
       await sendNotification({
         tenantId: parsed.data.tenant_id,
-        title: `Aanwezigheid bijgewerkt: ${labels[parsed.data.attendance] ?? parsed.data.attendance}`,
+        title: `${t.attendance_label} bijgewerkt: ${labels[parsed.data.attendance] ?? parsed.data.attendance}`,
         contentText: memberVisibleNote ?? "",
         targets: [{ target_type: "member", target_id: parsed.data.member_id }],
         sendEmail: evt.email_enabled,

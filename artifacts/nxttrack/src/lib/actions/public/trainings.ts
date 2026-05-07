@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { getNotificationEvent } from "@/lib/db/notifications";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { getTrainingSettingsResolved } from "@/lib/db/training-settings";
 import { setRsvpSchema, type SetRsvpInput } from "@/lib/validation/trainings";
 
@@ -183,9 +184,13 @@ export async function setMyRsvp(
           target_id: id,
         }));
         if (targets.length > 0) {
+          const term = await getTenantTerminology(parsed.data.tenant_id);
+          const sessionLower =
+            term.session_singular.charAt(0).toLowerCase() +
+            term.session_singular.slice(1);
           await sendNotification({
             tenantId: parsed.data.tenant_id,
-            title: `Late wijziging: ${session.title}`,
+            title: `Late wijziging ${sessionLower}: ${session.title}`,
             contentText: `Reactie binnen de cutoff: ${labels[parsed.data.rsvp]}.`,
             targets,
             sendEmail: evt?.email_enabled ?? false,

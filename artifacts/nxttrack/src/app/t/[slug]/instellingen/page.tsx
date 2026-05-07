@@ -11,6 +11,7 @@ import {
   DEFAULT_USER_VISIBLE_EVENTS,
   labelFor,
 } from "@/lib/notifications/event-labels";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { PrefToggle } from "./_pref-toggle";
 
 interface PageProps {
@@ -26,16 +27,19 @@ export default async function PublicSettingsPage({ params }: PageProps) {
   const user = await getUser();
   if (!user) redirect(`/t/${slug}/login?next=/t/${slug}/instellingen`);
 
-  const [events, prefs, themePref] = await Promise.all([
+  const [events, prefs, themePref, terminology] = await Promise.all([
     getNotificationEventsByTenant(tenant.id),
     getMyNotificationPrefs(tenant.id),
     getUserThemePreference(user.id, tenant.id),
+    getTenantTerminology(tenant.id),
   ]);
   const initialMode: "auto" | "light" | "dark" = themePref?.mode_preference ?? "light";
 
   const tenantKeys = Array.from(new Set(events.map((e) => e.event_key)));
   const eventKeys = tenantKeys.length > 0 ? tenantKeys : DEFAULT_USER_VISIBLE_EVENTS;
-  const sortedKeys = [...eventKeys].sort((a, b) => labelFor(a).label.localeCompare(labelFor(b).label));
+  const sortedKeys = [...eventKeys].sort((a, b) =>
+    labelFor(a, terminology).label.localeCompare(labelFor(b, terminology).label),
+  );
 
   function isEnabled(eventKey: string, channel: "email" | "push"): boolean {
     const row = prefs.find((p) => p.event_key === eventKey && p.channel === channel);
@@ -134,7 +138,7 @@ export default async function PublicSettingsPage({ params }: PageProps) {
 
           <ul className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
             {sortedKeys.map((key) => {
-              const lbl = labelFor(key);
+              const lbl = labelFor(key, terminology);
               return (
                 <li
                   key={key}

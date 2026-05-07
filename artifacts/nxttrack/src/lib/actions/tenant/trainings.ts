@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { assertTenantAccess } from "./_assert-access";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { getNotificationEvent } from "@/lib/db/notifications";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import {
   createTrainingSessionSchema,
   updateTrainingStatusSchema,
@@ -99,9 +100,11 @@ export async function createTrainingSession(
     const evt = await getNotificationEvent(parsed.data.tenant_id, "training_created");
     if (!evt || evt.template_enabled) {
       const when = fmtDateNL(parsed.data.starts_at);
+      const t = await getTenantTerminology(parsed.data.tenant_id);
+      const sessionLower = t.session_singular.charAt(0).toLowerCase() + t.session_singular.slice(1);
       await sendNotification({
         tenantId: parsed.data.tenant_id,
-        title: `Nieuwe training: ${parsed.data.title}`,
+        title: `Nieuwe ${sessionLower}: ${parsed.data.title}`,
         contentText: `${parsed.data.title} — ${when}${
           parsed.data.location ? ` · ${parsed.data.location}` : ""
         }`,
@@ -215,9 +218,10 @@ export async function setAttendance(
       };
       const memberVisibleNote =
         parsed.data.note_visibility === "member" ? parsed.data.note : null;
+      const t = await getTenantTerminology(parsed.data.tenant_id);
       await sendNotification({
         tenantId: parsed.data.tenant_id,
-        title: `Aanwezigheid bijgewerkt: ${labels[parsed.data.attendance] ?? parsed.data.attendance}`,
+        title: `${t.attendance_label} bijgewerkt: ${labels[parsed.data.attendance] ?? parsed.data.attendance}`,
         contentText: memberVisibleNote ?? "",
         targets: [{ target_type: "member", target_id: parsed.data.member_id }],
         sendEmail: evt.email_enabled,
@@ -268,9 +272,12 @@ export async function sendTrainingReminder(input: {
   try {
     const evt = await getNotificationEvent(input.tenant_id, "training_reminder");
     const when = fmtDateNL(session.starts_at);
+    const t = await getTenantTerminology(input.tenant_id);
+    const sessionLower =
+      t.session_singular.charAt(0).toLowerCase() + t.session_singular.slice(1);
     const result = await sendNotification({
       tenantId: input.tenant_id,
-      title: `Herinnering: ${session.title}`,
+      title: `Herinnering ${sessionLower}: ${session.title}`,
       contentText: `Vergeet je aanwezigheid niet door te geven voor ${when}.`,
       contentHtml: `<p>Vergeet je aanwezigheid niet door te geven voor <strong>${when}</strong>${
         session.location ? ` · ${session.location}` : ""

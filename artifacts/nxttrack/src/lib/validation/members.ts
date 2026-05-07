@@ -51,11 +51,17 @@ const optionalGender = z
   .or(z.literal(""))
   .transform((v) => (v ? (v as "male" | "female" | "other") : null));
 
+// Sprint 38 — sector-agnostic: was hardcoded `('player','goalkeeper')`,
+// now accepts any short string so non-football tenants can set their own
+// participant subtype (or leave it null). DB-side check is dropped in
+// `sprint38_player_type_open.sql`.
 const optionalPlayerType = z
-  .enum(["player", "goalkeeper"])
+  .string()
+  .trim()
+  .max(40)
   .nullish()
   .or(z.literal(""))
-  .transform((v) => (v ? (v as "player" | "goalkeeper") : null));
+  .transform((v) => (v ? v : null));
 
 export const createMemberSchema = z.object({
   tenant_id: z.string().uuid(),

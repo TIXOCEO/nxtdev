@@ -24,13 +24,13 @@ Voor groei naar zwemscholen, atletiek, dans, etc. moeten labels en defaults per 
 
 | # | Locatie | Bevinding | Risico bij multi-sector | Klasse |
 |---|---|---|---|---|
-| F1 | `members.player_type` (DB check) | Hardcoded `'player' \| 'goalkeeper'` | Zwemschool kan geen role-types kiezen | **Hoog** (out-of-scope sprint 36) |
+| F1 | `members.player_type` (DB check) | Hardcoded `'player' \| 'goalkeeper'` | Zwemschool kan geen role-types kiezen | **Hoog** (sprint 38: check gedropt, kolom open) |
 | F2 | Sidebar `tenant-sidebar.tsx` (4 labels) | "Leden / Groepen / Trainingen / Lidmaatschappen" hardcoded NL | Zwemles ziet "Trainingen" i.p.v. "Zwemlessen" | **Midden** (POC opgelost) |
 | F3 | Dashboard `tenant/page.tsx` `COMING_SOON` | "Players / Trainers / Attendance / Development tracking" hardcoded EN | Mismatch met sectorterminologie + taal | **Midden** (POC opgelost) |
 | F4 | Page-titles (`members/groups/trainings`) | NL hardcoded | Cosmetisch maar zichtbaar voor admins | **Midden** (POC opgelost) |
-| F5 | `members/page.tsx` `ROLE_LABELS` | `athlete: "Speler"` | Voetbal-bias in rol-tooling | **Laag** (volgende sprint) |
+| F5 | `members/page.tsx` `ROLE_LABELS` | `athlete: "Speler"` | Voetbal-bias in rol-tooling | **Laag** (sprint 38: athlete/parent/trainer uit terminology) |
 | F6 | `permissions/catalog.ts` group-label "Leden & Groepen" | Hardcoded NL | Cosmetisch in role-editor | **Laag** |
-| F7 | `notifications/event-labels.ts` | "Nieuwe training", "Trainingsverslag" | Mail-onderwerpen blijven voetbal-tone | **Midden** (out-of-scope sprint 36) |
+| F7 | `notifications/event-labels.ts` | "Nieuwe training", "Trainingsverslag" | Mail-onderwerpen blijven voetbal-tone | **Midden** (sprint 38: training_*/attendance_* sector-aware) |
 | F8 | Marketing-site `lib/marketing/site-data.ts` | Apex-domein content | Apex is niet tenant-scoped → terminologie n.v.t. | **N.v.t.** |
 | F9 | Email-templates `email-templates/*` | Per-tenant overrides bestaan al | Reeds tenant-scoped, geen risico | **Geen** |
 | F10 | Homepage modules `tenant_modules` | Voetbal-defaults bij seed | Nieuwe sector wil andere modules | **Midden** (default_modules_json voorbereid, niet uitgerold) |

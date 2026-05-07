@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { getNotificationEvent } from "@/lib/db/notifications";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { getTrainingSettingsResolved } from "@/lib/db/training-settings";
 import type { TrainingSession, Tenant } from "@/types/database";
 
@@ -82,9 +83,13 @@ export async function POST(req: Request) {
           hour: "2-digit",
           minute: "2-digit",
         });
+        const term = await getTenantTerminology(t.id);
+        const sessionLower =
+          term.session_singular.charAt(0).toLowerCase() +
+          term.session_singular.slice(1);
         await sendNotification({
           tenantId: t.id,
-          title: `Herinnering: ${s.title}`,
+          title: `Herinnering ${sessionLower}: ${s.title}`,
           contentText: `${when}${s.location ? ` · ${s.location}` : ""}`,
           contentHtml: `<p>${when}${s.location ? ` · ${s.location}` : ""}</p>`,
           targets: [{ target_type: "group", target_id: s.group_id }],
