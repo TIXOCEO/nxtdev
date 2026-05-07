@@ -102,7 +102,10 @@ export async function setAttendanceAsTrainer(
         targets: [{ target_type: "member", target_id: parsed.data.member_id }],
         sendEmail: evt.email_enabled,
         source: "trainer_attendance_updated",
-        sourceRef: parsed.data.session_id,
+        // Sprint 43 — training_attendance row id is unique per
+        // (member, session); session_id alone would dedupe legitimate
+        // notifications for other members in the same session.
+        sourceRef: data.id,
         createdBy: user.id,
       });
     }

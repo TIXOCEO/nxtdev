@@ -195,7 +195,11 @@ export async function setMyRsvp(
             targets,
             sendEmail: evt?.email_enabled ?? false,
             source: "attendance_changed_late",
-            sourceRef: session.id,
+            // Sprint 43 — use the training_attendance row id so the
+            // idempotency key is unique per (member, session). Using
+            // session.id alone would dedupe legitimate notifications for
+            // *other* members reacting late to the same session.
+            sourceRef: data.id,
             createdBy: user.id,
           });
         }
