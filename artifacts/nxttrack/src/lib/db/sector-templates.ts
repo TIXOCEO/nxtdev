@@ -12,6 +12,46 @@ export interface SectorTemplateRow {
   updated_at: string;
 }
 
+export interface SectorTemplateTenantUsage {
+  id: string;
+  name: string;
+  slug: string | null;
+}
+
+/**
+ * Groepeert alle tenants per `sector_template_key` zodat de
+ * platform-admin sector-templates-pagina kan tonen welke tenants
+ * impact ondervinden bij wijzigen of verwijderen. Tenants zonder
+ * key (NULL) vallen buiten de map.
+ */
+export async function listTenantsBySectorTemplate(): Promise<
+  Record<string, SectorTemplateTenantUsage[]>
+> {
+  await requirePlatformAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("id, name, slug, sector_template_key")
+    .not("sector_template_key", "is", null)
+    .order("name", { ascending: true });
+  if (error) throw new Error(`Failed to fetch tenants by sector template: ${error.message}`);
+  const out: Record<string, SectorTemplateTenantUsage[]> = {};
+  for (const row of (data ?? []) as Array<{
+    id: string;
+    name: string;
+    slug: string | null;
+    sector_template_key: string | null;
+  }>) {
+    if (!row.sector_template_key) continue;
+    (out[row.sector_template_key] ??= []).push({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+    });
+  }
+  return out;
+}
+
 export async function listSectorTemplates(): Promise<SectorTemplateRow[]> {
   await requirePlatformAdmin();
   const supabase = await createClient();

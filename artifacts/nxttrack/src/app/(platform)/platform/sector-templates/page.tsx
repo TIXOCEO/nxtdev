@@ -1,13 +1,19 @@
 import { PageHeading } from "@/components/ui/page-heading";
 import { requirePlatformAdmin } from "@/lib/auth/require-platform-admin";
-import { listSectorTemplates } from "@/lib/db/sector-templates";
+import {
+  listSectorTemplates,
+  listTenantsBySectorTemplate,
+} from "@/lib/db/sector-templates";
 import { SectorTemplatesManager } from "./_manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlatformSectorTemplatesPage() {
   await requirePlatformAdmin();
-  const templates = await listSectorTemplates();
+  const [templates, tenantsByKey] = await Promise.all([
+    listSectorTemplates(),
+    listTenantsBySectorTemplate(),
+  ]);
   return (
     <>
       <PageHeading
@@ -22,6 +28,7 @@ export default async function PlatformSectorTemplatesPage() {
           terminology_json: (t.terminology_json ?? {}) as Record<string, string>,
           default_modules_json: t.default_modules_json ?? [],
           is_active: t.is_active,
+          tenants: tenantsByKey[t.key] ?? [],
         }))}
       />
     </>

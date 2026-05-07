@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Save, Trash2, X, FolderOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Save, Trash2, X, FolderOpen } from "lucide-react";
 import {
   TERMINOLOGY_KEYS,
   TERMINOLOGY_KEY_LABELS,
@@ -15,6 +16,12 @@ import {
 } from "@/lib/actions/platform/sector-templates";
 import type { TerminologyKey } from "@/lib/terminology/types";
 
+export interface SectorTemplateTenantVM {
+  id: string;
+  name: string;
+  slug: string | null;
+}
+
 export interface SectorTemplateVM {
   key: string;
   name: string;
@@ -22,6 +29,7 @@ export interface SectorTemplateVM {
   terminology_json: Record<string, string>;
   default_modules_json: unknown[];
   is_active: boolean;
+  tenants: SectorTemplateTenantVM[];
 }
 
 interface Editor {
@@ -68,6 +76,8 @@ export function SectorTemplatesManager({ templates }: Props) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [deleteTarget, setDeleteTarget] = useState<SectorTemplateVM | null>(null);
 
   const sorted = useMemo(
     () => [...templates].sort((a, b) => a.name.localeCompare(b.name)),
@@ -139,8 +149,9 @@ export function SectorTemplatesManager({ templates }: Props) {
     });
   }
 
-  function onDelete(key: string) {
-    if (!confirm(`Template "${key}" verwijderen? Tenants die deze gebruiken vallen terug op generic.`)) return;
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    const key = deleteTarget.key;
     start(async () => {
       const res = await deleteSectorTemplate({ key });
       if (!res.ok) {
@@ -149,8 +160,13 @@ export function SectorTemplatesManager({ templates }: Props) {
       }
       flash("Template verwijderd.");
       if (editor?.key === key) setEditor(null);
+      setDeleteTarget(null);
       router.refresh();
     });
+  }
+
+  function toggleExpanded(key: string) {
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
   return (
@@ -190,54 +206,110 @@ export function SectorTemplatesManager({ templates }: Props) {
               <th className="px-5 py-3">Naam</th>
               <th className="px-5 py-3">Status</th>
               <th className="px-5 py-3">Overrides</th>
+              <th className="px-5 py-3">Tenants</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-6 text-center text-xs" style={{ color: "var(--text-secondary)" }}>
+                <td colSpan={6} className="px-5 py-6 text-center text-xs" style={{ color: "var(--text-secondary)" }}>
                   Nog geen sector-templates.
                 </td>
               </tr>
             )}
-            {sorted.map((t) => (
-              <tr
-                key={t.key}
-                className="border-t"
-                style={{ borderColor: "var(--surface-border)" }}
-              >
-                <td className="px-5 py-3 font-mono text-xs">{t.key}</td>
-                <td className="px-5 py-3">{t.name}</td>
-                <td className="px-5 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>
-                  {t.is_active ? "Actief" : "Inactief"}
-                </td>
-                <td className="px-5 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>
-                  {Object.keys(t.terminology_json ?? {}).length} keys
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setEditor(fromTemplate(t))}
-                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-black/5"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      <FolderOpen className="h-3.5 w-3.5" /> Open
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(t.key)}
-                      disabled={pending}
-                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-black/5 disabled:opacity-50"
-                      style={{ color: "rgb(153 27 27)" }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {sorted.map((t) => {
+              const tenantCount = t.tenants.length;
+              const isOpen = !!expanded[t.key];
+              return (
+                <Fragment key={t.key}>
+                  <tr
+                    className="border-t"
+                    style={{ borderColor: "var(--surface-border)" }}
+                  >
+                    <td className="px-5 py-3 font-mono text-xs">{t.key}</td>
+                    <td className="px-5 py-3">{t.name}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>
+                      {t.is_active ? "Actief" : "Inactief"}
+                    </td>
+                    <td className="px-5 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>
+                      {Object.keys(t.terminology_json ?? {}).length} keys
+                    </td>
+                    <td className="px-5 py-3 text-xs">
+                      {tenantCount === 0 ? (
+                        <span style={{ color: "var(--text-secondary)" }}>0 tenants</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(t.key)}
+                          aria-expanded={isOpen}
+                          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium hover:bg-black/5"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {isOpen ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                          {tenantCount} {tenantCount === 1 ? "tenant" : "tenants"}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditor(fromTemplate(t))}
+                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-black/5"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          <FolderOpen className="h-3.5 w-3.5" /> Open
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(t)}
+                          disabled={pending}
+                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-black/5 disabled:opacity-50"
+                          style={{ color: "rgb(153 27 27)" }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isOpen && tenantCount > 0 && (
+                    <tr style={{ borderColor: "var(--surface-border)" }}>
+                      <td colSpan={6} className="px-5 pb-3 pt-0">
+                        <ul className="flex flex-wrap gap-1.5">
+                          {t.tenants.map((tenant) => (
+                            <li key={tenant.id}>
+                              <Link
+                                href={`/platform/tenants/${tenant.id}`}
+                                className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs hover:bg-black/5"
+                                style={{
+                                  borderColor: "var(--surface-border)",
+                                  color: "var(--text-primary)",
+                                }}
+                              >
+                                {tenant.name}
+                                {tenant.slug && (
+                                  <span
+                                    className="ml-1 font-mono text-[10px]"
+                                    style={{ color: "var(--text-secondary)" }}
+                                  >
+                                    {tenant.slug}
+                                  </span>
+                                )}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -251,6 +323,106 @@ export function SectorTemplatesManager({ templates }: Props) {
           onClose={() => setEditor(null)}
         />
       )}
+
+      {deleteTarget && (
+        <DeleteSectorTemplateDialog
+          target={deleteTarget}
+          pending={pending}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
+    </div>
+  );
+}
+
+function DeleteSectorTemplateDialog({
+  target,
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  target: SectorTemplateVM;
+  pending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const count = target.tenants.length;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-sector-template-title"
+        className="w-full max-w-md rounded-2xl border p-5 shadow-xl"
+        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3
+          id="delete-sector-template-title"
+          className="text-sm font-semibold"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Template &quot;{target.name}&quot; verwijderen?
+        </h3>
+        <p className="mt-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+          {count === 0 ? (
+            <>Geen tenants gebruiken deze template. Verwijderen is veilig.</>
+          ) : (
+            <>
+              {count} {count === 1 ? "tenant valt" : "tenants vallen"} terug op generic na verwijderen.
+            </>
+          )}
+        </p>
+        {count > 0 && (
+          <ul className="mt-3 max-h-48 space-y-1 overflow-auto rounded-lg border p-2"
+              style={{ borderColor: "var(--surface-border)" }}>
+            {target.tenants.map((tenant) => (
+              <li key={tenant.id} className="text-xs">
+                <Link
+                  href={`/platform/tenants/${tenant.id}`}
+                  className="hover:underline"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {tenant.name}
+                </Link>
+                {tenant.slug && (
+                  <span
+                    className="ml-1 font-mono text-[10px]"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {tenant.slug}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={pending}
+            className="rounded-lg border px-3 py-2 text-xs disabled:opacity-50"
+            style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+          >
+            Annuleer
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={pending}
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            style={{ backgroundColor: "rgb(153 27 27)" }}
+          >
+            <Trash2 className="h-3 w-3" /> Verwijder
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
