@@ -36,7 +36,7 @@ export function SectorPreview({
           )}
         </p>
         <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-          De sectorkeuze en eventuele overrides worden door een platform-admin beheerd.
+          De sectorkeuze wordt door een platform-admin beheerd. Eigen overrides regel je hieronder.
         </p>
       </div>
 
