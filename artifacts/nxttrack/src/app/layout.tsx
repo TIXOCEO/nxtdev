@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://nxttrack.nl";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_URL),
   title: "NXTTRACK",
   description: "Multi-tenant SaaS platform",
 };

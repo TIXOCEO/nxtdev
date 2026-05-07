@@ -19,6 +19,10 @@ export interface PublicNewsPost
     | "status"
     | "published_at"
     | "created_at"
+    | "seo_title"
+    | "seo_description"
+    | "seo_image_url"
+    | "seo_noindex"
   > {
   category: Pick<NewsCategory, "id" | "name" | "slug"> | null;
 }
@@ -51,7 +55,7 @@ export async function getActiveTenantBySlug(slug: string): Promise<Tenant | null
 }
 
 const PUBLIC_NEWS_FIELDS =
-  "id, tenant_id, title, slug, excerpt, content_html, cover_image_url, category_id, status, published_at, created_at";
+  "id, tenant_id, title, slug, excerpt, content_html, cover_image_url, category_id, status, published_at, created_at, seo_title, seo_description, seo_image_url, seo_noindex";
 
 /**
  * Latest published news posts for a tenant. Optionally limit.

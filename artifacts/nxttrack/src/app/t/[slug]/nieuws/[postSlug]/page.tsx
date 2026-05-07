@@ -23,21 +23,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = await getPublicNewsPostBySlug(tenant.id, postSlug);
   if (!post) return { title: `${tenant.name} | Nieuws` };
   const seo = await getTenantSeoSettings(tenant.id);
-  // Per-post SEO automation: prefer post.seo_* (Sprint 15) → fall back to excerpt/cover.
-  const post_ = post as typeof post & {
-    seo_title?: string | null;
-    seo_description?: string | null;
-    seo_image_url?: string | null;
-    seo_noindex?: boolean | null;
-  };
+  // Per-post SEO automation: prefer post.seo_* (Sprint 15) → fall back to
+  // excerpt/cover → tenant logo → site-wide /opengraph.jpg, so social shares
+  // (Facebook, LinkedIn, WhatsApp) always get an image even when the post
+  // has no cover and the tenant left default_image_url empty.
+  const imageFallback =
+    post.seo_image_url ??
+    post.cover_image_url ??
+    seo?.default_image_url ??
+    tenant.logo_url ??
+    "/opengraph.jpg";
   return composeMetadata(
     tenant,
     seo,
     {
-      title: post_.seo_title ?? null,
-      description: post_.seo_description ?? post.excerpt ?? null,
-      image_url: post_.seo_image_url ?? post.cover_image_url ?? null,
-      noindex: post_.seo_noindex ?? false,
+      title: post.seo_title ?? null,
+      description: post.seo_description ?? post.excerpt ?? null,
+      image_url: imageFallback,
+      noindex: post.seo_noindex ?? false,
     },
     { title: post.title },
   );

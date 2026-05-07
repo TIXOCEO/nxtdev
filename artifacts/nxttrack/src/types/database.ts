@@ -66,6 +66,10 @@ export interface NewsPost {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  seo_image_url: string | null;
+  seo_noindex: boolean | null;
 }
 
 export type RegistrationStatus = "new" | "contacted" | "accepted" | "rejected" | "archived";
