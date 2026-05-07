@@ -74,6 +74,23 @@ const optionalDomain = z
     `Subdomeinen van ${PLATFORM_APEX} kunnen niet als custom domein. Gebruik de tenant-slug.`,
   );
 
+/**
+ * Sector-template keys: lowercase ASCII, cijfers en underscores
+ * (zelfde patroon als `sectorTemplateKeySchema`). `null`/leeg → geen
+ * sector gekoppeld; bij tenant-aanmaak vervalt automatische
+ * homepage-seeding dan op `no_template`.
+ */
+const optionalSectorTemplateKey = z
+  .string()
+  .trim()
+  .nullish()
+  .or(z.literal(""))
+  .transform((v) => (v ? v : null))
+  .refine(
+    (v) => v === null || /^[a-z][a-z0-9_]*$/.test(v),
+    "Ongeldige sector-template key",
+  );
+
 export const createTenantSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
   slug: slugSchema,
@@ -82,6 +99,7 @@ export const createTenantSchema = z.object({
   contact_email: optionalEmail,
   domain: optionalDomain,
   status: statusSchema.default("active"),
+  sector_template_key: optionalSectorTemplateKey,
 });
 
 export const updateTenantSchema = createTenantSchema.partial().extend({

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TerminologySchema } from "@/lib/terminology/schema";
+import { sectorTemplateModulesSchema } from "./sector-template-modules";
 
 /**
  * Sector-template key formaat: lowercase ASCII, cijfers en underscores;
@@ -26,7 +27,7 @@ export const createSectorTemplateSchema = z.object({
   name: z.string().trim().min(1, "Naam is verplicht").max(120),
   description: optionalText,
   terminology_json: TerminologySchema.default({}),
-  default_modules_json: z.array(z.unknown()).default([]),
+  default_modules_json: sectorTemplateModulesSchema.default([]),
   is_active: z.boolean().default(true),
 });
 
@@ -35,7 +36,7 @@ export const updateSectorTemplateSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   description: optionalText.optional(),
   terminology_json: TerminologySchema.optional(),
-  default_modules_json: z.array(z.unknown()).optional(),
+  default_modules_json: sectorTemplateModulesSchema.optional(),
   is_active: z.boolean().optional(),
 });
 

@@ -17,9 +17,16 @@ import {
 import type { Tenant } from "@/types/database";
 import { PasswordField } from "@/components/admin/password-field";
 
+export interface TenantFormSectorOption {
+  key: string;
+  name: string;
+}
+
 export interface TenantFormProps {
   mode: "create" | "edit";
   initial?: Tenant;
+  /** Beschikbare sector-templates voor de dropdown bij aanmaken. */
+  sectorTemplates?: TenantFormSectorOption[];
 }
 
 type CreateValues = {
@@ -30,6 +37,7 @@ type CreateValues = {
   contact_email: string;
   domain: string;
   status: "active" | "inactive";
+  sector_template_key: string;
   admin_email: string;
   admin_password: string;
   admin_full_name: string;
@@ -46,10 +54,11 @@ function tenantToForm(t?: Tenant): EditValues {
     contact_email: t?.contact_email ?? "",
     domain: t?.domain ?? "",
     status: t?.status === "inactive" ? "inactive" : "active",
+    sector_template_key: t?.sector_template_key ?? "",
   };
 }
 
-export function TenantForm({ mode, initial }: TenantFormProps) {
+export function TenantForm({ mode, initial, sectorTemplates = [] }: TenantFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -86,6 +95,7 @@ export function TenantForm({ mode, initial }: TenantFormProps) {
           contact_email: values.contact_email || null,
           domain: values.domain || null,
           status: values.status,
+          sector_template_key: values.sector_template_key || null,
           admin_email: values.admin_email,
           admin_password: values.admin_password,
           admin_full_name: values.admin_full_name || "",
@@ -104,6 +114,7 @@ export function TenantForm({ mode, initial }: TenantFormProps) {
           contact_email: values.contact_email || null,
           domain: values.domain || null,
           status: values.status,
+          sector_template_key: values.sector_template_key || null,
         };
         const res = await updateTenant(initial!.id, payload);
         if (!res.ok) {
@@ -155,6 +166,33 @@ export function TenantForm({ mode, initial }: TenantFormProps) {
           >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
+          </select>
+        </Field>
+
+        <Field
+          label="Sector-template"
+          error={errors.sector_template_key?.message}
+          hint={
+            isCreate
+              ? "Bepaalt sector-default homepagemodules (auto-seed bij aanmaak) en woordenschat. Leeg = generic woordenschat-fallback en GEEN auto-seed van homepagemodules."
+              : "Wijzigen heeft alleen effect op woordenschat; bestaande homepagemodules blijven. Seeden gebeurt via 'Sector & woordenschat' hieronder."
+          }
+        >
+          <select
+            {...register("sector_template_key")}
+            className="h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-primary)",
+              backgroundColor: "var(--surface-main)",
+            }}
+          >
+            <option value="">— Geen (generic fallback) —</option>
+            {sectorTemplates.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.name} ({t.key})
+              </option>
+            ))}
           </select>
         </Field>
       </div>

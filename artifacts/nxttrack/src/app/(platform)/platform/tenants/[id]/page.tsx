@@ -61,7 +61,13 @@ export default async function EditTenantPage({ params }: Params) {
           className="rounded-2xl border p-6"
           style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
         >
-          <TenantForm mode="edit" initial={tenant} />
+          <TenantForm
+            mode="edit"
+            initial={tenant}
+            sectorTemplates={allTemplates
+              .filter((t) => t.is_active || t.key === tenant.sector_template_key)
+              .map((t) => ({ key: t.key, name: t.name }))}
+          />
         </div>
       </section>
 

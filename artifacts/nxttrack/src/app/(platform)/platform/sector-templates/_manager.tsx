@@ -15,6 +15,7 @@ import {
   deleteSectorTemplate,
 } from "@/lib/actions/platform/sector-templates";
 import type { TerminologyKey } from "@/lib/terminology/types";
+import { sectorTemplateModulesSchema } from "@/lib/validation/sector-template-modules";
 
 export interface SectorTemplateTenantVM {
   id: string;
@@ -97,15 +98,26 @@ export function SectorTemplatesManager({ templates }: Props) {
   function onSave() {
     if (!editor) return;
     setErr(null);
-    let modules: unknown[] = [];
+    let raw: unknown;
     try {
-      const raw = JSON.parse(editor.default_modules_text || "[]");
-      if (!Array.isArray(raw)) throw new Error("Moet een JSON-array zijn");
-      modules = raw;
+      raw = JSON.parse(editor.default_modules_text || "[]");
     } catch (e) {
       flashErr(`Standaardmodules JSON ongeldig: ${(e as Error).message}`);
       return;
     }
+    if (!Array.isArray(raw)) {
+      flashErr("Standaardmodules JSON moet een array zijn.");
+      return;
+    }
+    const parsed = sectorTemplateModulesSchema.safeParse(raw);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      const where =
+        first?.path && first.path.length > 0 ? `[${first.path.join(".")}] ` : "";
+      flashErr(`Standaardmodules ongeldig: ${where}${first?.message ?? "onbekende fout"}`);
+      return;
+    }
+    const modules = parsed.data;
     const terminology: Record<string, string> = {};
     for (const k of TERMINOLOGY_KEYS) {
       const v = editor.terminology[k];
@@ -532,7 +544,12 @@ function SectorTemplateEditor({
           Standaardmodules (JSON)
         </p>
         <p className="mb-2 text-[11px]" style={{ color: "var(--text-secondary)" }}>
-          Optioneel — gereserveerd voor sector-default homepage-modules. Moet een JSON-array zijn.
+          Lijst van standaard-homepagemodules die nieuwe tenants in deze sector
+          krijgen. Per item: <code>module_key</code> (verplicht),{" "}
+          <code>size</code> (1x1, 1x2, 2x1, 2x2), optioneel <code>title</code>,{" "}
+          <code>visible_for</code>, <code>visible_mobile</code> en{" "}
+          <code>config</code>. Voorbeeld:{" "}
+          <code>{`[{"module_key":"news","size":"2x1"}]`}</code>
         </p>
         <textarea
           value={editor.default_modules_text}

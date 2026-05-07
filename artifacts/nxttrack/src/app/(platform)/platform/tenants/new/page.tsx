@@ -2,8 +2,15 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeading } from "@/components/ui/page-heading";
 import { TenantForm } from "../_tenant-form";
+import { listSectorTemplates } from "@/lib/db/sector-templates";
 
-export default function NewTenantPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewTenantPage() {
+  const templates = await listSectorTemplates();
+  const sectorTemplates = templates
+    .filter((t) => t.is_active)
+    .map((t) => ({ key: t.key, name: t.name }));
   return (
     <>
       <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -18,7 +25,7 @@ export default function NewTenantPage() {
         className="rounded-2xl border p-6"
         style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
       >
-        <TenantForm mode="create" />
+        <TenantForm mode="create" sectorTemplates={sectorTemplates} />
       </div>
     </>
   );

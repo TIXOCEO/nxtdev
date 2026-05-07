@@ -18,6 +18,7 @@ import {
   type UpdateMasterAdminInput,
 } from "@/lib/validation/platform";
 import { findUniqueSlug } from "@/lib/utils/slug";
+import { seedTenantHomepageFromSector } from "@/lib/db/sector-template-seed";
 import type { Tenant } from "@/types/database";
 
 /**
@@ -57,8 +58,13 @@ export async function createTenant(
     admin_email,
     admin_password,
     admin_full_name,
-    ...tenantFields
+    sector_template_key,
+    ...rest
   } = parsed.data;
+  const tenantFields: typeof rest & { sector_template_key?: string | null } = {
+    ...rest,
+    sector_template_key: sector_template_key ?? null,
+  };
 
   const admin = createAdminClient();
 
@@ -141,6 +147,32 @@ export async function createTenant(
     await admin.from("tenants").delete().eq("id", tenant.id);
     await admin.auth.admin.deleteUser(userId);
     return fail(`Failed to assign master admin: ${memErr.message}`);
+  }
+
+  // Sprint 39 — pas sector-default homepage-modules toe (best-effort).
+  // Faalt deze stap, dan blokkeert dat het aanmaken van de tenant niet:
+  // de platform-admin kan later via "Seed homepage" alsnog (her-)seeden.
+  try {
+    const seedRes = await seedTenantHomepageFromSector(tenant.id);
+    if (
+      seedRes.reason === "tenant_read_error" ||
+      seedRes.reason === "template_read_error" ||
+      seedRes.reason === "tenant_modules_count_error" ||
+      seedRes.reason === "catalog_read_error" ||
+      seedRes.reason === "invalid_template_modules"
+    ) {
+      console.error(
+        `[createTenant] sector-homepage seed reason=${seedRes.reason} ` +
+          `tenant=${tenant.id} error=${seedRes.error ?? "unknown"}`,
+      );
+    }
+  } catch (err) {
+    // Best-effort: tenant is al aangemaakt, seed-fout blokkeert niet.
+    // Wel loggen zodat operationeel zichtbaar is wat misging.
+    console.error(
+      `[createTenant] sector-homepage seed threw for tenant=${tenant.id}: ` +
+        (err instanceof Error ? err.message : String(err)),
+    );
   }
 
   revalidatePath("/platform");

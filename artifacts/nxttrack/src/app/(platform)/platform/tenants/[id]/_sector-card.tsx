@@ -2,15 +2,27 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Save, RotateCcw } from "lucide-react";
+import { Save, RotateCcw, Sparkles } from "lucide-react";
 import {
   TERMINOLOGY_KEYS,
   TERMINOLOGY_KEY_LABELS,
 } from "@/lib/terminology/labels";
-import { setTenantSector } from "@/lib/actions/platform/sector-templates";
+import {
+  setTenantSector,
+  seedTenantHomepage,
+} from "@/lib/actions/platform/sector-templates";
 import { resolveTerminology } from "@/lib/terminology/merge";
 import type { TerminologyKey } from "@/lib/terminology/types";
 
+/**
+ * UI-split (bewust): `TenantForm` kiest `sector_template_key` bij
+ * tenant-aanmaak/edit (de "kale" FK op `tenants`). `SectorCard` is
+ * de uitgebreide bewerker die de sector koppelt aan
+ * `terminology_overrides` + de "Seed homepage uit sector"-actie. De
+ * dropdown in TenantForm is daarom alleen voor de onboarding/edit-
+ * flow van basisvelden; voor woordenschat + seeden gebruikt de
+ * platform-admin SectorCard.
+ */
 export interface SectorCardProps {
   tenantId: string;
   initialSectorKey: string | null;
@@ -36,8 +48,53 @@ export function SectorCard({
   const [overrides, setOverrides] = useState<Record<string, string>>({ ...initialOverrides });
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [seedPending, startSeed] = useTransition();
 
   const selectedTemplate = templates.find((t) => t.key === sectorKey) ?? null;
+
+  // Onbewaarde wijzigingen: seed-knop leest server-side de persisted
+  // tenant.sector_template_key, dus dirty UI-state mag niet seeden.
+  const sectorDirty = (sectorKey || null) !== (initialSectorKey ?? null);
+
+  function onSeedHomepage(force: boolean) {
+    setErr(null);
+    setMsg(null);
+    startSeed(async () => {
+      const res = await seedTenantHomepage({ tenant_id: tenantId, force });
+      if (!res.ok) {
+        setErr(res.error);
+        return;
+      }
+      const { inserted, skipped, reason, error: seedErr, skips } = res.data;
+      if (reason === "no_template") setErr("Geen sectortemplate gekoppeld.");
+      else if (reason === "no_modules")
+        setErr("Deze sectortemplate heeft geen standaardmodules.");
+      else if (reason === "already_seeded")
+        setErr(
+          "Tenant heeft al modules — geen actie. Verwijder ze eerst handmatig als je opnieuw wilt seeden.",
+        );
+      else if (
+        reason === "tenant_read_error" ||
+        reason === "template_read_error" ||
+        reason === "tenant_modules_count_error" ||
+        reason === "catalog_read_error" ||
+        reason === "invalid_template_modules"
+      )
+        setErr(`Seed mislukt (${reason}): ${seedErr ?? "onbekende fout"}`);
+      else {
+        const skipDetail =
+          skips && skips.length > 0
+            ? ` Overgeslagen: ${skips
+                .map((s) => `${s.module_key} (${s.reason})`)
+                .join(", ")}.`
+            : "";
+        setMsg(
+          `Seed voltooid: ${inserted} module(s) toegevoegd${skipped > 0 ? `, ${skipped} overgeslagen` : ""}.${skipDetail}`,
+        );
+      }
+      router.refresh();
+    });
+  }
 
   // Effectief = generic ← sector ← overrides — gebruikt voor placeholders & preview.
   const effective = resolveTerminology({
@@ -156,7 +213,30 @@ export function SectorCard({
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onSeedHomepage(false)}
+            disabled={seedPending || pending || !sectorKey || sectorDirty}
+            title={
+              !sectorKey
+                ? "Kies eerst een sectortemplate."
+                : sectorDirty
+                  ? "Sla de sectorwijziging eerst op voordat je seedt."
+                  : "Voegt de standaardmodules van de gekozen sector toe als de tenant nog geen homepage-modules heeft."
+            }
+            className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs disabled:opacity-50"
+            style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+          >
+            <Sparkles className="h-3 w-3" />
+            {seedPending
+              ? "Bezig…"
+              : sectorDirty
+                ? "Sla eerst op om te seeden"
+                : "Seed homepage uit sector"}
+          </button>
+        </div>
         <button
           type="button"
           disabled={pending}

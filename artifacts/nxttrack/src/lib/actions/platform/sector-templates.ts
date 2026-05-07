@@ -14,6 +14,11 @@ import {
   type SetTenantSectorInput,
 } from "@/lib/validation/sector-templates";
 import { safeParseTerminology } from "@/lib/terminology/schema";
+import {
+  seedTenantHomepageFromSector,
+  type SeedHomepageResult,
+} from "@/lib/db/sector-template-seed";
+import { z } from "zod";
 
 export type ActionResult<T = void> =
   | { ok: true; data: T }
@@ -135,4 +140,43 @@ export async function setTenantSector(
   revalidatePath(`/platform/tenants/${tenant_id}`);
   revalidatePath("/tenant/profile");
   return { ok: true, data: { tenant_id } };
+}
+
+/**
+ * Sprint 39 — Platform-admin knop "Seed homepage": past de
+ * `default_modules_json` van de huidige sector-template van de tenant
+ * toe op `tenant_modules`. Slaat over als de tenant al modules heeft
+ * (idempotent), tenzij `force` true is.
+ */
+const seedTenantHomepageSchema = z.object({
+  tenant_id: z.string().uuid("Ongeldige tenant id"),
+  force: z.boolean().optional(),
+});
+
+/**
+ * Contract: retourneert `ok: true` ook voor semantische no-ops en
+ * read-errors. Callers moeten `data.reason` inspecteren:
+ * - `undefined` → succesvol toegepast (zie `inserted` / `skipped` /
+ *   optionele `skips[]`).
+ * - `no_template` | `no_modules` | `already_seeded` → no-op (geen
+ *   actie nodig of geen werk te doen).
+ * - `tenant_read_error` | `template_read_error` |
+ *   `tenant_modules_count_error` | `catalog_read_error` →
+ *   server-side read failure; `data.error` bevat de message en is ook
+ *   via `console.error` gelogd. `ok: false` is gereserveerd voor
+ *   authz/validatie-fouten in de action zelf.
+ */
+export async function seedTenantHomepage(
+  input: z.infer<typeof seedTenantHomepageSchema>,
+): Promise<ActionResult<SeedHomepageResult>> {
+  await requirePlatformAdmin();
+  const parsed = seedTenantHomepageSchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
+
+  const result = await seedTenantHomepageFromSector(parsed.data.tenant_id, {
+    force: parsed.data.force,
+  });
+  revalidatePath(`/platform/tenants/${parsed.data.tenant_id}`);
+  revalidatePath("/tenant/homepage");
+  return { ok: true, data: result };
 }
