@@ -559,7 +559,11 @@ export async function addMemberToGroup(
         targets: [{ target_type: "member", target_id: parsed.data.member_id }],
         sendEmail: evt?.email_enabled ?? false,
         source: "group_assigned",
-        sourceRef: parsed.data.group_id,
+        // Sprint 41 — use the group_members row id so the idempotency key
+        // is unique per (member, group) pair. Using group_id alone would
+        // make the partial unique index dedupe legitimate notifications
+        // for *other* members added to the same group.
+        sourceRef: data.id,
       });
     }
   } catch (err) {
