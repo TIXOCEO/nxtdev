@@ -23,15 +23,9 @@ import {
 } from "@/lib/db/tenant-admin";
 import { getLatestPublishedRelease, hasUserSeenRelease } from "@/lib/db/releases";
 import { LatestReleaseCard } from "@/components/tenant/release-card";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 
 export const dynamic = "force-dynamic";
-
-const COMING_SOON = [
-  { label: "Players", icon: Users, hint: "Manage athletes and teams." },
-  { label: "Trainers", icon: UserCog, hint: "Coach roster and assignments." },
-  { label: "Attendance", icon: CalendarCheck, hint: "Track session attendance." },
-  { label: "Development tracking", icon: TrendingUp, hint: "Player progress over time." },
-];
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -47,12 +41,19 @@ export default async function TenantDashboardPage() {
   if (result.kind !== "ok") return null; // layout handled
 
   const tenantId = result.tenant.id;
-  const [stats, news, regs, latestRelease] = await Promise.all([
+  const [stats, news, regs, latestRelease, terminology] = await Promise.all([
     getTenantDashboardStats(tenantId),
     getTenantNewsOverview(tenantId, 5),
     getTenantRegistrationsOverview(tenantId, 5),
     getLatestPublishedRelease(),
+    getTenantTerminology(tenantId),
   ]);
+  const COMING_SOON = [
+    { label: terminology.participant_plural, icon: Users,         hint: "Manage athletes and teams." },
+    { label: terminology.instructor_plural,  icon: UserCog,       hint: "Coach roster and assignments." },
+    { label: "Attendance",                   icon: CalendarCheck, hint: "Track session attendance." },
+    { label: "Development tracking",         icon: TrendingUp,    hint: "Player progress over time." },
+  ];
   const latestReleaseUnseen = latestRelease
     ? !(await hasUserSeenRelease(result.user.id, latestRelease.version).catch(() => true))
     : false;

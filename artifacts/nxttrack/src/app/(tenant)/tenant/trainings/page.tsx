@@ -6,6 +6,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getTrainingSessionsByTenant } from "@/lib/db/trainings";
 import { getTrainingSettingsResolved } from "@/lib/db/training-settings";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -30,15 +31,16 @@ export default async function TenantTrainingsPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const [sessions, settings] = await Promise.all([
+  const [sessions, settings, terminology] = await Promise.all([
     getTrainingSessionsByTenant(result.tenant.id),
     getTrainingSettingsResolved(result.tenant.id),
+    getTenantTerminology(result.tenant.id),
   ]);
 
   return (
     <>
       <PageHeading
-        title="Trainingen"
+        title={terminology.session_plural}
         description="Plan trainingen voor groepen, beheer status en aanwezigheid."
         actions={
           <Link

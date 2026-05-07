@@ -26,6 +26,8 @@ export interface Tenant {
   settings_json: Record<string, unknown>;
   /** Per-tenant audit-log retentie in maanden. NULL = nooit opschonen. */
   audit_retention_months: number | null;
+  /** FK naar `sector_templates.key`. NULL betekent: geen template gekozen → resolver valt terug op generic + defaults. */
+  sector_template_key: string | null;
   created_at: string;
   updated_at: string;
 }

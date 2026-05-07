@@ -6,6 +6,8 @@ import { TenantShell } from "@/components/tenant/tenant-shell";
 import { TenantSelection } from "./_tenant-selection";
 import { Toaster } from "@/components/ui/toaster";
 import { getLatestPublishedRelease, hasUserSeenRelease } from "@/lib/db/releases";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
+import { TerminologyProvider } from "@/lib/terminology/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -21,24 +23,29 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
     return <TenantSelection tenants={result.tenants} />;
   }
 
-  const latestRelease = await getLatestPublishedRelease().catch(() => null);
+  const [latestRelease, terminology] = await Promise.all([
+    getLatestPublishedRelease().catch(() => null),
+    getTenantTerminology(result.tenant.id),
+  ]);
   const latestVersionUnseen = latestRelease
     ? !(await hasUserSeenRelease(result.user.id, latestRelease.version).catch(() => true))
     : false;
 
   return (
-    <TenantShell
-      tenantName={result.tenant.name}
-      primaryColor={result.tenant.primary_color}
-      email={result.user.email ?? null}
-      isPlatformAdmin={result.isPlatformAdmin}
-      tenantSlug={result.tenant.slug}
-      tenantDomain={result.tenant.domain}
-      currentVersion={latestRelease?.version ?? null}
-      currentVersionUnseen={latestVersionUnseen}
-    >
-      {children}
-      <Toaster />
-    </TenantShell>
+    <TerminologyProvider value={terminology}>
+      <TenantShell
+        tenantName={result.tenant.name}
+        primaryColor={result.tenant.primary_color}
+        email={result.user.email ?? null}
+        isPlatformAdmin={result.isPlatformAdmin}
+        tenantSlug={result.tenant.slug}
+        tenantDomain={result.tenant.domain}
+        currentVersion={latestRelease?.version ?? null}
+        currentVersionUnseen={latestVersionUnseen}
+      >
+        {children}
+        <Toaster />
+      </TenantShell>
+    </TerminologyProvider>
   );
 }

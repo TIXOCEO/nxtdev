@@ -5,6 +5,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getGroupsByTenant } from "@/lib/db/groups";
 import { getMembersByTenant } from "@/lib/db/members";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { NewGroupForm } from "./_new-group-form";
 import { GroupAssign } from "./_group-assign";
 
@@ -15,15 +16,16 @@ export default async function TenantGroupsPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const [groups, members] = await Promise.all([
+  const [groups, members, terminology] = await Promise.all([
     getGroupsByTenant(result.tenant.id),
     getMembersByTenant(result.tenant.id),
+    getTenantTerminology(result.tenant.id),
   ]);
 
   return (
     <>
       <PageHeading
-        title="Groepen"
+        title={terminology.group_plural}
         description="Maak teams of trainingsgroepen aan en koppel leden eraan."
       />
 

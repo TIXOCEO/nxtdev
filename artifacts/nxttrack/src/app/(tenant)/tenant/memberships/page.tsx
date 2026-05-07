@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { NewPlanForm } from "./_new-plan-form";
 import { PlanToggle } from "./_plan-toggle";
 import { PlanDefaultRadio } from "./_plan-default-radio";
@@ -27,7 +28,10 @@ export default async function TenantMembershipsPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const plans = await getPlansByTenant(result.tenant.id);
+  const [plans, terminology] = await Promise.all([
+    getPlansByTenant(result.tenant.id),
+    getTenantTerminology(result.tenant.id),
+  ]);
 
   return (
     <>

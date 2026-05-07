@@ -30,6 +30,8 @@ import {
   ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTerminology } from "@/lib/terminology/provider";
+import type { Terminology } from "@/lib/terminology/types";
 
 interface NavItem {
   label: string;
@@ -53,7 +55,12 @@ interface NavGroup {
 //   5. Communicatie (alle uitgaande berichten)
 //   6. Content (publieke website / pagina's / media)
 //   7. Instellingen (configuratie, helemaal onderaan)
-const NAV_GROUPS: NavGroup[] = [
+/**
+ * Bouwt de nav-structuur op basis van de actieve terminologie. De labels
+ * van de POC-items (Leden / Groepen / Trainingen / Lidmaatschappen) komen
+ * uit het terminology-object; alle andere labels blijven hardcoded.
+ */
+function buildNavGroups(t: Terminology): NavGroup[] { return [
   {
     id: "main",
     items: [
@@ -62,11 +69,11 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "members",
-    label: "Leden & groepen",
+    label: `${t.member_plural} & ${t.group_plural.toLowerCase()}`,
     items: [
-      { label: "Leden",           icon: Users,        href: "/tenant/members" },
-      { label: "Uitnodigingen",   icon: MailPlus,     href: "/tenant/invites" },
-      { label: "Groepen",         icon: UsersRound,   href: "/tenant/groups" },
+      { label: t.member_plural,      icon: Users,        href: "/tenant/members" },
+      { label: "Uitnodigingen",      icon: MailPlus,     href: "/tenant/invites" },
+      { label: t.group_plural,       icon: UsersRound,   href: "/tenant/groups" },
     ],
   },
   {
@@ -78,10 +85,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "planning",
-    label: "Planning & lidmaatschap",
+    label: `Planning & ${t.program_singular.toLowerCase()}`,
     items: [
-      { label: "Trainingen",      icon: CalendarDays,  href: "/tenant/trainings" },
-      { label: "Lidmaatschappen", icon: CreditCard,    href: "/tenant/memberships" },
+      { label: t.session_plural, icon: CalendarDays,  href: "/tenant/trainings" },
+      { label: t.program_plural, icon: CreditCard,    href: "/tenant/memberships" },
     ],
   },
   {
@@ -121,7 +128,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Audit-log",        icon: ScrollText,   href: "/tenant/audit" },
     ],
   },
-];
+]; }
 
 const NXTTRACK_LOGO = "https://dgwebservices.nl/logonxttrack.svg";
 
@@ -145,11 +152,13 @@ export function TenantSidebar({
 }: TenantSidebarProps) {
   const pathname = usePathname();
   const swatch = primaryColor || "var(--accent)";
+  const terminology = useTerminology();
+  const navGroups = buildNavGroups(terminology);
 
   // Default: open the group that contains the active path.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const g of NAV_GROUPS) {
+    for (const g of navGroups) {
       init[g.id] = g.items.some(
         (it) => pathname === it.href || pathname.startsWith(it.href + "/"),
       );
@@ -193,7 +202,7 @@ export function TenantSidebar({
       </div>
 
       <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4">
-        {NAV_GROUPS.map((group) => {
+        {navGroups.map((group) => {
           const open = !!openGroups[group.id];
           const hasLabel = !!group.label;
 

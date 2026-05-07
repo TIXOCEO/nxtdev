@@ -23,6 +23,7 @@ import { MemberCard } from "@/components/tenant/member-card";
 import { AddMemberWizard } from "./_add-member-wizard";
 import { getPlansByTenant } from "@/lib/db/membership-plans";
 import { getUserPermissionsInTenant } from "@/lib/db/tenant-roles";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import {
   MembersFilterSheet,
   ActiveFiltersStrip,
@@ -137,6 +138,7 @@ export default async function TenantMembersPage({
   const requested = await readActiveTenantCookie();
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
+  const terminology = await getTenantTerminology(result.tenant.id);
 
   const filterOpts = {
     onlyArchived: showArchived,
@@ -247,7 +249,7 @@ export default async function TenantMembersPage({
   return (
     <>
       <PageHeading
-        title="Leden"
+        title={terminology.member_plural}
         description="Beheer ouders, sporters, trainers en staf van deze vereniging."
         actions={
           <div className="flex items-center gap-2">
