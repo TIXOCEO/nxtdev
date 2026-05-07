@@ -19,12 +19,15 @@ export interface PublicNewsPost
     | "status"
     | "published_at"
     | "created_at"
-    | "seo_title"
-    | "seo_description"
-    | "seo_image_url"
-    | "seo_noindex"
   > {
   category: Pick<NewsCategory, "id" | "name" | "slug"> | null;
+  // Optional: only present once sprint40_news_seo_columns.sql is applied AND
+  // the SELECT is widened to include them. Until then these stay undefined,
+  // which is fine — the OG fallback chain handles it.
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_image_url?: string | null;
+  seo_noindex?: boolean | null;
 }
 
 function flattenCategory(
@@ -54,8 +57,14 @@ export async function getActiveTenantBySlug(slug: string): Promise<Tenant | null
   return data as Tenant;
 }
 
+// NOTE: `seo_*` columns are intentionally NOT selected here. They were added
+// by Sprint 15 SQL but may not exist on every production DB. The news-post
+// page resolves them via an optional cast — undefined falls through to the
+// next fallback (cover_image_url → tenant logo → /opengraph.jpg). Once
+// `sprint40_news_seo_columns.sql` is applied, the cast will start picking up
+// the real values transparently.
 const PUBLIC_NEWS_FIELDS =
-  "id, tenant_id, title, slug, excerpt, content_html, cover_image_url, category_id, status, published_at, created_at, seo_title, seo_description, seo_image_url, seo_noindex";
+  "id, tenant_id, title, slug, excerpt, content_html, cover_image_url, category_id, status, published_at, created_at";
 
 /**
  * Latest published news posts for a tenant. Optionally limit.
