@@ -83,7 +83,7 @@ created_at, updated_at  -- standaard
 
 * **Nieuwe kolom**: `sector_template_key text references public.sector_templates(key) on delete set null`.
 * **Geen** `terminology_overrides` kolom — die leeft als sub-key in de bestaande `tenants.settings_json` (`settings_json -> 'terminology_overrides'`). Reden: voorkomt schemabreuk en houdt overrides bij eventueel verwijderde keys safe (zacht negeren).
-* Backfill: alle bestaande tenants → `'football_school'` (Houtrust + andere) zodat UI tekstueel gelijk blijft.
+* Backfill: **alleen Voetbalschool Houtrust** (`where slug='houtrust' and sector_template_key is null`) krijgt `'football_school'` toegewezen, zodat de UI voor Houtrust tekstueel exact gelijk blijft. Alle overige bestaande tenants blijven `NULL` en de resolver valt voor hen terug op de `generic` template — veilig omdat die alle keys vult.
 
 ### 3.3 Resolver-architectuur
 
@@ -93,7 +93,7 @@ created_at, updated_at  -- standaard
   2. `sector_templates[tenant.sector_template_key].terminology_json`
   3. `sector_templates['generic'].terminology_json`
   4. Hardcoded `DEFAULT_TERMINOLOGY` (generic-equivalent)
-* Validatie: `mergeIntoTerminology` accepteert alleen niet-lege strings; vervuilde JSON-data leidt tot stille val-back i.p.v. UI-crash. Een Zod-schema is bewust **niet** in de hot path geplaatst om geen extra failmode toe te voegen — types staan in `terminology/types.ts`, validatie gebeurt impliciet door key-set + type-guard. Voor toekomstige platform-admin UI komt er wel een Zod-schema (`TerminologySchema`) bij CRUD-mutaties.
+* Validatie: ingestie van zowel sector-template-JSON als per-tenant overrides loopt door `safeParseTerminology` (Zod `TerminologySchema` in `terminology/schema.ts`) — onbekende keys worden gestript, lege of niet-string waardes vallen weg. De parse is *safe*: bij parse-error blijft de baseline ongewijzigd, dus de UI crasht nooit op vervuilde data. De pure resolver-kern (`resolveTerminology` in `terminology/merge.ts`) staat los van de Supabase-laag zodat tests en een toekomstige platform-admin preview hem zonder server-context kunnen gebruiken.
 * Client: `<TerminologyProvider value={…}>` (gezet in `(tenant)/tenant/layout.tsx`) + `useTerminology()` hook → werkt voor zowel client- als server-componenten zonder per-prop drilling.
 
 ---
@@ -104,7 +104,7 @@ Bestand: `artifacts/nxttrack/supabase/sprint36_sector_templates.sql`
 
 * Volledig idempotent (`if not exists`, `on conflict (key) do nothing`, FK opnieuw aangehecht).
 * Seed van `football_school`, `swimming_school`, `generic` (alleen 1e run).
-* Backfill `tenants.sector_template_key = 'football_school' where … is null;`.
+* Backfill `update tenants set sector_template_key='football_school' where sector_template_key is null and slug='houtrust';` (Houtrust-only).
 * Geen role-renames, geen kolomwijzigingen op bestaande tabellen behalve de toegevoegde nullable kolom + FK + index.
 
 **Volgorde op productie**: na alle Sprint 35-files. Daarna één keer `pnpm drizzle-kit push:pg` of de Supabase-SQL-runner (`sprint36_sector_templates.sql`).
