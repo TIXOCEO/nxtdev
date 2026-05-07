@@ -466,7 +466,13 @@ export async function createGroup(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("groups")
-    .insert(parsed.data)
+    .insert({
+      tenant_id: parsed.data.tenant_id,
+      name: parsed.data.name,
+      description: parsed.data.description,
+      max_members: parsed.data.max_members,
+      max_athletes: parsed.data.max_athletes,
+    })
     .select()
     .single();
   if (error || !data) return fail(error?.message ?? "Kon groep niet aanmaken.");
@@ -479,6 +485,7 @@ export async function createGroup(
       group_id: (data as Group).id,
       name: parsed.data.name,
       max_members: parsed.data.max_members ?? null,
+      max_athletes: parsed.data.max_athletes ?? null,
     },
   });
 
@@ -511,12 +518,28 @@ export async function updateGroup(
     }
   }
 
+  // Sprint 45 — zelfde guard voor max_athletes (alleen athlete-rol meetellen).
+  if (parsed.data.max_athletes != null) {
+    const { data: gmRows } = await supabase
+      .from("group_members")
+      .select("member_id, member_roles!inner(role)")
+      .eq("group_id", parsed.data.id)
+      .eq("member_roles.role", "athlete");
+    const athleteCount = (gmRows ?? []).length;
+    if (athleteCount > parsed.data.max_athletes) {
+      return fail(
+        `Maximum atleten (${parsed.data.max_athletes}) is lager dan huidige aantal (${athleteCount}).`,
+      );
+    }
+  }
+
   const { data, error } = await supabase
     .from("groups")
     .update({
       name: parsed.data.name,
       description: parsed.data.description,
       max_members: parsed.data.max_members,
+      max_athletes: parsed.data.max_athletes,
     })
     .eq("id", parsed.data.id)
     .eq("tenant_id", parsed.data.tenant_id)
@@ -531,6 +554,7 @@ export async function updateGroup(
     meta: {
       group_id: parsed.data.id,
       max_members: parsed.data.max_members ?? null,
+      max_athletes: parsed.data.max_athletes ?? null,
     },
   });
 
@@ -558,7 +582,7 @@ export async function addMemberToGroup(
   const [{ data: g }, { data: m }] = await Promise.all([
     supabase
       .from("groups")
-      .select("id, tenant_id, max_members")
+      .select("id, tenant_id, max_members, max_athletes")
       .eq("id", parsed.data.group_id)
       .eq("tenant_id", parsed.data.tenant_id)
       .maybeSingle(),
@@ -575,8 +599,12 @@ export async function addMemberToGroup(
   // Sprint 42 — handhaaf max_members vóór insert. Race-conditie kan
   // theoretisch nog 1 lid extra binnenlaten als twee admins gelijktijdig
   // toevoegen; voor onze schaal acceptabel — hard guard zit in de UI én
-  // hier in de pre-check.
-  const groupRow = g as { id: string; max_members: number | null };
+  // hier in de pre-check. DB-trigger heeft het laatste woord.
+  const groupRow = g as {
+    id: string;
+    max_members: number | null;
+    max_athletes: number | null;
+  };
   if (groupRow.max_members != null) {
     const { count } = await supabase
       .from("group_members")
@@ -588,6 +616,30 @@ export async function addMemberToGroup(
           groupRow.max_members === 1 ? "plek" : "plekken"
         }).`,
       );
+    }
+  }
+
+  // Sprint 45 — als toe te voegen lid de rol 'athlete' heeft, ook
+  // max_athletes checken.
+  if (groupRow.max_athletes != null) {
+    const { data: roleRows } = await supabase
+      .from("member_roles")
+      .select("role")
+      .eq("member_id", parsed.data.member_id);
+    const isAthlete = ((roleRows ?? []) as Array<{ role: string }>).some(
+      (r) => r.role === "athlete",
+    );
+    if (isAthlete) {
+      const { data: athleteRows } = await supabase
+        .from("group_members")
+        .select("member_id, member_roles!inner(role)")
+        .eq("group_id", parsed.data.group_id)
+        .eq("member_roles.role", "athlete");
+      if ((athleteRows ?? []).length >= groupRow.max_athletes) {
+        return fail(
+          `Maximum atleten bereikt (${groupRow.max_athletes}).`,
+        );
+      }
     }
   }
 
@@ -608,6 +660,13 @@ export async function addMemberToGroup(
               groupRow.max_members === 1 ? "plek" : "plekken"
             }).`
           : "Groep is vol.",
+      );
+    }
+    if (error?.message?.includes("group_athletes_max_exceeded")) {
+      return fail(
+        groupRow.max_athletes != null
+          ? `Maximum atleten bereikt (${groupRow.max_athletes}).`
+          : "Maximum atleten bereikt.",
       );
     }
     return fail(error?.message ?? "Kon lid niet toevoegen.");
@@ -793,12 +852,16 @@ export async function bulkAddMembersToGroup(input: {
 
   const { data: g } = await supabase
     .from("groups")
-    .select("id, max_members")
+    .select("id, max_members, max_athletes")
     .eq("id", groupId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (!g) return fail("Groep niet gevonden.");
-  const groupRow = g as { id: string; max_members: number | null };
+  const groupRow = g as {
+    id: string;
+    max_members: number | null;
+    max_athletes: number | null;
+  };
 
   // Filter member-ids tegen tenant + bestaande lidmaatschappen.
   const [{ data: existingMembers }, { data: existingLinks }] = await Promise.all([
@@ -854,6 +917,36 @@ export async function bulkAddMembersToGroup(input: {
       return fail(
         `Import overschrijdt maximum: ${count ?? 0} + ${toInsert.length} > ${groupRow.max_members}.`,
       );
+    }
+  }
+
+  // Sprint 45 — guard op max_athletes voor de import-set.
+  if (groupRow.max_athletes != null && toInsert.length > 0) {
+    const { data: athleteRoleRows } = await supabase
+      .from("member_roles")
+      .select("member_id")
+      .in("member_id", toInsert)
+      .eq("role", "athlete");
+    const incomingAthletes = new Set(
+      ((athleteRoleRows ?? []) as Array<{ member_id: string }>).map(
+        (r) => r.member_id,
+      ),
+    );
+    const incomingAthleteCount = toInsert.filter((id) =>
+      incomingAthletes.has(id),
+    ).length;
+    if (incomingAthleteCount > 0) {
+      const { data: currentAthleteRows } = await supabase
+        .from("group_members")
+        .select("member_id, member_roles!inner(role)")
+        .eq("group_id", groupId)
+        .eq("member_roles.role", "athlete");
+      const currentAthletes = (currentAthleteRows ?? []).length;
+      if (currentAthletes + incomingAthleteCount > groupRow.max_athletes) {
+        return fail(
+          `Import overschrijdt maximum atleten: ${currentAthletes} + ${incomingAthleteCount} > ${groupRow.max_athletes}.`,
+        );
+      }
     }
   }
 

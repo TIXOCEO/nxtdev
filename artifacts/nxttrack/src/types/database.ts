@@ -338,6 +338,8 @@ export interface Group {
   description: string | null;
   /** Sprint 42 — hard cap on member count; null = unlimited. */
   max_members: number | null;
+  /** Sprint 45 — hard cap on athlete-role members; null = unlimited. */
+  max_athletes: number | null;
   created_at: string;
   /** Sprint 42 — bijgehouden via `groups_updated_at` trigger. */
   updated_at: string;

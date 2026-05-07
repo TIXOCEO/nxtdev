@@ -5,6 +5,8 @@ export interface GroupWithCount extends Group {
   member_count: number;
   /** Sprint 42 — hoeveel leden hebben de rol "trainer". */
   trainer_count: number;
+  /** Sprint 45 — hoeveel leden hebben de rol "athlete". */
+  athlete_count: number;
 }
 
 export async function getGroupsByTenant(tenantId: string): Promise<GroupWithCount[]> {
@@ -36,24 +38,26 @@ export async function getGroupsByTenant(tenantId: string): Promise<GroupWithCoun
   }
 
   const trainerIds = new Set<string>();
+  const athleteIds = new Set<string>();
   if (memberIds.size > 0) {
     const { data: roleRows } = await supabase
       .from("member_roles")
       .select("member_id, role")
       .in("member_id", Array.from(memberIds))
-      .eq("role", "trainer");
-    for (const r of (roleRows ?? []) as Array<{ member_id: string }>) {
-      trainerIds.add(r.member_id);
+      .in("role", ["trainer", "athlete"]);
+    for (const r of (roleRows ?? []) as Array<{ member_id: string; role: string }>) {
+      if (r.role === "trainer") trainerIds.add(r.member_id);
+      else if (r.role === "athlete") athleteIds.add(r.member_id);
     }
   }
 
   return ((groups ?? []) as Group[]).map((g) => {
     const memberList = linksByGroup.get(g.id) ?? [];
-    const trainerCount = memberList.filter((id) => trainerIds.has(id)).length;
     return {
       ...g,
       member_count: counts.get(g.id) ?? 0,
-      trainer_count: trainerCount,
+      trainer_count: memberList.filter((id) => trainerIds.has(id)).length,
+      athlete_count: memberList.filter((id) => athleteIds.has(id)).length,
     };
   });
 }
@@ -135,14 +139,16 @@ export async function getGroupsPage(
   }
 
   const trainerIds = new Set<string>();
+  const athleteIds = new Set<string>();
   if (memberIds.size > 0) {
     const { data: roleRows } = await supabase
       .from("member_roles")
       .select("member_id, role")
       .in("member_id", Array.from(memberIds))
-      .eq("role", "trainer");
-    for (const r of (roleRows ?? []) as Array<{ member_id: string }>) {
-      trainerIds.add(r.member_id);
+      .in("role", ["trainer", "athlete"]);
+    for (const r of (roleRows ?? []) as Array<{ member_id: string; role: string }>) {
+      if (r.role === "trainer") trainerIds.add(r.member_id);
+      else if (r.role === "athlete") athleteIds.add(r.member_id);
     }
   }
 
@@ -152,6 +158,7 @@ export async function getGroupsPage(
       ...g,
       member_count: list.length,
       trainer_count: list.filter((id) => trainerIds.has(id)).length,
+      athlete_count: list.filter((id) => athleteIds.has(id)).length,
     };
   });
 

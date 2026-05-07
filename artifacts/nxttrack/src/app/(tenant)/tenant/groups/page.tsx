@@ -18,7 +18,7 @@ import {
   type SortOrder,
 } from "@/lib/db/groups";
 import { getTenantTerminology } from "@/lib/terminology/resolver";
-import { NewGroupForm } from "./_new-group-form";
+import { NewGroupDialog } from "./_new-group-dialog";
 import { AddMemberPopover } from "./_add-member-popover";
 
 export const dynamic = "force-dynamic";
@@ -135,30 +135,13 @@ export default async function TenantGroupsPage({
       <PageHeading
         title={terminology.group_plural}
         description={terminology.groups_page_description}
+        actions={<NewGroupDialog tenantId={result.tenant.id} />}
       />
-
-      <div
-        className="rounded-2xl border p-4 sm:p-6"
-        style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-        }}
-      >
-        <h2
-          className="text-sm font-semibold"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {terminology.groups_new_form_title}
-        </h2>
-        <div className="mt-3">
-          <NewGroupForm tenantId={result.tenant.id} />
-        </div>
-      </div>
 
       <form
         action="/tenant/groups"
         method="get"
-        className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="relative max-w-md flex-1">
           <Search
@@ -221,7 +204,7 @@ export default async function TenantGroupsPage({
           description={
             search
               ? "Geen groepen die voldoen aan de zoekopdracht."
-              : "Maak je eerste groep aan via het formulier hierboven."
+              : "Maak je eerste groep aan via de knop \"Nieuwe groep\" rechtsboven."
           }
         />
       ) : (
@@ -258,6 +241,7 @@ export default async function TenantGroupsPage({
                       Leden <SortIndicator col="member_count" />
                     </Link>
                   </th>
+                  <th className="px-5 py-3">Atleten</th>
                   <th className="px-5 py-3">
                     <Link
                       href={buildSortHref("trainer_count")}
@@ -283,7 +267,14 @@ export default async function TenantGroupsPage({
               >
                 {rows.map((g) => {
                   const isFull =
-                    g.max_members != null && g.member_count >= g.max_members;
+                    (g.max_members != null && g.member_count >= g.max_members) ||
+                    (g.max_athletes != null && g.athlete_count >= g.max_athletes);
+                  const fullTooltip =
+                    g.max_athletes != null && g.athlete_count >= g.max_athletes
+                      ? `Maximum atleten bereikt (${g.max_athletes})`
+                      : g.max_members != null
+                        ? `Groep is vol (${g.max_members})`
+                        : "Groep is vol";
                   return (
                     <tr key={g.id} style={{ color: "var(--text-primary)" }}>
                       <td className="px-5 py-3 font-medium">{g.name}</td>
@@ -302,6 +293,15 @@ export default async function TenantGroupsPage({
                           </span>
                         )}
                       </td>
+                      <td className="px-5 py-3 text-xs whitespace-nowrap">
+                        {g.athlete_count}
+                        {g.max_athletes != null && (
+                          <span style={{ color: "var(--text-secondary)" }}>
+                            {" "}
+                            / {g.max_athletes}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-5 py-3 text-xs">{g.trainer_count}</td>
                       <td
                         className="px-5 py-3 text-xs whitespace-nowrap"
@@ -315,7 +315,7 @@ export default async function TenantGroupsPage({
                             tenantId={result.tenant.id}
                             groupId={g.id}
                             isFull={isFull}
-                            fullTooltip={`Groep is vol (${g.max_members})`}
+                            fullTooltip={fullTooltip}
                             compact
                           />
                           <Link
@@ -344,7 +344,14 @@ export default async function TenantGroupsPage({
         <ul className="mt-3 space-y-3 md:hidden">
           {rows.map((g) => {
             const isFull =
-              g.max_members != null && g.member_count >= g.max_members;
+              (g.max_members != null && g.member_count >= g.max_members) ||
+              (g.max_athletes != null && g.athlete_count >= g.max_athletes);
+            const fullTooltip =
+              g.max_athletes != null && g.athlete_count >= g.max_athletes
+                ? `Maximum atleten bereikt (${g.max_athletes})`
+                : g.max_members != null
+                  ? `Groep is vol (${g.max_members})`
+                  : "Groep is vol";
             return (
               <li
                 key={g.id}
@@ -371,23 +378,38 @@ export default async function TenantGroupsPage({
                       </p>
                     )}
                   </div>
-                  <span
-                    className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                    style={{
-                      backgroundColor: "var(--surface-soft)",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {g.member_count}
-                    {g.max_members != null ? ` / ${g.max_members}` : ""}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                      style={{
+                        backgroundColor: "var(--surface-soft)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {g.member_count}
+                      {g.max_members != null ? ` / ${g.max_members}` : ""} leden
+                    </span>
+                    {(g.athlete_count > 0 || g.max_athletes != null) && (
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                        style={{
+                          backgroundColor: "var(--surface-soft)",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {g.athlete_count}
+                        {g.max_athletes != null ? ` / ${g.max_athletes}` : ""}{" "}
+                        atleten
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
                   <AddMemberPopover
                     tenantId={result.tenant.id}
                     groupId={g.id}
                     isFull={isFull}
-                    fullTooltip={`Groep is vol (${g.max_members})`}
+                    fullTooltip={fullTooltip}
                   />
                   <Link
                     href={`/tenant/groups/${g.id}`}

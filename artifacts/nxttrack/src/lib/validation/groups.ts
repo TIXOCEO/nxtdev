@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const optionalPositiveInt = z
+  .union([z.number().int().positive().max(10_000), z.literal("")])
+  .nullish()
+  .transform((v) => (v === "" || v == null ? null : v));
+
 export const createGroupSchema = z.object({
   tenant_id: z.string().uuid(),
   name: z.string().trim().min(2, "Naam is verplicht").max(120),
@@ -10,11 +15,12 @@ export const createGroupSchema = z.object({
     .nullish()
     .or(z.literal(""))
     .transform((v) => (v ? v : null)),
-  // Sprint 42 — optionele harde limiet. Lege input → null (ongelimiteerd).
-  max_members: z
-    .union([z.number().int().positive().max(10_000), z.literal("")])
-    .nullish()
-    .transform((v) => (v === "" || v == null ? null : v)),
+  // Sprint 42 — optionele harde limiet op het totaal aantal leden
+  // (trainer/atleet/staff samen). Lege input → null (ongelimiteerd).
+  max_members: optionalPositiveInt,
+  // Sprint 45 — optionele aparte limiet die alleen leden met rol
+  // 'athlete' meetelt. Trainers en staff vallen hier buiten.
+  max_athletes: optionalPositiveInt,
 });
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
