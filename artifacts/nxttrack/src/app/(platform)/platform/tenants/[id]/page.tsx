@@ -7,6 +7,9 @@ import { getTenantWithMemberships } from "@/lib/db/platform-tenants";
 import { TenantForm } from "../_tenant-form";
 import { MasterAdminCard } from "./_master-admin-card";
 import { CustomDomainCard } from "./_custom-domain-card";
+import { SectorCard } from "./_sector-card";
+import { listSectorTemplates } from "@/lib/db/sector-templates";
+import { DEFAULT_TERMINOLOGY } from "@/lib/terminology/defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +29,15 @@ export default async function EditTenantPage({ params }: Params) {
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
   const master = admins[0] ?? null;
   const others = memberships.filter((m) => m.role !== "tenant_admin");
+
+  const allTemplates = await listSectorTemplates();
+  const generic =
+    (allTemplates.find((t) => t.key === "generic")?.terminology_json as Record<string, string>) ??
+    (DEFAULT_TERMINOLOGY as unknown as Record<string, string>);
+  const overrides =
+    ((tenant.settings_json ?? {}) as Record<string, unknown>).terminology_overrides;
+  const initialOverrides =
+    overrides && typeof overrides === "object" ? (overrides as Record<string, string>) : {};
 
   return (
     <>
@@ -51,6 +63,25 @@ export default async function EditTenantPage({ params }: Params) {
         >
           <TenantForm mode="edit" initial={tenant} />
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
+          Sector & woordenschat
+        </h2>
+        <SectorCard
+          tenantId={tenant.id}
+          initialSectorKey={tenant.sector_template_key}
+          initialOverrides={initialOverrides}
+          templates={allTemplates
+            .filter((t) => t.is_active || t.key === tenant.sector_template_key)
+            .map((t) => ({
+              key: t.key,
+              name: t.name,
+              terminology_json: (t.terminology_json ?? {}) as Record<string, string>,
+            }))}
+          genericTerminology={generic}
+        />
       </section>
 
       <CustomDomainCard

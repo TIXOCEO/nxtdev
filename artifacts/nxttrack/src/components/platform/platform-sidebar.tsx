@@ -13,6 +13,7 @@ import {
   ImageIcon,
   Palette,
   Sparkles,
+  Languages,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const navItems = [
   { label: "Email logs", icon: ScrollText,      href: "/platform/email/logs" },
   { label: "Profielafbeeldingen", icon: ImageIcon, href: "/platform/profile-pictures" },
   { label: "Themes",     icon: Palette,         href: "/platform/themes" },
+  { label: "Sectortemplates", icon: Languages,  href: "/platform/sector-templates" },
   { label: "Releases",   icon: Sparkles,        href: "/platform/releases" },
   { label: "Settings",   icon: Settings,        href: "/platform/settings" },
 ];
