@@ -49,8 +49,8 @@ export default async function TenantDashboardPage() {
     getTenantTerminology(tenantId),
   ]);
   const COMING_SOON = [
-    { label: terminology.participant_plural, icon: Users,         hint: "Manage athletes and teams." },
-    { label: terminology.instructor_plural,  icon: UserCog,       hint: "Coach roster and assignments." },
+    { label: terminology.participant_plural, icon: Users,         hint: terminology.dashboard_participants_hint },
+    { label: terminology.instructor_plural,  icon: UserCog,       hint: terminology.dashboard_instructors_hint },
     { label: "Attendance",                   icon: CalendarCheck, hint: "Track session attendance." },
     { label: "Development tracking",         icon: TrendingUp,    hint: "Player progress over time." },
   ];

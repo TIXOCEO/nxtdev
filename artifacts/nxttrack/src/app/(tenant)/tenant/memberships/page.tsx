@@ -36,8 +36,8 @@ export default async function TenantMembershipsPage() {
   return (
     <>
       <PageHeading
-        title={terminology.program_page_title}
-        description="Definieer lidmaatschapsabonnementen voor deze vereniging."
+        title={terminology.program_plural}
+        description={terminology.memberships_page_description}
       />
 
       <div
@@ -51,7 +51,7 @@ export default async function TenantMembershipsPage() {
           className="text-sm font-semibold"
           style={{ color: "var(--text-primary)" }}
         >
-          Nieuw abonnement
+          {terminology.memberships_new_form_title}
         </h2>
         <div className="mt-3">
           <NewPlanForm tenantId={result.tenant.id} />

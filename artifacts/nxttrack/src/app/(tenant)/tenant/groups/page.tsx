@@ -26,7 +26,7 @@ export default async function TenantGroupsPage() {
     <>
       <PageHeading
         title={terminology.group_plural}
-        description="Maak teams of trainingsgroepen aan en koppel leden eraan."
+        description={terminology.groups_page_description}
       />
 
       <div
@@ -40,7 +40,7 @@ export default async function TenantGroupsPage() {
           className="text-sm font-semibold"
           style={{ color: "var(--text-primary)" }}
         >
-          Nieuwe groep
+          {terminology.groups_new_form_title}
         </h2>
         <div className="mt-3">
           <NewGroupForm tenantId={result.tenant.id} />

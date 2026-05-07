@@ -41,14 +41,14 @@ export default async function TenantTrainingsPage() {
     <>
       <PageHeading
         title={terminology.session_plural}
-        description="Plan trainingen voor groepen, beheer status en aanwezigheid."
+        description={terminology.trainings_page_description}
         actions={
           <Link
             href="/tenant/trainings/new"
             className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
             style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
           >
-            <Plus className="h-4 w-4" /> Nieuwe training
+            <Plus className="h-4 w-4" /> {terminology.trainings_new_button}
           </Link>
         }
       />

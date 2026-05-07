@@ -3,8 +3,8 @@
  * UI-labels die per tenant kunnen verschillen.
  *
  * Houd deze lijst smal en stabiel: iedere key is een 1-op-1 zichtbaar
- * concept (singular / plural). Voor afgeleide combi-strings ("Beheer X
- * en Y") componeer je in de view via deze keys.
+ * concept (singular / plural) of één afgewerkte UI-volzin. Voor afgeleide
+ * combi-strings componeer je in de view via deze keys.
  */
 export interface Terminology {
   /** Generieke roster-term (parents + athletes + trainers + staf samen). */
@@ -22,19 +22,35 @@ export interface Terminology {
   session_singular: string;
   session_plural: string;
   program_singular: string;
-  program_plural: string;
   /**
-   * Page-title voor het programmabeheer-scherm. Apart van `program_plural`
-   * omdat de bestaande NL-UI hier "Abonnementen" gebruikt terwijl de
-   * sidebar "Lidmaatschappen" toont — discrepantie blijft tot een
-   * vervolgsprint die deze samenvoegt.
+   * Meervoud van programma/lidmaatschap. Single source-of-truth voor
+   * zowel sidebar-label als de page-title van het programmabeheer-scherm
+   * (sprint 37 heeft de eerdere `program_page_title`-discrepantie hiermee
+   * opgeheven — geen aparte page-title key meer).
    */
-  program_page_title: string;
+  program_plural: string;
   attendance_label: string;
   registration_singular: string;
   registration_plural: string;
   certificate_singular: string;
   certificate_plural: string;
+
+  // ── Sector-aware volzin-strings (sprint 37) ───────────────────────────
+  // Page-`description` velden onder `<PageHeading>` en knop-/sectie-titels
+  // die bewust per sector een eigen formulering kunnen krijgen omdat
+  // automatisch componeren met `toLowerCase()` snel rare grammatica
+  // oplevert.
+  members_page_description: string;
+  groups_page_description: string;
+  groups_new_form_title: string;
+  trainings_page_description: string;
+  trainings_new_button: string;
+  memberships_page_description: string;
+  memberships_new_form_title: string;
+  /** Hint onder dashboard-card "Coming soon" → deelnemers/players. */
+  dashboard_participants_hint: string;
+  /** Hint onder dashboard-card "Coming soon" → instructeurs/trainers. */
+  dashboard_instructors_hint: string;
 }
 
 export type TerminologyKey = keyof Terminology;

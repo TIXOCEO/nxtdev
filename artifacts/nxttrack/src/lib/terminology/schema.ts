@@ -26,12 +26,21 @@ export const TerminologySchema: z.ZodType<Partial<Terminology>> = z.object({
   session_plural:         NonEmpty.optional(),
   program_singular:       NonEmpty.optional(),
   program_plural:         NonEmpty.optional(),
-  program_page_title:     NonEmpty.optional(),
   attendance_label:       NonEmpty.optional(),
   registration_singular:  NonEmpty.optional(),
   registration_plural:    NonEmpty.optional(),
   certificate_singular:   NonEmpty.optional(),
   certificate_plural:     NonEmpty.optional(),
+
+  members_page_description:    NonEmpty.optional(),
+  groups_page_description:     NonEmpty.optional(),
+  groups_new_form_title:       NonEmpty.optional(),
+  trainings_page_description:  NonEmpty.optional(),
+  trainings_new_button:        NonEmpty.optional(),
+  memberships_page_description:NonEmpty.optional(),
+  memberships_new_form_title:  NonEmpty.optional(),
+  dashboard_participants_hint: NonEmpty.optional(),
+  dashboard_instructors_hint:  NonEmpty.optional(),
 });
 
 /**

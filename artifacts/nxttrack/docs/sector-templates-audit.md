@@ -123,15 +123,16 @@ Bestand: `artifacts/nxttrack/supabase/sprint36_sector_templates.sql`
 | Members page-title | Leden | **Leden** | Leden |
 | Groups page-title | Groepen | **Groepen** | Lesgroepen |
 | Trainings page-title | Trainingen | **Trainingen** | Zwemlessen |
-| Memberships page-title | Abonnementen | **Abonnementen** (via terminology key `program_page_title`) | Lespakketten |
+| Memberships page-title | Abonnementen | **Lidmaatschappen** (sprint 37 — `program_plural` is single source of truth, sidebar+title gelijk) | Lespakketten |
 | Dashboard "Coming soon" — Players | "Players" (EN) | **Sporters** | Leerlingen |
 | Dashboard "Coming soon" — Trainers | "Trainers" (EN) | **Trainers** | Zweminstructeurs |
 
 **Scope-grenzen om regressie te voorkomen**:
 
 * Alléén korte koplabels (page-title + sidebar-item + dashboard-card-label) zijn dynamisch via de resolver.
-* Lopende NL-zinnen (page-`description`s zoals *"Maak teams of trainingsgroepen aan en koppel leden eraan."*, *"Beheer ouders, sporters, trainers en staf van deze vereniging."*, *"Plan trainingen voor groepen, beheer status en aanwezigheid."*, *"Definieer lidmaatschapsabonnementen voor deze vereniging."*) en knop-teksten (*"Nieuwe training"*) blijven **hardcoded NL**, omdat machinaal componeren met `toLowerCase()` snel rare grammatica oplevert (capitalisatie, lidwoorden, samenstellingen). Deze worden in een vervolgsprint via aparte volzin-keys per sector ingevuld.
-* Memberships-page-title is dynamisch via een **aparte** key `program_page_title` (apart van `program_plural`) zodat football_school exact "Abonnementen" toont terwijl de sidebar `program_plural`="Lidmaatschappen" gebruikt — de bestaande NL-discrepantie blijft daarmee bewust ongewijzigd. Een vervolgsprint kan deze samenvoegen (zie §7).
+* **Sprint 37 update**: lopende NL-zinnen (page-`description`s en knop-/sectie-titels zoals *"Nieuwe training"*, *"Nieuw lidmaatschap"*, *"Nieuwe groep"*) zijn nu wél sector-aware via aparte volzin-keys — zie §9.
+* Het dashboard-`Coming soon`-blok leest naast de label ook de **hint** uit terminology (`dashboard_participants_hint`, `dashboard_instructors_hint`).
+* De memberships-page-titel gebruikt vanaf sprint 37 dezelfde key als de sidebar (`program_plural`); de losstaande `program_page_title`-key is verwijderd. Houtrust-zichtbare wijziging: page-titel "Abonnementen" → **"Lidmaatschappen"** (gelijk aan sidebar).
 
 > **Houtrust-regressie**: alle zichtbare strings die vóór sprint 36 NL waren blijven exact gelijk. De **enige** zichtbare wijziging voor Houtrust is dat het dashboard "Coming soon"-blok nu de label *"Sporters"* toont (in plaats van *"Players"*) — dit is een impliciete NL-isering en wordt in de release-notes benoemd.
 
@@ -152,7 +153,29 @@ Bestand: `artifacts/nxttrack/supabase/sprint36_sector_templates.sql`
 3. `members.player_type` opheffen of per-sector configureerbaar maken.
 4. Sector-aware notification subjecten.
 5. Onboarding wizard taal-/sector-aware copy.
-6. Page-title consistency: "Abonnementen" vs sidebar "Lidmaatschappen" via één key oplossen (introduceer `program_plural_long` óf hernoem allebei).
+6. ~~Page-title consistency: "Abonnementen" vs sidebar "Lidmaatschappen" via één key oplossen~~ → **opgelost in sprint 37** door `program_page_title` te schrappen en `program_plural` als single source te gebruiken.
+
+---
+
+## 9. Sprint 37 — Sector-aware volzin-strings
+
+`Terminology` is uitgebreid met negen volzin-keys die per sector een eigen formulering kunnen krijgen, geseed in `sprint37_sector_template_sentences.sql` (jsonb-merge, idempotent):
+
+| Key | football_school | swimming_school | generic |
+|---|---|---|---|
+| `members_page_description` | Beheer ouders, sporters, trainers en staf van deze vereniging. | Beheer ouders, leerlingen, instructeurs en staf van deze zwemschool. | Beheer ouders, deelnemers, begeleiders en staf van deze academie. |
+| `groups_page_description` | Maak teams of trainingsgroepen aan en koppel leden eraan. | Maak lesgroepen aan en koppel leerlingen eraan. | Maak groepen aan en koppel deelnemers eraan. |
+| `groups_new_form_title` | Nieuwe groep | Nieuwe lesgroep | Nieuwe groep |
+| `trainings_page_description` | Plan trainingen voor groepen, beheer status en aanwezigheid. | Plan zwemlessen voor lesgroepen, beheer status en lesaanwezigheid. | Plan sessies voor groepen, beheer status en aanwezigheid. |
+| `trainings_new_button` | Nieuwe training | Nieuwe zwemles | Nieuwe sessie |
+| `memberships_page_description` | Definieer lidmaatschappen voor deze vereniging. | Definieer lespakketten voor deze zwemschool. | Definieer programma's voor deze academie. |
+| `memberships_new_form_title` | Nieuw lidmaatschap | Nieuw lespakket | Nieuw programma |
+| `dashboard_participants_hint` | Beheer sporters en teams. | Beheer leerlingen en lesgroepen. | Beheer deelnemers en groepen. |
+| `dashboard_instructors_hint` | Trainersbestand en koppelingen. | Instructeursbestand en koppelingen. | Begeleidersbestand en koppelingen. |
+
+`DEFAULT_TERMINOLOGY` mirrort de generic-waarden zodat de hardcoded TS-fallback nooit leeg of `undefined` is. Pages onder `(tenant)/tenant/{members,groups,trainings,memberships}/page.tsx` en `(tenant)/tenant/page.tsx` lezen deze keys nu uit de resolver — geen hardcoded NL meer voor deze strings.
+
+**Houtrust-regressie**: page-titel "Abonnementen" → **"Lidmaatschappen"** (consolidatie met sidebar). Verder geen tekstuele wijzigingen — football_school is bewust met dezelfde formulering geseed als de oude hardcoded NL-strings.
 
 ---
 

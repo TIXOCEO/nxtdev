@@ -250,7 +250,7 @@ export default async function TenantMembersPage({
     <>
       <PageHeading
         title={terminology.member_plural}
-        description="Beheer ouders, sporters, trainers en staf van deze vereniging."
+        description={terminology.members_page_description}
         actions={
           <div className="flex items-center gap-2">
             <MembersFilterSheet

@@ -9,7 +9,8 @@ const FOOTBALL = {
   participant_plural: "Sporters",
   instructor_plural: "Trainers",
   session_plural: "Trainingen",
-  program_page_title: "Abonnementen",
+  trainings_new_button: "Nieuwe training",
+  memberships_new_form_title: "Nieuw lidmaatschap",
 };
 
 const GENERIC = {
@@ -17,7 +18,8 @@ const GENERIC = {
   participant_plural: "Deelnemers",
   instructor_plural: "Begeleiders",
   session_plural: "Sessies",
-  program_page_title: "Programma's",
+  trainings_new_button: "Nieuwe sessie",
+  memberships_new_form_title: "Nieuw programma",
 };
 
 describe("safeParseTerminology", () => {
@@ -72,7 +74,7 @@ describe("resolveTerminology fallback chain", () => {
     const out = resolveTerminology({ generic: GENERIC, sector: FOOTBALL });
     assert.equal(out.participant_plural, "Sporters");
     assert.equal(out.session_plural, "Trainingen");
-    assert.equal(out.program_page_title, "Abonnementen");
+    assert.equal(out.trainings_new_button, "Nieuwe training");
   });
 
   it("overrides beat sector and generic", () => {
@@ -109,6 +111,7 @@ describe("resolveTerminology fallback chain", () => {
     assert.equal(out.group_plural, "Groepen");
     assert.equal(out.session_plural, "Trainingen");
     assert.equal(out.program_plural, DEFAULT_TERMINOLOGY.program_plural);
-    assert.equal(out.program_page_title, "Abonnementen");
+    assert.equal(out.trainings_new_button, "Nieuwe training");
+    assert.equal(out.memberships_new_form_title, "Nieuw lidmaatschap");
   });
 });
