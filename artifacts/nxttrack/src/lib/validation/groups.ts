@@ -10,6 +10,16 @@ export const createGroupSchema = z.object({
     .nullish()
     .or(z.literal(""))
     .transform((v) => (v ? v : null)),
+  // Sprint 42 — optionele harde limiet. Lege input → null (ongelimiteerd).
+  max_members: z
+    .union([z.number().int().positive().max(10_000), z.literal("")])
+    .nullish()
+    .transform((v) => (v === "" || v == null ? null : v)),
 });
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
+
+export const updateGroupSchema = createGroupSchema.extend({
+  id: z.string().uuid(),
+});
+export type UpdateGroupInput = z.infer<typeof updateGroupSchema>;

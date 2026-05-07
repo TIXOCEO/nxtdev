@@ -12,7 +12,12 @@ import {
   type CreateMemberInput,
   type UpdateMemberInput,
 } from "@/lib/validation/members";
-import { createGroupSchema, type CreateGroupInput } from "@/lib/validation/groups";
+import {
+  createGroupSchema,
+  updateGroupSchema,
+  type CreateGroupInput,
+  type UpdateGroupInput,
+} from "@/lib/validation/groups";
 import {
   createMembershipPlanSchema,
   type CreateMembershipPlanInput,
@@ -456,7 +461,7 @@ export async function createGroup(
   const parsed = createGroupSchema.safeParse(input);
   if (!parsed.success) return fail("Invalid input", parsed.error.flatten().fieldErrors);
 
-  await assertTenantAccess(parsed.data.tenant_id);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -466,7 +471,71 @@ export async function createGroup(
     .single();
   if (error || !data) return fail(error?.message ?? "Kon groep niet aanmaken.");
 
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    action: "group.created",
+    meta: {
+      group_id: (data as Group).id,
+      name: parsed.data.name,
+      max_members: parsed.data.max_members ?? null,
+    },
+  });
+
   revalidatePath("/tenant/groups");
+  return { ok: true, data: data as Group };
+}
+
+// Sprint 42 — separate update action so the inline edit form on the
+// detail page can change name / description / max_members without
+// touching the create flow.
+export async function updateGroup(
+  input: UpdateGroupInput,
+): Promise<ActionResult<Group>> {
+  const parsed = updateGroupSchema.safeParse(input);
+  if (!parsed.success) return fail("Invalid input", parsed.error.flatten().fieldErrors);
+
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+
+  // Existing member-count check: weiger lager te zetten dan huidig aantal.
+  if (parsed.data.max_members != null) {
+    const { count } = await supabase
+      .from("group_members")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", parsed.data.id);
+    if ((count ?? 0) > parsed.data.max_members) {
+      return fail(
+        `Maximum (${parsed.data.max_members}) is lager dan huidige bezetting (${count}).`,
+      );
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("groups")
+    .update({
+      name: parsed.data.name,
+      description: parsed.data.description,
+      max_members: parsed.data.max_members,
+    })
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id)
+    .select()
+    .single();
+  if (error || !data) return fail(error?.message ?? "Kon groep niet bijwerken.");
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    action: "group.updated",
+    meta: {
+      group_id: parsed.data.id,
+      max_members: parsed.data.max_members ?? null,
+    },
+  });
+
+  revalidatePath("/tenant/groups");
+  revalidatePath(`/tenant/groups/${parsed.data.id}`);
   return { ok: true, data: data as Group };
 }
 
@@ -482,14 +551,14 @@ export async function addMemberToGroup(
   const parsed = groupMemberSchema.safeParse(input);
   if (!parsed.success) return fail("Invalid input", parsed.error.flatten().fieldErrors);
 
-  await assertTenantAccess(parsed.data.tenant_id);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
   const supabase = await createClient();
 
   // Verify both group + member belong to the tenant.
   const [{ data: g }, { data: m }] = await Promise.all([
     supabase
       .from("groups")
-      .select("id, tenant_id")
+      .select("id, tenant_id, max_members")
       .eq("id", parsed.data.group_id)
       .eq("tenant_id", parsed.data.tenant_id)
       .maybeSingle(),
@@ -503,6 +572,25 @@ export async function addMemberToGroup(
   if (!g) return fail("Groep niet gevonden.");
   if (!m) return fail("Lid niet gevonden.");
 
+  // Sprint 42 — handhaaf max_members vóór insert. Race-conditie kan
+  // theoretisch nog 1 lid extra binnenlaten als twee admins gelijktijdig
+  // toevoegen; voor onze schaal acceptabel — hard guard zit in de UI én
+  // hier in de pre-check.
+  const groupRow = g as { id: string; max_members: number | null };
+  if (groupRow.max_members != null) {
+    const { count } = await supabase
+      .from("group_members")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", parsed.data.group_id);
+    if ((count ?? 0) >= groupRow.max_members) {
+      return fail(
+        `Groep is vol (${groupRow.max_members} ${
+          groupRow.max_members === 1 ? "plek" : "plekken"
+        }).`,
+      );
+    }
+  }
+
   const { data, error } = await supabase
     .from("group_members")
     .insert({ group_id: parsed.data.group_id, member_id: parsed.data.member_id })
@@ -510,8 +598,29 @@ export async function addMemberToGroup(
     .single();
   if (error || !data) {
     if (error?.code === "23505") return fail("Lid zit al in deze groep.");
+    if (
+      error?.code === "23514" ||
+      error?.message?.includes("group_members_max_exceeded")
+    ) {
+      return fail(
+        groupRow.max_members != null
+          ? `Groep is vol (${groupRow.max_members} ${
+              groupRow.max_members === 1 ? "plek" : "plekken"
+            }).`
+          : "Groep is vol.",
+      );
+    }
     return fail(error?.message ?? "Kon lid niet toevoegen.");
   }
+
+  // Sprint 42 — audit trail voor groepswijzigingen.
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: parsed.data.member_id,
+    action: "group.member_added",
+    meta: { group_id: parsed.data.group_id },
+  });
 
   // Sprint 35 — backfill attendance rows for already-scheduled future
   // sessions of this group so the new member shows up on the trainer's
@@ -581,7 +690,7 @@ export async function removeMemberFromGroup(
   const parsed = groupMemberSchema.safeParse(input);
   if (!parsed.success) return fail("Invalid input", parsed.error.flatten().fieldErrors);
 
-  await assertTenantAccess(parsed.data.tenant_id);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
   const supabase = await createClient();
 
   // Verify both the group AND the member belong to this tenant before
@@ -613,9 +722,161 @@ export async function removeMemberFromGroup(
     .eq("member_id", parsed.data.member_id);
   if (error) return fail(error.message);
 
+  if ((count ?? 0) > 0) {
+    await recordAudit({
+      tenant_id: parsed.data.tenant_id,
+      actor_user_id: user.id,
+      member_id: parsed.data.member_id,
+      action: "group.member_removed",
+      meta: { group_id: parsed.data.group_id },
+    });
+  }
+
   revalidatePath("/tenant/groups");
+  revalidatePath(`/tenant/groups/${parsed.data.group_id}`);
   revalidatePath(`/tenant/members/${parsed.data.member_id}`);
   return { ok: true, data: { removed: count ?? 0 } };
+}
+
+// Sprint 42 — bulk add gebruikt door de CSV-import flow op de detail-pagina.
+// Wordt vóór insert gevalideerd (max_members + dubbele rijen) zodat een
+// foute import in zijn geheel niets toevoegt en de admin een duidelijk
+// rapport krijgt.
+export interface BulkAddResultRow {
+  member_id: string;
+  ok: boolean;
+  reason?: string;
+}
+
+export async function bulkAddMembersToGroup(input: {
+  tenant_id: string;
+  group_id: string;
+  member_ids: string[];
+}): Promise<
+  ActionResult<{ added: number; skipped: BulkAddResultRow[] }>
+> {
+  if (
+    !input ||
+    typeof input.tenant_id !== "string" ||
+    typeof input.group_id !== "string" ||
+    !Array.isArray(input.member_ids)
+  ) {
+    return fail("Ongeldige invoer");
+  }
+
+  const tenantId = input.tenant_id;
+  const groupId = input.group_id;
+  // Sprint 42 — bewaar de volgorde én rapporteer duplicate-rijen expliciet
+  // i.p.v. ze stilzwijgend te dedupliceren via Set. Eerste hit wint, latere
+  // hits krijgen `reason: 'Dubbele rij in CSV'` zodat de admin weet wat er
+  // gebeurd is.
+  const rawIds = (input.member_ids ?? []).filter(
+    (s) => typeof s === "string" && s.length > 0,
+  );
+  const seen = new Set<string>();
+  const memberIds: string[] = [];
+  const dupSkipped: BulkAddResultRow[] = [];
+  for (const id of rawIds) {
+    if (seen.has(id)) {
+      dupSkipped.push({ member_id: id, ok: false, reason: "Dubbele rij in CSV" });
+      continue;
+    }
+    seen.add(id);
+    memberIds.push(id);
+  }
+  if (memberIds.length === 0) {
+    return { ok: true, data: { added: 0, skipped: dupSkipped } };
+  }
+
+  const user = await assertTenantAccess(tenantId);
+  const supabase = await createClient();
+
+  const { data: g } = await supabase
+    .from("groups")
+    .select("id, max_members")
+    .eq("id", groupId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (!g) return fail("Groep niet gevonden.");
+  const groupRow = g as { id: string; max_members: number | null };
+
+  // Filter member-ids tegen tenant + bestaande lidmaatschappen.
+  const [{ data: existingMembers }, { data: existingLinks }] = await Promise.all([
+    supabase
+      .from("members")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .in("id", memberIds),
+    supabase
+      .from("group_members")
+      .select("member_id")
+      .eq("group_id", groupId)
+      .in("member_id", memberIds),
+  ]);
+  const validIds = new Set(
+    ((existingMembers ?? []) as Array<{ id: string }>).map((r) => r.id),
+  );
+  const alreadyIn = new Set(
+    ((existingLinks ?? []) as Array<{ member_id: string }>).map((r) => r.member_id),
+  );
+
+  const skipped: BulkAddResultRow[] = [...dupSkipped];
+  const toInsert: string[] = [];
+  for (const id of memberIds) {
+    if (!validIds.has(id)) {
+      skipped.push({ member_id: id, ok: false, reason: "Lid niet gevonden in deze tenant." });
+      continue;
+    }
+    if (alreadyIn.has(id)) {
+      skipped.push({ member_id: id, ok: false, reason: "Zit al in de groep." });
+      continue;
+    }
+    toInsert.push(id);
+  }
+
+  if (toInsert.length === 0) {
+    return { ok: true, data: { added: 0, skipped } };
+  }
+
+  if (groupRow.max_members != null) {
+    const currentCount =
+      ((existingMembers ?? []) as Array<{ id: string }>).length === 0
+        ? 0
+        : alreadyIn.size;
+    // We hebben de huidige bezetting niet exact (alleen het deel binnen onze
+    // input set). Doe dus een echte head-count.
+    const { count } = await supabase
+      .from("group_members")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId);
+    const remaining = groupRow.max_members - (count ?? currentCount);
+    if (toInsert.length > remaining) {
+      return fail(
+        `Import overschrijdt maximum: ${count ?? 0} + ${toInsert.length} > ${groupRow.max_members}.`,
+      );
+    }
+  }
+
+  const rows = toInsert.map((mid) => ({ group_id: groupId, member_id: mid }));
+  const { error } = await supabase.from("group_members").insert(rows);
+  if (error) return fail(error.message);
+
+  // Audit per inserted row (best-effort, parallel).
+  await Promise.all(
+    toInsert.map((mid) =>
+      recordAudit({
+        tenant_id: tenantId,
+        actor_user_id: user.id,
+        member_id: mid,
+        action: "group.member_added",
+        meta: { group_id: groupId, source: "csv_import" },
+      }),
+    ),
+  );
+
+  revalidatePath("/tenant/groups");
+  revalidatePath(`/tenant/groups/${groupId}`);
+  return { ok: true, data: { added: toInsert.length, skipped } };
 }
 
 // ── membership plans ───────────────────────────────────────

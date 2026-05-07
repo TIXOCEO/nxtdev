@@ -283,6 +283,8 @@ export interface Member {
   // Sprint 24 / Sprint F — admin-only velden.
   member_since: string | null;
   notes: string | null;
+  // Sprint 42 — optionele, tenant-unieke athlete-/lid-code (autocomplete + CSV).
+  athlete_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -334,7 +336,11 @@ export interface Group {
   tenant_id: string;
   name: string;
   description: string | null;
+  /** Sprint 42 — hard cap on member count; null = unlimited. */
+  max_members: number | null;
   created_at: string;
+  /** Sprint 42 — bijgehouden via `groups_updated_at` trigger. */
+  updated_at: string;
 }
 
 export interface GroupMember {

@@ -28,7 +28,12 @@ export function NewGroupForm({ tenantId }: NewGroupFormProps) {
   } = useForm<CreateGroupInput>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(createGroupSchema) as any,
-    defaultValues: { tenant_id: tenantId, name: "", description: "" },
+    defaultValues: {
+      tenant_id: tenantId,
+      name: "",
+      description: "",
+      max_members: null,
+    },
   });
 
   function onSubmit(values: CreateGroupInput) {
@@ -39,7 +44,7 @@ export function NewGroupForm({ tenantId }: NewGroupFormProps) {
         setErr(res.error);
         return;
       }
-      reset({ tenant_id: tenantId, name: "", description: "" });
+      reset({ tenant_id: tenantId, name: "", description: "", max_members: null });
       router.refresh();
     });
   }
@@ -55,7 +60,7 @@ export function NewGroupForm({ tenantId }: NewGroupFormProps) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="grid gap-3 sm:grid-cols-2"
+      className="grid gap-3 sm:grid-cols-3"
       noValidate
     >
       <input type="hidden" {...register("tenant_id")} value={tenantId} />
@@ -90,12 +95,37 @@ export function NewGroupForm({ tenantId }: NewGroupFormProps) {
           placeholder="Optioneel"
         />
       </div>
+      <div>
+        <label
+          className="mb-1 block text-xs font-medium"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Max. leden
+        </label>
+        <input
+          type="number"
+          min={1}
+          step={1}
+          {...register("max_members", {
+            setValueAs: (v) =>
+              v === "" || v == null ? null : Number.parseInt(String(v), 10),
+          })}
+          className={inputCls}
+          style={inputStyle}
+          placeholder="Onbeperkt"
+        />
+        {errors.max_members && (
+          <p className="mt-1 text-xs text-red-600">
+            {errors.max_members.message}
+          </p>
+        )}
+      </div>
       {err && (
-        <p className="sm:col-span-2 text-xs text-red-600" role="alert">
+        <p className="sm:col-span-3 text-xs text-red-600" role="alert">
           {err}
         </p>
       )}
-      <div className="sm:col-span-2 flex justify-end">
+      <div className="sm:col-span-3 flex justify-end">
         <button
           type="submit"
           disabled={pending}
