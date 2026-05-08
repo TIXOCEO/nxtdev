@@ -44,16 +44,33 @@
 
 - `program_singular` / `program_plural` (Sprint 36) wordt vandaag al gelezen door de sidebar en `/tenant/lidmaatschappen` page-titel — maar verwijst inhoudelijk naar `membership_plans`. We hergebruiken **dezelfde keys** voor de nieuwe programs-tabel zodat tenants geen tweede label-set hoeven te leren. Waar `membership_plans` nodig blijft, gebruiken we `membership_plan_singular/plural` (nieuw, zie §3.6).
 
+### 1.4 Sector concept-mapping (generiek datamodel ↔ per-sector labels)
+
+Het `programs`-concept is **DB-side volledig generiek** — alleen labels en seed-voorbeelden verschillen per sector. Sector-template seeds (Sprint 60) clonen passende terminology + (optioneel) example-programs naar nieuwe tenants.
+
+| Aspect | football_school | swimming_school | generic |
+|---|---|---|---|
+| Label `program_singular` | Lidmaatschap | Lespakket | Programma |
+| Label `program_plural` | Lidmaatschappen | Lespakketten | Programma's |
+| Label `marketplace_title` | Ons aanbod | Onze lespakketten | Ons aanbod |
+| Voorbeeld-programs | "Selectie U13", "Recreatief U10", "Keepersacademie" | "Watergewenning", "Diploma A", "Diploma B", "Banenzwemmen" | "Cursus voorjaar 2026", "Open trainingsuur" |
+| Gerelateerde `capacity_resource.kind` | `field`, `court` | `lane`, `area` (bad → baan via `parent_id`) | `room`, `area`, `other` |
+| Default-instructeur-rol-label | Hoofdtrainer | Hoofdinstructeur | Hoofdbegeleider |
+| Default `capacity_purpose` | `regular` | `regular`, `makeup`, `trial` | `regular` |
+| Marketplace-CTA | "Word lid" | "Schrijf in voor proefles" | "Aanmelden" |
+
+Het datamodel kent geen sector-kolom op `programs` — sector wordt impliciet bepaald door `tenants.sector_template_key`. Alleen de seed-template-defaults verschillen.
+
 ---
 
 ## 2. Probleemstelling & ontwerp-doelen
 
 | Doel | Acceptatie |
 |---|---|
-| **D1.** Tenant-admin kan een program definiëren met defaults (capaciteit, min-instructeurs, resources, hoofdinstructeur, marketplace-zichtbaarheid, optioneel gekoppelde membership_plans). | CRUD-screen onder `/tenant/programmas`, server-actions met `assertTenantAccess` + Zod, audit-keys `program.{created,updated,published,archived}`. |
+| **D1.** Tenant-admin kan een program definiëren met defaults (capaciteit, flex-capaciteit, capacity-purpose-defaults, min-instructeurs, resources, hoofdinstructeur, marketplace-zichtbaarheid, optioneel gekoppelde membership_plans). | CRUD-screen onder `/tenant/programmas`, server-actions met `assertTenantAccess` + Zod, audit-keys `program.{created,updated,published,archived}`. |
 | **D2.** Bestaande groups en training_sessions kunnen optioneel aan een program hangen, met identiek gedrag bij `program_id IS NULL`. | Nieuwe FK's nullable + RLS ongewijzigd; UI toont program-badge alleen als gekoppeld; cron / dedup / e-mail-templates blijven werken. |
 | **D3.** Layered defaults zonder code-duplicatie. | Eén lees-helper `getEffectiveSessionConstraints(sessionId)` in `lib/db/sessions.ts` die de cascade implementeert; view `session_instructors_effective` krijgt program-fallback inline. |
-| **D4.** Publieke marketplace `/t/[slug]/aanbod` toont gepubliceerde programs met deeplink naar het bestaande aanmeld-formulier (`?program=<slug>`). | Server-rendered, indexeerbaar, respecteert `programs.is_published` én `programs.visibility='public'`. `members_only` is voor Sprint 60-64 buiten scope (zie §3.5) — alleen `public`-programs verschijnen op de marketplace. Houtrust ziet niets nieuws (geen programs = lege lijst, route blijft 404). |
+| **D4.** Publieke marketplace op route `/t/[slug]/programmas` + detail `/t/[slug]/programmas/[publicSlug]` (label uit `terminology.program_plural`) toont alle programs met `visibility='public'` en deeplinkt naar het bestaande aanmeld-formulier (`?program=<publicSlug>`). | Server-rendered, indexeerbaar, respecteert `programs.visibility='public'` én aanwezigheid van `public_slug`. `internal` = alleen voor ingelogde tenant-admins; `archived` = nergens zichtbaar (alleen historische data-retentie). Houtrust ziet niets nieuws (geen programs = lege lijst, route blijft 404). |
 | **D5.** Wachtlijst kan op program-niveau worden geopend (i.p.v. alleen per groep), inclusief intake-routing override per program. | `waitlists.program_id`, `waitlist_entries.program_id` nullable; `submitMembershipRegistration` leest `intake_overrides_by_program[program.slug]` voor route-keuze. |
 | **D6.** Houtrust-veiligheid. | Geen verplichte program_id ergens; backfill in geen enkele migratie raakt Houtrust-data; alle nieuwe RLS via `has_tenant_access`; dedup-index breidt het predicate uit i.p.v. herstructureren. |
 | **D7.** Voorbereiding op Smart Waitlist & Placement (Task TBD). | Programs worden de "matchbare aanbod-eenheid": placement-RPC krijgt `program_id`-input, leest preferences, scoort tegen actieve groups + capaciteit. Schema in deze taak is daar al op afgesteld (zie §6 risico-paragraaf "Wat we expliciet alvast vrijhouden"). |
@@ -87,27 +104,35 @@ erDiagram
 public.programs                     -- de planning-eenheid
   id              uuid pk default gen_random_uuid()
   tenant_id       uuid not null references tenants(id) on delete cascade
-  slug            text not null                              -- unique per tenant; gebruikt in URL ?program=
-  name            text not null
-  short_description text                                     -- voor marketplace-card (max ~280)
-  long_description  text                                     -- markdown/tiptap-body voor detail-pagina
-  status          text not null default 'draft'              -- draft | active | archived
-                  check (status in ('draft','active','archived'))
-  is_published    boolean not null default false             -- onafhankelijk van status: kan actief zijn maar niet publiek
-  visibility      text not null default 'public'             -- public | members_only | private
-                  check (visibility in ('public','members_only','private'))
+  slug            text not null                              -- intern; uniek per tenant
+  public_slug     text                                       -- publieke URL-slug (uniek per tenant, alleen gevuld als visibility='public')
+  name            text not null                              -- intern admin-label
+  marketing_title       text                                 -- publieke titel op marketplace (fallback: name)
+  marketing_description text                                 -- publieke korte omschrijving (markdown/tiptap)
+  hero_image_url        text                                 -- absolute URL naar App Storage object
+  cta_label             text                                 -- "Word lid" / "Schrijf in voor proefles" / "Aanmelden"
+  visibility      text not null default 'internal'           -- public | internal | archived
+                  check (visibility in ('public','internal','archived'))
+  -- 'public'   = zichtbaar op /t/<slug>/programmas marketplace + indexeerbaar
+  -- 'internal' = alleen tenant-admin/staff zien het in /tenant/programmas
+  -- 'archived' = historie; nergens UI-getoond, niet selecteerbaar bij sessie-creatie
   -- gelaagde defaults (worden door cascade-helper gelezen)
-  default_capacity         int  check (default_capacity is null or default_capacity > 0)
-  default_min_instructors  int  not null default 1 check (default_min_instructors >= 0)
-  -- marketplace metadata
-  hero_image_path  text                                      -- App Storage object path (optioneel)
+  default_capacity              int  check (default_capacity is null or default_capacity > 0)
+  default_flex_capacity         int  check (default_flex_capacity is null or default_flex_capacity >= 0)
+                                              -- buffer bovenop default_capacity (proefles, inhaal, intake)
+  default_min_instructors       int  not null default 1 check (default_min_instructors >= 0)
+  capacity_purpose_defaults_json jsonb not null default '{}'::jsonb
+                                              -- bv. {"regular":12,"makeup":2,"trial":1} — wordt
+                                              -- door capacity-overview-view gelezen voor groen/oranje/rood
   age_min          int  check (age_min is null or age_min >= 0)
   age_max          int  check (age_max is null or age_max >= age_min)
-  highlights_json  jsonb not null default '[]'::jsonb        -- ["small groups","ervaren coach",...] voor card
+  highlights_json  jsonb not null default '[]'::jsonb        -- ["small groups","ervaren coach",...]
   -- ordering
   sort_order       int  not null default 0
   created_at, updated_at timestamptz                         -- handle_updated_at-trigger
   unique (tenant_id, slug)
+  unique (tenant_id, public_slug)                            -- alleen relevant wanneer public_slug gevuld
+  check (visibility <> 'public' or public_slug is not null)  -- public-zichtbaarheid vereist public_slug
 
 public.program_groups               -- many-to-many program ↔ group
   program_id  uuid not null references programs(id) on delete cascade
@@ -169,7 +194,7 @@ public.tenants.settings_json
   + intake_overrides_by_program jsonb  (key = program slug, value in {'registration','waitlist'})
 ```
 
-Indexen: `programs_tenant_status_idx (tenant_id, status, sort_order)`, `programs_marketplace_idx (tenant_id, is_published, visibility) where status='active'`, `program_groups_group_idx (group_id)`, `program_instructors_member_idx (member_id)`, `training_sessions_program_idx (program_id, starts_at)` (partial `where program_id is not null`), idem voor waitlists.
+Indexen: `programs_tenant_visibility_idx (tenant_id, visibility, sort_order)`, `programs_marketplace_idx (tenant_id, public_slug) where visibility='public'`, `program_groups_group_idx (group_id)`, `program_instructors_member_idx (member_id)`, `training_sessions_program_idx (program_id, starts_at)` (partial `where program_id is not null`), idem voor waitlists.
 
 ### 3.4 Layered cascade — leeshelpers
 
@@ -258,15 +283,16 @@ is identiek aan hoe de bestaande `/t/[slug]/*`-routes met `news`/
 drop policy if exists "programs_public_read" on public.programs;
 create policy "programs_public_read" on public.programs
   for select to anon, authenticated
-  using (status = 'active' and is_published = true and visibility = 'public');
+  using (visibility = 'public' and public_slug is not null);
 ```
 
-**`visibility='members_only'`** is bewust **out-of-scope** voor Sprint
-60-64. De kolom mag de waarde dragen (CHECK staat hem toe), maar er
-komt geen extra public-policy voor. Members-only-zichtbaarheid wordt
-geleverd door de tenant-scoped `programs_tenant_all`-policy in
-combinatie met member-routes onder `(tenant)/tenant/...`. D4 in §2 is
-hieronder bijgesteld om dat te reflecteren.
+**`visibility='internal'`** krijgt geen extra public-policy — die rijen
+zijn uitsluitend bereikbaar via de tenant-scoped `programs_tenant_all`
+policy en dus alleen voor ingelogde tenant-admin/staff. **`archived`**
+komt nergens in publieke of member-screens, alleen in een
+admin-only "Archief"-filter. Een dedicated `members_only`-zichtbaarheid
+is **expliciet out-of-scope** voor Sprint 60-64 — komt eventueel in een
+latere sprint terug zodra member-only program-routes ontstaan (eventueel onder `/tenant/aanbod-voor-leden` o.i.d. — niet nu).
 
 **Tenant-consistency op join-tabellen.** Iedere join-tabel met
 gedenormaliseerde `tenant_id` (`program_groups`, `program_instructors`,
@@ -297,6 +323,41 @@ Voor `program_groups` / `program_instructors` / `program_resources` /
 read). Publieke route leest alléén uit `programs` zelf en hydrateert
 losse data via tenant-gescopede service-role-queries.
 
+### 3.7 Data model classification matrix
+
+Onderstaande matrix vat alle voorgestelde wijzigingen samen volgens de in Task #93 stap 4 gevraagde labels: **new table** / **new column** / **migration** (data-aanpassing of constraint) / **view** / **UI-only** / **later phase** (pas na Sprint 60-64).
+
+| Item | Type | Sprint | Houtrust-impact |
+|---|---|---|---|
+| `programs` (tabel) | new table | 60 | none (leeg voor Houtrust) |
+| `program_groups` (tabel + composite FK's) | new table | 60 | none |
+| `groups.program_id` (kolom, nullable) | new column | 60 | none — blijft NULL |
+| `(id, tenant_id)`-unique op `programs`/`groups` | migration | 60 | additief, idempotent |
+| Trigger `enforce_group_primary_program` | migration | 60 | none (vuurt alleen bij `program_groups`-writes) |
+| Permission-keys `programs.*` | migration (catalog-row) | 60 | none |
+| Terminology-keys (§3.6) | migration (jsonb-merge sector_templates) | 60 | additief |
+| `/tenant/programmas` lijst + nieuw + detail (overzicht/groepen tabs) | UI-only | 60 | none |
+| `program_instructors` (tabel + composite FK) | new table | 61 | none |
+| `program_resources` (tabel + composite FK) | new table | 61 | none |
+| `(id, tenant_id)`-unique op `members`/`capacity_resources` | migration | 61 | additief |
+| `session_instructors_effective` (rewrite) | view | 61 | snapshot-test bewijst byte-identiek voor Houtrust |
+| RPC `detect_instructor_conflicts` (rewrite met `program.default_min_instructors` in coalesce) | migration | 61 | identiek voor Houtrust (geen `program_id`) |
+| Cascade-helpers `getEffectiveCapacity`/`getEffectiveMinInstructors` | UI-only (server-helpers) | 61 | none — fall through naar bestaande velden |
+| `training_sessions.program_id` (kolom, nullable) | new column | 61 | none |
+| Sessie-creatie copy `program_resources → session_resources` | UI-only (server-action) | 61 | none — alleen als `program_id` set |
+| `program_membership_plans` (tabel + partial unique index `is_default`) | new table | 62 | none |
+| `program_capacity_overview` (view, security_invoker) | view | 62 | leest read-only; raakt Sprint 42 `max_members`-trigger niet |
+| `/tenant/planning/capaciteit` dashboard | UI-only | 62 | toont Houtrust-data zonder programma-rij |
+| `programs_public_read` policy | migration | 63 | none — Houtrust heeft geen public programs |
+| `registrations.program_id` (kolom, nullable) | new column | 63 | none — blijft NULL |
+| `/t/[slug]/programmas` + `/t/[slug]/programmas/[publicSlug]` | UI-only | 63 | 404 voor Houtrust (geen public programs) |
+| `?program=<publicSlug>` deeplink in `submitMembershipRegistration` | UI-only (server-action) | 63 | none — backwards compatible |
+| `waitlists.program_id`, `waitlist_entries.program_id` (kolommen, nullable) | new column | 64 | none — blijven NULL |
+| `notifications.source='waitlist_entry_program_assigned'` (dedup-index uitbreiden) | migration | 64 | drop+recreate index + spiegelen `on conflict where` |
+| `tenants.settings_json.intake_overrides_by_program` (settings-key) | migration (Zod-schema-extend) | 64 | none — leeg = bestaand gedrag |
+| Smart waitlist & placement (RPC + scoring) | later phase | n.v.t. | aparte taak post-Sprint 64 |
+| Drag-drop placement canvas, bulk-import, copy-to-tenant | later phase | n.v.t. | expliciet out-of-scope (§6.3) |
+
 ### 3.6 Terminology-uitbreidingen (Sprint 60)
 
 Hergebruik `program_singular`/`program_plural` (al bestaand). Nieuwe keys:
@@ -318,11 +379,11 @@ Hergebruik `program_singular`/`program_plural` (al bestaand). Nieuwe keys:
 
 ### 4.1 Tenant-admin
 
-- **`/tenant/programmas`** — lijst-view (sortable: naam, status, # groepen, # actieve sessies, marketplace-zichtbaar). Filters: status, marketplace-zichtbaar, gekoppeld aan groep. CTA "Nieuw <program_singular>".
+- **`/tenant/programmas`** — lijst-view (sortable: naam, visibility, # groepen, # actieve sessies). Filters: visibility (public/internal/archived), gekoppeld aan groep. CTA "Nieuw <program_singular>".
 - **`/tenant/programmas/[id]`** — detail met 5 tabs (`?tab=`):
-  1. **Overzicht** — naam, slug, beschrijvingen, status-toggle, publish-toggle, hero-image-upload. Live-preview van marketplace-card.
+  1. **Overzicht** — naam, interne slug, `visibility`-segmented-control (public/internal/archived). Wanneer `visibility=public` worden marketplace-velden actief: `public_slug`, `marketing_title`, `marketing_description` (TipTap), `hero_image_url` (App Storage upload), `cta_label`. Live-preview van marketplace-card.
   2. **Groepen** — tabel `program_groups` met add/remove, `is_primary`-flag, sort-order drag-handle.
-  3. **Capaciteit & defaults** — formulier voor `default_capacity`, `default_min_instructors`, ouderdomsbereik, highlights (chip-input).
+  3. **Capaciteit & defaults** — formulier voor `default_capacity`, `default_flex_capacity`, `capacity_purpose_defaults_json` (key/value rows: regular/makeup/trial/…), `default_min_instructors`, ouderdomsbereik, highlights (chip-input).
   4. **Instructeurs** — `program_instructors` editor (lead/assistant/substitute), member-picker beperkt tot trainers (via beide rolbronnen, conform Sprint 57-helper `assertMemberHasTrainerRole`).
   5. **Resources & prijzen** — twee subsecties: `program_resources` koppel-list met inline `max_participants`-editor, en `program_membership_plans` met `is_default`-radio.
 - **Op groep-detail** verschijnt een nieuwe sectie "Onderdeel van" die alle programs toont waaraan deze groep hangt (zowel via `groups.program_id` als via `program_groups`). Geen wijziging in bestaande tabs.
@@ -330,9 +391,11 @@ Hergebruik `program_singular`/`program_plural` (al bestaand). Nieuwe keys:
 
 ### 4.2 Publieke marketplace (Sprint 63)
 
-- **`/t/[slug]/aanbod`** — server-rendered grid van marketplace-cards (naam, short_description, hero_image, age-range, highlights, CTA "Aanmelden"). Lege state respecteert tenant: voor Houtrust (geen programs) blijft 404 actief.
-- **`/t/[slug]/aanbod/[programSlug]`** — detail-pagina met long_description (TipTap render), gekoppelde groepen (publiek-veilige metadata: naam, dagdelen uit `training_sessions` aggregaat), highlights, "Direct aanmelden"-CTA die naar `/t/[slug]/aanmelden?program=<slug>` linkt.
-- **`/t/[slug]/aanmelden?program=<slug>`** — bestaande wizard, `submitMembershipRegistration` resolveert het program, schrijft `registrations.program_id` (nieuwe nullable kolom in Sprint 63) en bepaalt intake-route via `intake_overrides_by_program`.
+Routes volgen exact de spec in Task #93 stap 6:
+
+- **`/t/[slug]/programmas`** — server-rendered grid van marketplace-cards (`marketing_title` met fallback naar `name`, `marketing_description`, `hero_image_url`, age-range, highlights, CTA-label uit `cta_label` met fallback naar terminology). Pagina-titel uit `terminology.program_plural`. Lege state: voor Houtrust (geen public programs) blijft 404 actief.
+- **`/t/[slug]/programmas/[publicSlug]`** — detail-pagina met TipTap-render van `marketing_description`, gekoppelde groepen (publiek-veilige metadata: naam, dagdelen uit `training_sessions` aggregaat), highlights, "Direct aanmelden"-CTA die naar `/t/[slug]/aanmelden?program=<publicSlug>` linkt.
+- **`/t/[slug]/aanmelden?program=<publicSlug>`** — bestaande registratie-wizard krijgt een optionele `?program=`-query. `submitMembershipRegistration` resolveert het program (per `(tenant_id, public_slug)`), schrijft `registrations.program_id` (nieuwe nullable kolom in Sprint 63) en bepaalt intake-route via `intake_overrides_by_program` (Sprint 64) → `intake_overrides_by_target` → `intake_default`.
 
 ### 4.3 Member/parent-shell
 
@@ -346,19 +409,44 @@ Geen nieuwe screens in MVP. Sprint 64 voegt op `/me` een sectie "Wachtlijst-aanv
 
 | Key | Default rol-toewijzing |
 |---|---|
-| `programs.read` | tenant_admin, staff |
+| `programs.read` | tenant_admin, staff (+ trainer voor "leesbaar in eigen agenda") |
 | `programs.write` | tenant_admin |
-| `programs.publish` | tenant_admin |
+| `programs.publish` | tenant_admin (vereist voor `visibility=public` toggle) |
 | `programs.assign_instructors` | tenant_admin |
+| `programs.manage_resources` | tenant_admin |
+| `programs.manage_capacity` | tenant_admin |
+| `programs.override_capacity` | tenant_admin (sessie/group override boven program-default) |
 | `programs.link_membership_plan` | tenant_admin |
+| `programs.view_capacity_dashboard` | tenant_admin, staff |
+
+### 5.1b Volledige rol × actie-matrix
+
+✅ = mag, 🚫 = mag niet, 👁 = read-only.
+
+| Actie ↓ / Rol → | platform-admin | tenant-admin | examiner | trainer | member | ouder | public |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Manage programs (CRUD) | ✅ (alle tenants) | ✅ | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+| Publish program (`visibility=public` toggle) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+| Manage capacity defaults op program | ✅ | ✅ | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+| Override capacity op group/session | ✅ | ✅ | 🚫 | 👁 (eigen sessies) | 🚫 | 🚫 | 🚫 |
+| Assign program instructors (defaults) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+| Manage program resources (defaults) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+| View capacity dashboard `/tenant/planning/capaciteit` | ✅ | ✅ | 🚫 | 👁 (eigen sessies/groepen) | 🚫 | 🚫 | 🚫 |
+| Register-via-marketplace `/t/<slug>/programmas/<publicSlug>` → `/aanmelden?program=` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (anon) |
+| Lees publieke program-details (`visibility=public`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Lees `internal` programs | ✅ | ✅ | 🚫 | 👁 (alleen waar trainer-koppeling) | 🚫 | 🚫 | 🚫 |
+| Lees `archived` programs | ✅ | ✅ (Archief-filter) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+| Beheer `intake_overrides_by_program` (`tenants.settings_json`) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 |
+
+Helpers: `assertTenantAccess`, `isPlatformAdmin`, `isTenantAdmin` (bestaand), `assertMemberHasTrainerRole` (Sprint 57). Trainer "lees eigen sessies" gebruikt de bestaande `/t/<slug>/agenda` filter via `member_id`.
 
 ### 5.2 Audit-namespace (in `lib/audit/actions.ts`)
 
 ```
 program.created
 program.updated
-program.published          -- specifiek: is_published flip
-program.archived           -- specifiek: status → archived
+program.published          -- specifiek: visibility flip naar 'public' (vereist public_slug)
+program.archived           -- specifiek: visibility flip naar 'archived'
 program.group.linked
 program.group.unlinked
 program.instructor.assigned
@@ -415,24 +503,32 @@ Sprint 60 voegt geen notification-sources toe. Sprint 64 (waitlist-koppeling) vo
 
 ### Sprint 60 — Programs MVP (v0.16.0)
 
+**Geïsoleerde waarde**: Tenant-admin kan programma's aanmaken en bestaande groepen koppelen. Geen marketplace, geen capaciteits-cascade. Tenants zonder programma's (Houtrust) zien helemaal niets nieuws — alle nieuwe FK's nullable, geen UI-zichtbare wijziging op groep-, sessie- of registratie-schermen.
+
 **Migratie-files** (`artifacts/nxttrack/supabase/`):
-1. `sprint60_programs.sql` — tabellen `programs`, `program_groups`. Idempotente `(id, tenant_id)`-uniques op `programs` én `groups` (en, voor latere sprints, voorbereidend ook op `members`, `capacity_resources`, `membership_plans`). `program_groups` krijgt composite FK's `(program_id, tenant_id)` → `programs(id, tenant_id)` en `(group_id, tenant_id)` → `groups(id, tenant_id)` voor schema-niveau tenant-isolatie (§3.5). Trigger `enforce_group_primary_program` houdt `groups.program_id` in sync met `program_groups (is_primary=true)`. Nullable `groups.program_id`-kolom + index. Terminology-keys uit §3.6 toegevoegd via jsonb-merge op alle drie sector-templates. Permission-keys `programs.read|write|publish` toegevoegd aan `permission_catalog`.
+1. `sprint60_programs.sql` — tabellen `programs` (met `visibility public|internal|archived`, `public_slug`, `marketing_*`-velden, `default_capacity`, `default_flex_capacity`, `default_min_instructors`, `capacity_purpose_defaults_json`), `program_groups`. Idempotente `(id, tenant_id)`-uniques op `programs` én `groups` (en, voor latere sprints, voorbereidend ook op `members`, `capacity_resources`, `membership_plans`). `program_groups` krijgt composite FK's `(program_id, tenant_id)` → `programs(id, tenant_id)` en `(group_id, tenant_id)` → `groups(id, tenant_id)` voor schema-niveau tenant-isolatie (§3.5). Trigger `enforce_group_primary_program` houdt `groups.program_id` in sync met `program_groups (is_primary=true)`. Nullable `groups.program_id`-kolom + index. Permission-keys uit §5.1 toegevoegd aan `permission_catalog`.
 2. `sprint60_release_v0_16_0.sql` — release-notes-row.
+
+**Terminology-impact** (Sprint 60): bestaande keys `program_singular`/`program_plural` worden nu inhoudelijk hergebruikt voor de nieuwe tabel. Nieuwe keys via jsonb-merge op alle drie sector-templates (`football_school`/`swimming_school`/`generic`): `programs_page_description`, `programs_marketplace_title`, `programs_marketplace_intro`, `programs_new_button`, `program_assignment_lead_label`, `membership_plan_singular`, `membership_plan_plural`. Default-waarden uit §3.6 tabel.
 
 **App-laag**:
 - `lib/db/programs.ts` — listProgramsPage, getProgramById, hydrateProgramAggregates (member_count via groups, session_count laatste 30d).
-- `lib/actions/tenant/programs.ts` — createProgram, updateProgram, archiveProgram, publishProgram, linkGroup, unlinkGroup, setPrimaryGroup. Audit + Zod + assertTenantAccess.
+- `lib/actions/tenant/programs.ts` — createProgram, updateProgram, archiveProgram, setVisibility (mag visibility 'public' alleen wanneer `public_slug` ingevuld is), linkGroup, unlinkGroup, setPrimaryGroup. Audit + Zod + assertTenantAccess.
 - UI: `/tenant/programmas` lijst + `/tenant/programmas/nieuw` form + `/tenant/programmas/[id]?tab=overzicht|groepen` (alleen 2 tabs in deze sprint).
 
-**Niet in Sprint 60**: instructors-tab, resources-tab, membership-plans-tab, marketplace-route, waitlist-koppeling, cascade-helper.
+**Niet in Sprint 60**: instructors-tab, resources-tab, membership-plans-tab, marketplace-route, capacity-cascade-helper, waitlist-koppeling, capacity-overview-view.
 
 **Acceptatie**: Houtrust kan zonder program werken (geen UI-veranderingen op groep- of sessie-detail). Nieuwe program kan groepen koppelen, `groups.program_id` blijft synchroon met `is_primary`-rij.
 
 ### Sprint 61 — Instructors + resources defaults (v0.16.1)
 
+**Geïsoleerde waarde**: Tenants stellen één keer hoofdinstructeur(s) en standaard-resources (banen/velden/zalen) in op program-niveau; bij iedere nieuwe sessie worden die automatisch overgenomen. Bestaande Sprint 57 instructeurs-fallback krijgt een derde laag, zonder breaking change voor tenants zonder programs.
+
 **Migratie**:
 1. `sprint61_program_defaults.sql` — `program_instructors`, `program_resources` (beide met composite `(parent_id, tenant_id)`-FK's conform §3.5; vereist `(id, tenant_id)`-uniques op `members` en `capacity_resources` die in dezelfde file idempotent worden toegevoegd als ze ontbreken). View `session_instructors_effective` herschreven met derde fallback-branch waarvan het `not exists`-predicate **beide** trainer-rolbronnen respecteert (`member_roles.role='trainer'` OR `tenant_roles.is_trainer_role=true`) — zie §3.4. RPC `detect_instructor_conflicts` herschreven zodat understaffed-check `coalesce(s.min_instructors, g.default_min_instructors, p.default_min_instructors, 1)` gebruikt (extra `left join programs p on p.id = s.program_id`). Helper-RPC `program_default_capacity(program_id) returns int` voor RLS-veilige publieke lezing.
 2. `sprint61_release_v0_16_1.sql`.
+
+**Terminology-impact** (Sprint 61): geen nieuwe keys vereist. `program_assignment_lead_label` (Sprint 60) wordt actief gebruikt op de Instructeurs-tab.
 
 **App-laag**:
 - Cascade-helpers `getEffectiveCapacity`, `getEffectiveMinInstructors` in `lib/db/sessions.ts`.
@@ -441,46 +537,62 @@ Sprint 60 voegt geen notification-sources toe. Sprint 64 (waitlist-koppeling) vo
 
 **Acceptatie**: Sessie-detail toont Capaciteit-tooltip met bron. View-snapshot voor Houtrust identiek voor/na.
 
-### Sprint 62 — Layered capacity + membership_plans link + capacity-color view (v0.16.2)
+### Sprint 62 — Layered capacity + capacity-color view + plan-link (v0.16.2)
+
+**Geïsoleerde waarde**: Tenant-admin krijgt één capaciteits-dashboard `/tenant/planning/capaciteit` met groen/oranje/rood/blauw/grijs-statussen per programma/groep/sessie. `program_membership_plans` koppelt optioneel billing aan een program (suggestie-laag, registratie-flow blijft werken zonder).
 
 **Migratie**:
-1. `sprint62_program_billing_capacity.sql` — `program_membership_plans` met partial unique index op `is_default=true`. Gedenormaliseerde view `program_capacity_load` (program_id, scheduled_sessions_30d, avg_capacity_use_pct) voor list-view sorting. Terminology `membership_plan_singular/plural`.
+1. `sprint62_program_capacity.sql` — `program_membership_plans` met partial unique index `program_membership_plans_one_default_uq on (program_id) where is_default=true`. **View `program_capacity_overview`** (`security_invoker=true`) die per `(tenant_id, program_id, group_id, session_id)` retourneert: `fixed_capacity` (= `coalesce(session_resources.max_participants, group.max_members, program.default_capacity)`), `flex_capacity` (= `coalesce(group.flex_buffer_override, program.default_flex_capacity, 0)`), `used_count` (uit `training_attendance` + `registrations`), `free_count`, `purpose_breakdown_json` (per `capacity_purpose`-key uit `capacity_purpose_defaults_json`). Geen kleur-kolom in DB — kleur is UI-derived in `lib/ui/capacity-color.ts` (groen ≤ 70%, oranje 71-90%, rood 91-100%, blauw > 100% binnen flex_capacity, grijs = `fixed_capacity is null`). Houtrust-veiligheid: bij `program_id IS NULL` valt `program.*` weg via `left join` en breekt de bestaande Sprint 42 `max_members`-trigger niet (view leest read-only).
 2. `sprint62_release_v0_16_2.sql`.
 
+**Terminology-impact** (Sprint 62): geen nieuwe keys. Kleur-statussen krijgen vaste labels in `capacity-color.ts` ("Genoeg plek", "Bijna vol", "Vol", "Overboekt", "Onbeperkt"). Komen later in een `capacity_status_*` keyset terug als tenants dat willen aanpassen — niet voor Sprint 62.
+
 **App-laag**:
-- Membership-plans-helft van tab "Resources & prijzen".
-- Lijst-view `/tenant/programmas` toont kleurband (groen/geel/rood) op basis van `program_capacity_load.avg_capacity_use_pct`.
+- Membership-plans-helft van tab "Resources & prijzen" wordt actief.
+- Nieuwe route `/tenant/planning/capaciteit` met dashboard: kolommen Programma | Groepen | Komende sessies | Bezetting | Kleur. Filter op program/groep/datumbereik.
+- Lijst-view `/tenant/programmas` toont kleurband per rij op basis van geaggregeerde overview.
 - Sessie-creatie picker toont gekoppelde plannen wanneer program is gekozen.
+
+**Acceptatie**: Houtrust ziet `/tenant/planning/capaciteit` met al zijn bestaande groepen op basis van `group.max_members` (= "grijs/groen"-band), zonder enige programma-rij. Nieuwe tenants met programs zien layered capaciteit kloppen voor alle 4 status-kleuren.
 
 ### Sprint 63 — Public marketplace + `?program=`-deeplink (v0.17.0)
 
+**Geïsoleerde waarde**: Iedere tenant met `visibility=public` programs heeft een SEO-vriendelijke marketplace-pagina onder `/t/[slug]/programmas` + detail `/t/[slug]/programmas/[publicSlug]`. CTA's deeplinken naar bestaande registratie-wizard met `?program=<publicSlug>`-pre-fill, zonder bestaand registratie-gedrag te wijzigen.
+
 **Migratie**:
-1. `sprint63_programs_public.sql` — `programs_public_read` policy. `registrations.program_id` nullable kolom + index.
+1. `sprint63_programs_public.sql` — `programs_public_read` policy (`visibility='public' AND public_slug IS NOT NULL`). `registrations.program_id` nullable kolom + index. Idempotent `add column if not exists`.
 2. `sprint63_release_v0_17_0.sql`.
 
-**App-laag**:
-- Routes `/t/[slug]/aanbod` + `/t/[slug]/aanbod/[programSlug]`.
-- `submitMembershipRegistration` leest `program` query-param, valideert tegen tenant, schrijft `registrations.program_id`.
-- Tenant-admin krijgt nieuwe knop "Marketplace voorbeeld" op program-detail die `?preview=1` gebruikt om ook draft-programs te tonen (sessie-only, met cookie-token).
+**Terminology-impact** (Sprint 63): `programs_marketplace_title` en `programs_marketplace_intro` (Sprint 60) worden hier voor het eerst publiek gerenderd. Geen nieuwe keys.
 
-**Acceptatie**: Houtrust → `/t/houtrust/aanbod` blijft 404 (geen programs). Tenant met 1 published program ziet card + detail correct.
+**App-laag**:
+- Routes `/t/[slug]/programmas` + `/t/[slug]/programmas/[publicSlug]`. Pagina-titel via `getTenantTerminology(tenant).program_plural`.
+- `submitMembershipRegistration` leest `program` query-param, valideert per `(tenant_id, public_slug)`, schrijft `registrations.program_id`. Tenant-scoping in query-laag (§3.5, R4).
+- Tenant-admin krijgt nieuwe knop "Marketplace voorbeeld" op program-detail die `?preview=1` gebruikt om ook `internal`-programs te tonen (sessie-only, met cookie-token, tenant-admin-only).
+
+**Acceptatie**: Houtrust → `/t/houtrust/programmas` blijft 404 (geen public programs). Tenant met 1 public program ziet card + detail correct.
 
 ### Sprint 64 — Waitlist program-koppeling + intake-overrides (v0.17.1)
 
+**Geïsoleerde waarde**: Wachtlijsten en intake-routing kunnen op program-niveau worden gezet (i.p.v. alleen per groep). Bereidt smart-placement voor zonder zelf placement-algoritme te bouwen.
+
 **Migratie**:
-1. `sprint64_waitlist_programs.sql` — `waitlists.program_id`, `waitlist_entries.program_id` nullable. Notification dedup-index uitgebreid met `waitlist_entry_program_assigned` (drop+recreate, predicate gespiegeld in `create_notification_with_recipients`). `tenants.settings_json.intake_overrides_by_program` is een settings-key (geen schema-wijziging, alleen documentatie + Zod-extend).
+1. `sprint64_waitlist_programs.sql` — `waitlists.program_id`, `waitlist_entries.program_id` nullable + indexen. Notification dedup-index uitgebreid met `waitlist_entry_program_assigned` (drop+recreate, predicate gespiegeld in `create_notification_with_recipients`-`on conflict where`-clause; `source_ref = waitlist_entries.id` per Sprint 41/43-Gotcha). `tenants.settings_json.intake_overrides_by_program` is een settings-key (geen schema-wijziging, alleen documentatie + Zod-extend op `tenant_settings_json_schema.ts`).
 2. `sprint64_release_v0_17_1.sql`.
 
+**Terminology-impact** (Sprint 64): geen nieuwe keys. Bestaande `waitlist_*` terminology (Sprint 49) wordt hergebruikt.
+
 **App-laag**:
-- `submitMembershipRegistration` resolveert intake-route via cascade `intake_overrides_by_program[slug] → intake_overrides_by_target[target] → intake_default`.
+- `submitMembershipRegistration` resolveert intake-route via cascade `intake_overrides_by_program[publicSlug] → intake_overrides_by_target[target] → intake_default`.
 - `/tenant/wachtlijst` filter "Op program".
+- `/tenant/registrations/instellingen` krijgt subpaneel "Per programma overrides" naast bestaande "Per doelgroep".
 - Audit-keys `program.intake_override.set`, `program.waitlist.linked`.
 
 ---
 
 ## 8. MVP-definitie (Sprint 60 alleen)
 
-- Programs CRUD met velden uit §3.2 minus marketplace-velden (`hero_image_path`, `age_min/max`, `highlights_json` mogen leeg blijven).
+- Programs CRUD met velden uit §3.2 minus marketplace-velden (`marketing_title`, `marketing_description`, `hero_image_url`, `cta_label`, `public_slug`, `age_min/max`, `highlights_json` mogen leeg blijven; `visibility` mag enkel `internal` of `archived` zijn — `public` wordt pas relevant in Sprint 63).
 - `program_groups` koppel-tabel met add/remove/sort/`is_primary`.
 - Twee tabs: Overzicht + Groepen.
 - Geen cascade-helper, geen view-rewrite, geen marketplace, geen waitlist-koppeling.
@@ -509,8 +621,8 @@ Sprint 60 voegt geen notification-sources toe. Sprint 64 (waitlist-koppeling) vo
 | **Unit** | Cascade-helpers (`getEffectiveCapacity`, `getEffectiveMinInstructors`) — 8 cases per helper inclusief alle nullable-combinaties | Sprint 61 |
 | **DB** | View-snapshot van `session_instructors_effective` voor Houtrust (5 sessies) vóór/na — moet byte-identiek zijn | Sprint 61, in `supabase/tests/sprint61_view_snapshot.sql` |
 | **DB** | Sync-trigger `enforce_group_primary_program`: insert/update/delete-paden met assertions op `groups.program_id` | Sprint 60 |
-| **RLS** | Publieke selects op `programs` — anonieme client mag alleen `status=active AND is_published AND visibility=public` zien | Sprint 63, in `supabase/tests/sprint63_programs_public_rls.sql` |
-| **E2E** | Playwright via testing-skill: tenant maakt program → koppelt groep → publiceert → bezoekt `/t/[slug]/aanbod` → klikt CTA → komt op aanmeldformulier met program-pre-fill | Sprint 63 |
+| **RLS** | Publieke selects op `programs` — anonieme client mag alleen `visibility='public' AND public_slug IS NOT NULL` zien, en moet expliciet aantonen dat die select cross-tenant data oplevert (= bewijs dat de query-laag verantwoordelijk is voor tenant-scoping) | Sprint 63, in `supabase/tests/sprint63_programs_public_rls.sql` |
+| **E2E** | Playwright via testing-skill: tenant maakt program → koppelt groep → zet visibility=public + public_slug → bezoekt `/t/[slug]/programmas` → klikt CTA → komt op aanmeldformulier met program-pre-fill | Sprint 63 |
 | **E2E** | Tenant zet `intake_overrides_by_program[slug]='waitlist'` → publieke aanmelding voor dat program landt op `waitlist_entries`, andere program blijft op `registrations` | Sprint 64 |
 | **Regression** | Houtrust-walk-through (groepen, sessies, wachtlijst, instructeurs) na elke sprint | Sprint 60-64 |
 
