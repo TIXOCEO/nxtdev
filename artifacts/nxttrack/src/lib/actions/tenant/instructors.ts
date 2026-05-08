@@ -121,7 +121,7 @@ export async function createAvailability(
     tenant_id: parsed.data.tenant_id,
     actor_user_id: user.id,
     member_id: parsed.data.member_id,
-    action: "instructor.availability.created",
+    action: "instructor.availability.added",
     meta: {
       day_of_week: parsed.data.day_of_week,
       availability_type: parsed.data.availability_type,
@@ -192,7 +192,7 @@ export async function deleteAvailability(
     tenant_id: tenantId,
     actor_user_id: user.id,
     member_id: (existing as { member_id: string }).member_id,
-    action: "instructor.availability.deleted",
+    action: "instructor.availability.removed",
     meta: { day_of_week: (existing as { day_of_week: number }).day_of_week },
   });
   revalidatePath(`/tenant/instructeurs/${(existing as { member_id: string }).member_id}`);
@@ -233,7 +233,7 @@ export async function createUnavailability(
     tenant_id: parsed.data.tenant_id,
     actor_user_id: user.id,
     member_id: parsed.data.member_id,
-    action: "instructor.unavailability.created",
+    action: "instructor.unavailability.added",
     meta: { reason: parsed.data.reason ?? null },
   });
   revalidatePath(`/tenant/instructeurs/${parsed.data.member_id}`);
@@ -305,7 +305,7 @@ export async function deleteUnavailability(
     tenant_id: tenantId,
     actor_user_id: user.id,
     member_id: (existing as { member_id: string }).member_id,
-    action: "instructor.unavailability.deleted",
+    action: "instructor.unavailability.removed",
   });
   revalidatePath(`/tenant/instructeurs/${(existing as { member_id: string }).member_id}`);
   return { ok: true, data: undefined };
@@ -357,8 +357,8 @@ export async function assignSessionInstructor(
     actor_user_id: user.id,
     member_id: parsed.data.member_id,
     action: parsed.data.assignment_type === "substitute"
-      ? "instructor.substitute.assigned"
-      : "instructor.assignment.added",
+      ? "session.instructor.substituted"
+      : "session.instructor.assigned",
     meta: {
       session_id: parsed.data.session_id,
       assignment_type: parsed.data.assignment_type,
@@ -394,7 +394,7 @@ export async function unassignSessionInstructor(
     tenant_id: tenantId,
     actor_user_id: user.id,
     member_id: ex.member_id,
-    action: "instructor.assignment.removed",
+    action: "session.instructor.removed",
     meta: { session_id: ex.session_id, assignment_type: ex.assignment_type },
   });
   revalidatePath(`/tenant/trainings/${ex.session_id}`);

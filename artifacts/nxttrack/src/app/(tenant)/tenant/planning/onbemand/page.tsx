@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { listUnderstaffed } from "@/lib/db/instructors";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 
 export const dynamic = "force-dynamic";
 
@@ -35,13 +36,17 @@ export default async function OnbemandPage({
   const days = Math.max(1, Math.min(180, Number.parseInt(sp.days ?? "30", 10) || 30));
   const fromIso = new Date().toISOString();
   const toIso = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-  const rows = await listUnderstaffed(result.tenant.id, fromIso, toIso);
+  const [rows, terminology] = await Promise.all([
+    listUnderstaffed(result.tenant.id, fromIso, toIso),
+    getTenantTerminology(result.tenant.id),
+  ]);
+  const instrPlural = terminology.instructor_plural.toLowerCase();
 
   return (
     <>
       <PageHeading
         title="Onbemande sessies"
-        description={`Sessies met minder dan vereiste primary-instructeurs in de komende ${days} dagen.`}
+        description={`Sessies met minder dan vereiste primary-${instrPlural} in de komende ${days} dagen.`}
       />
       <div className="mb-3 rounded-xl border px-3 py-2 text-xs" style={{ backgroundColor: "var(--surface-soft)", borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
         Stel een minimum in per groep (Groepen → bewerken) of overschrijf het per sessie.
@@ -50,7 +55,7 @@ export default async function OnbemandPage({
         <EmptyState
           icon={Users}
           title="Geen onbemande sessies"
-          description="Alle sessies hebben voldoende primary-instructeurs."
+          description={`Alle sessies hebben voldoende primary-${instrPlural}.`}
         />
       ) : (
         <ul className="grid gap-2">

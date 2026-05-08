@@ -27,12 +27,12 @@ interface EligibleRow {
   full_name: string;
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  primary: "Hoofdinstructeur",
-  assistant: "Assistent",
-  substitute: "Vervanger",
-  observer: "Observer",
-};
+export interface InstructorBlockLabels {
+  /** instructor_singular, e.g. "Trainer" of "Zweminstructeur" */
+  singular: string;
+  /** instructor_plural, e.g. "Trainers" of "Zweminstructeurs" */
+  plural: string;
+}
 
 export function SessionInstructorsBlock({
   tenantId,
@@ -40,13 +40,21 @@ export function SessionInstructorsBlock({
   explicit,
   effective,
   eligible,
+  labels,
 }: {
   tenantId: string;
   sessionId: string;
   explicit: ExplicitRow[];
   effective: EffectiveRow[];
   eligible: EligibleRow[];
+  labels: InstructorBlockLabels;
 }) {
+  const TYPE_LABEL: Record<string, string> = {
+    primary: `Hoofd${labels.singular.toLowerCase()}`,
+    assistant: "Assistent",
+    substitute: "Vervanger",
+    observer: "Observer",
+  };
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [memberId, setMemberId] = useState("");
@@ -110,7 +118,7 @@ export function SessionInstructorsBlock({
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          Instructeurs ({effective.length})
+          {labels.plural} ({effective.length})
         </h2>
         {!isExplicitMode && (
           <span
@@ -178,7 +186,7 @@ export function SessionInstructorsBlock({
             className={inputCls}
             style={inputStyle}
           >
-            <option value="primary">Hoofdinstructeur</option>
+            <option value="primary">Hoofd{labels.singular.toLowerCase()}</option>
             <option value="assistant">Assistent</option>
             <option value="substitute">Vervanger</option>
             <option value="observer">Observer</option>
@@ -207,7 +215,7 @@ export function SessionInstructorsBlock({
           className="rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
           style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)", width: "fit-content" }}
         >
-          {pending ? "Bezig…" : "Instructeur toewijzen"}
+          {pending ? "Bezig…" : `${labels.singular} toewijzen`}
         </button>
         <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
           Eerste expliciete toewijzing schakelt de impliciete fallback uit voor deze sessie.

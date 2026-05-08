@@ -401,3 +401,63 @@ export async function getInstructorMember(
     .maybeSingle();
   return (data ?? null) as { id: string; full_name: string; email: string | null } | null;
 }
+
+export interface MemberGroupRow {
+  group_id: string;
+  group_name: string;
+  is_trainer_in_group: boolean;
+  member_count: number;
+}
+
+/**
+ * Lijst van groepen waarin deze member als group_member staat. We labelen
+ * de rol via member_roles (trainer-rol = is_trainer_in_group=true).
+ */
+export async function listMemberGroups(
+  tenantId: string,
+  memberId: string,
+): Promise<MemberGroupRow[]> {
+  const admin = createAdminClient();
+  const { data: links } = await admin
+    .from("group_members")
+    .select("group_id, groups!inner(id,name,tenant_id)")
+    .eq("member_id", memberId);
+  type LinkRow = { group_id: string; groups: { id: string; name: string; tenant_id: string } | { id: string; name: string; tenant_id: string }[] | null };
+  const rows = ((links ?? []) as LinkRow[])
+    .map((l) => {
+      const g = Array.isArray(l.groups) ? (l.groups[0] ?? null) : l.groups;
+      return g && g.tenant_id === tenantId ? { group_id: l.group_id, name: g.name } : null;
+    })
+    .filter((x): x is { group_id: string; name: string } => x !== null);
+  if (rows.length === 0) return [];
+  const groupIds = rows.map((r) => r.group_id);
+
+  // member-counts per group
+  const { data: counts } = await admin
+    .from("group_members")
+    .select("group_id")
+    .in("group_id", groupIds);
+  const countMap = new Map<string, number>();
+  for (const c of (counts ?? []) as Array<{ group_id: string }>) {
+    countMap.set(c.group_id, (countMap.get(c.group_id) ?? 0) + 1);
+  }
+
+  // trainer-rol via member_roles
+  const { data: directRole } = await admin
+    .from("member_roles")
+    .select("member_id")
+    .eq("member_id", memberId)
+    .eq("role", "trainer")
+    .limit(1)
+    .maybeSingle();
+  const isTrainer = Boolean(directRole);
+
+  return rows
+    .map((r) => ({
+      group_id: r.group_id,
+      group_name: r.name,
+      is_trainer_in_group: isTrainer,
+      member_count: countMap.get(r.group_id) ?? 0,
+    }))
+    .sort((a, b) => a.group_name.localeCompare(b.group_name, "nl"));
+}

@@ -6,6 +6,7 @@ import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getTrainingSessionDetail } from "@/lib/db/trainings";
 import { listSessionInstructorsExplicit, listSessionInstructorsEffective, listInstructors } from "@/lib/db/instructors";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { TrainingStatusActions } from "./_status-actions";
 import { ReminderButton } from "./_reminder-button";
 import { SessionInstructorsBlock } from "./_instructors-block";
@@ -52,13 +53,14 @@ export default async function TrainingDetailPage({ params }: PageProps) {
   const detail = await getTrainingSessionDetail(id, result.tenant.id);
   if (!detail) notFound();
 
-  const [explicitInstructors, effectiveInstructors, allInstructors] = await Promise.all([
+  const [explicitInstructors, effectiveInstructors, allInstructors, terminology] = await Promise.all([
     listSessionInstructorsExplicit(result.tenant.id, id),
     listSessionInstructorsEffective(result.tenant.id, id),
     // Eligible: alle leden met de trainer-rol binnen deze tenant. We staan
     // bewust toe een trainer toe te wijzen die niet in de groep zit (bv.
     // vervangers uit een andere groep / poule).
     listInstructors(result.tenant.id),
+    getTenantTerminology(result.tenant.id),
   ]);
   const eligibleMap = new Map<string, { id: string; full_name: string }>();
   for (const t of allInstructors) {
@@ -151,6 +153,7 @@ export default async function TrainingDetailPage({ params }: PageProps) {
         explicit={explicitInstructors}
         effective={effectiveInstructors}
         eligible={eligibleInstructors}
+        labels={{ singular: terminology.instructor_singular, plural: terminology.instructor_plural }}
       />
 
       <section
