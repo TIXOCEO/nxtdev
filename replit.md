@@ -68,6 +68,26 @@ I prefer the AI to
 - Not use many emojis.
 - Ask clarifying questions if something is unclear.
 
+### Sprint-release werkwijze (vaste volgorde)
+Bij elke sprint die SQL-migraties bevat houdt de agent deze volgorde aan:
+
+1. **Dev-database migreren** — alle nieuwe `sprintNN_*.sql`-files in `artifacts/nxttrack/supabase/` in nummer-volgorde uitvoeren tegen `DEV_DATABASE_URL` met `psql -v ON_ERROR_STOP=1 -f …`. Files moeten idempotent zijn (`if not exists`, `add column if not exists`, drop+create voor policies/triggers).
+2. **Prod-database migreren** — exact dezelfde volgorde tegen `PROD_DATABASE_URL`. Als de env-var ontbreekt of de connectie faalt: stop en vraag de gebruiker om hem te zetten (Supabase **Session pooler**, port 5432, username `postgres.<project-ref>`).
+3. **Release notes toevoegen** — een laatste `sprintNN_release_vX.Y.Z.sql` die een rij invoegt in `public.platform_releases` met `status='published'` en de standaard secties (Nieuw / Verbeterd / Opgelost / Voor admins). Verifieer met `select version, status, published_at from platform_releases where version='X.Y.Z';` op zowel dev als prod.
+4. **Commit-instructies** — bevestig wat er gecommit is (de platform-checkpoint commit-id) of geef de gebruiker een lijst van bestanden + een suggested commit message als handmatig committen nodig is.
+5. **Pull / build instructies voor de VPS** — geef een copy-paste blok:
+   ```bash
+   cd /pad/naar/nxttrack
+   git pull --ff-only origin main
+   pnpm install --frozen-lockfile
+   pnpm --filter @workspace/nxttrack build
+   pnpm --filter @workspace/api-server build   # alleen als deze in prod draait
+   # herstart app (pm2/systemd)
+   ```
+   Vermeld expliciet dat de DB-migraties NIET nogmaals gedraaid hoeven te worden omdat stap 2 die al deed.
+
+Verificatie-query na prod-migratie geeft altijd: release-row, count nieuwe tabellen, eventuele backfill-counts, en de hardening-constraints/indexen — zodat de gebruiker in één blik ziet dat alles klopt.
+
 ## Gotchas
 
 - **Sprint 55 zwemschool-hardening (task #84)**: `artifacts/nxttrack/supabase/sprint55_zwemschool_hardening.sql` adresseert architectural-review bevindingen op sprint 47-54: (1) btree_gist exclusion-constraint `session_resources_no_overlap` op `(resource_id, tstzrange(starts_at, ends_at, '[)'))` — `session_resources` krijgt gedenormaliseerde `starts_at`/`ends_at` kolommen die via twee triggers in sync blijven met `training_sessions` (`session_resources_sync_range_t` op insert/update van `session_id`, `training_sessions_propagate_range_t` op update van starts_at/ends_at); (2) `milestone_event_invites.expires_at`/`used_at` voor decision-token TTL + one-time-use, backfill 30 dagen na `created_at`, partial indexen `_token_active_idx`/`_expiry_idx` op `where used_at is null`; (3) dedup-index/RPC uitgebreid met `progress_milestone_reached` (Sprint 41/43-patroon: drop+recreate index + matching `on conflict ... where`-predicate); (4) description-privacy DB-side enforced via column-grant: `revoke select (description)` op `progress_modules`/`progress_categories`/`progress_items` voor `authenticated`+`anon`, plus drie `progress_*_public`-views met `security_invoker=true` die `description` nullen wanneer `description_visibility='private'` — service-role (createAdminClient) blijft volledige toegang houden, leden/ouders MOETEN de _public-views aanspreken.
