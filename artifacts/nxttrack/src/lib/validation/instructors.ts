@@ -22,6 +22,22 @@ export const availabilitySchema = z
 
 export type AvailabilityInput = z.infer<typeof availabilitySchema>;
 
+export const updateAvailabilitySchema = z
+  .object({
+    tenant_id: Uuid,
+    id: Uuid,
+    day_of_week: z.number().int().min(0).max(6),
+    start_time: Time,
+    end_time: Time,
+    availability_type: z.enum(["available", "preferred", "unavailable"]).default("available"),
+    notes: z.string().trim().max(500).nullable().optional(),
+  })
+  .refine((v) => v.end_time > v.start_time, {
+    message: "Eindtijd moet ná starttijd liggen",
+    path: ["end_time"],
+  });
+export type UpdateAvailabilityInput = z.infer<typeof updateAvailabilitySchema>;
+
 export const unavailabilitySchema = z
   .object({
     tenant_id: Uuid,
@@ -37,6 +53,21 @@ export const unavailabilitySchema = z
   });
 
 export type UnavailabilityInput = z.infer<typeof unavailabilitySchema>;
+
+export const updateUnavailabilitySchema = z
+  .object({
+    tenant_id: Uuid,
+    id: Uuid,
+    starts_at: z.string().min(1),
+    ends_at: z.string().min(1),
+    reason: z.string().trim().max(120).nullable().optional(),
+    notes: z.string().trim().max(500).nullable().optional(),
+  })
+  .refine((v) => new Date(v.ends_at).getTime() > new Date(v.starts_at).getTime(), {
+    message: "Eindtijd moet ná starttijd liggen",
+    path: ["ends_at"],
+  });
+export type UpdateUnavailabilityInput = z.infer<typeof updateUnavailabilitySchema>;
 
 export const sessionInstructorSchema = z
   .object({

@@ -13,7 +13,8 @@ import {
 import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { AvailabilityForm } from "./_availability-form";
 import { UnavailabilityForm } from "./_unavailability-form";
-import { DeleteRowButton } from "./_delete-row-button";
+import { AvailabilityRow } from "./_availability-row";
+import { UnavailabilityRow } from "./_unavailability-row";
 
 interface PageProps {
   params: Promise<{ memberId: string }>;
@@ -21,11 +22,6 @@ interface PageProps {
 
 export const dynamic = "force-dynamic";
 
-const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
-
-function fmtTime(t: string): string {
-  return t.slice(0, 5);
-}
 function fmtDateTime(iso: string): string {
   return new Date(iso).toLocaleString("nl-NL", {
     weekday: "short",
@@ -81,22 +77,18 @@ export default async function InstructorDetailPage({ params }: PageProps) {
           ) : (
             <ul className="mb-4 grid gap-1.5 text-xs">
               {availability.map((a) => (
-                <li
+                <AvailabilityRow
                   key={a.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-1.5"
-                  style={{ borderColor: "var(--surface-border)" }}
-                >
-                  <span style={{ color: "var(--text-primary)" }}>
-                    <strong>{DAY_LABELS[a.day_of_week]}</strong>{" "}
-                    {fmtTime(a.start_time)}–{fmtTime(a.end_time)}{" "}
-                    <span style={{ color: "var(--text-secondary)" }}>· {a.availability_type}</span>
-                  </span>
-                  <DeleteRowButton
-                    tenantId={result.tenant.id}
-                    rowId={a.id}
-                    kind="availability"
-                  />
-                </li>
+                  tenantId={result.tenant.id}
+                  row={{
+                    id: a.id,
+                    day_of_week: a.day_of_week,
+                    start_time: a.start_time,
+                    end_time: a.end_time,
+                    availability_type: a.availability_type,
+                    notes: a.notes,
+                  }}
+                />
               ))}
             </ul>
           )}
@@ -117,21 +109,17 @@ export default async function InstructorDetailPage({ params }: PageProps) {
           ) : (
             <ul className="mb-4 grid gap-1.5 text-xs">
               {unavailability.map((u) => (
-                <li
+                <UnavailabilityRow
                   key={u.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-1.5"
-                  style={{ borderColor: "var(--surface-border)" }}
-                >
-                  <span style={{ color: "var(--text-primary)" }}>
-                    {fmtDateTime(u.starts_at)} → {fmtDateTime(u.ends_at)}
-                    {u.reason ? <span style={{ color: "var(--text-secondary)" }}> · {u.reason}</span> : null}
-                  </span>
-                  <DeleteRowButton
-                    tenantId={result.tenant.id}
-                    rowId={u.id}
-                    kind="unavailability"
-                  />
-                </li>
+                  tenantId={result.tenant.id}
+                  row={{
+                    id: u.id,
+                    starts_at: u.starts_at,
+                    ends_at: u.ends_at,
+                    reason: u.reason,
+                    notes: u.notes,
+                  }}
+                />
               ))}
             </ul>
           )}

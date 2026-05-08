@@ -5,6 +5,7 @@ import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listInstructorSessions } from "@/lib/db/instructors";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -39,6 +40,9 @@ export default async function PublicAgendaPage({ params }: PageProps) {
   const user = await getUser();
   if (!user) redirect(`/t/${slug}/login?next=/t/${slug}/agenda`);
 
+  const terminology = await getTenantTerminology(tenant.id);
+  const pageTitle = `Mijn ${terminology.instructor_singular.toLowerCase()}-agenda`;
+
   const admin = createAdminClient();
   const { data: ownMembers } = await admin
     .from("members")
@@ -69,14 +73,14 @@ export default async function PublicAgendaPage({ params }: PageProps) {
   });
 
   return (
-    <PublicTenantShell tenant={tenant} pageTitle="Mijn instructeurs-agenda" active="agenda">
+    <PublicTenantShell tenant={tenant} pageTitle={pageTitle} active="agenda">
       <div className="space-y-3">
         <div>
           <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-            Mijn instructeurs-agenda
+            {pageTitle}
           </h1>
           <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            Sessies waarop jij als instructeur staat (komende 90 dagen).
+            Sessies waarop jij als {terminology.instructor_singular.toLowerCase()} staat (komende 90 dagen).
           </p>
         </div>
 
@@ -84,7 +88,7 @@ export default async function PublicAgendaPage({ params }: PageProps) {
           <EmptyState
             icon={CalendarClock}
             title="Geen sessies"
-            description="Je staat momenteel niet als instructeur op aankomende sessies."
+            description={`Je staat momenteel niet als ${terminology.instructor_singular.toLowerCase()} op aankomende sessies.`}
           />
         ) : (
           <ul className="grid gap-2">

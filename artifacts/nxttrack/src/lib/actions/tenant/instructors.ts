@@ -11,11 +11,15 @@ import {
   sessionInstructorSchema,
   updateGroupMinInstructorsSchema,
   updateSessionMinInstructorsSchema,
+  updateAvailabilitySchema,
+  updateUnavailabilitySchema,
   type AvailabilityInput,
   type UnavailabilityInput,
   type SessionInstructorInput,
   type UpdateGroupMinInstructorsInput,
   type UpdateSessionMinInstructorsInput,
+  type UpdateAvailabilityInput,
+  type UpdateUnavailabilityInput,
 } from "@/lib/validation/instructors";
 
 export type ActionResult<T = void> =
@@ -51,6 +55,37 @@ async function assertSessionInTenant(tenantId: string, sessionId: string): Promi
     .eq("tenant_id", tenantId)
     .maybeSingle();
   return Boolean(data);
+}
+
+/**
+ * Bevestig dat een member binnen de tenant de trainer-rol heeft. Een member
+ * kwalificeert als trainer wanneer (a) er een member_roles-rij met
+ * role='trainer' bestaat, of (b) een tenant_member_roles-koppeling waarvan
+ * de bijbehorende tenant_role.is_trainer_role=true is.
+ */
+async function assertMemberHasTrainerRole(
+  tenantId: string,
+  memberId: string,
+): Promise<boolean> {
+  const admin = createAdminClient();
+  const [{ data: directRole }, { data: tenantRole }] = await Promise.all([
+    admin
+      .from("member_roles")
+      .select("member_id")
+      .eq("member_id", memberId)
+      .eq("role", "trainer")
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("tenant_member_roles")
+      .select("member_id, tenant_roles!inner(is_trainer_role)")
+      .eq("tenant_id", tenantId)
+      .eq("member_id", memberId)
+      .eq("tenant_roles.is_trainer_role", true)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  return Boolean(directRole) || Boolean(tenantRole);
 }
 
 // ─── Availability ────────────────────────────────────────────────
@@ -94,6 +129,44 @@ export async function createAvailability(
   });
   revalidatePath(`/tenant/instructeurs/${parsed.data.member_id}`);
   return { ok: true, data };
+}
+
+export async function updateAvailability(
+  input: UpdateAvailabilityInput,
+): Promise<ActionResult> {
+  const parsed = updateAvailabilitySchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("instructor_availability")
+    .select("id, member_id")
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id)
+    .maybeSingle();
+  if (!existing) return fail("Niet gevonden");
+  const memberId = (existing as { member_id: string }).member_id;
+  const { error } = await supabase
+    .from("instructor_availability")
+    .update({
+      day_of_week: parsed.data.day_of_week,
+      start_time: parsed.data.start_time,
+      end_time: parsed.data.end_time,
+      availability_type: parsed.data.availability_type,
+      notes: parsed.data.notes ?? null,
+    })
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id);
+  if (error) return fail(error.message);
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: memberId,
+    action: "instructor.availability.updated",
+    meta: { availability_id: parsed.data.id, day_of_week: parsed.data.day_of_week },
+  });
+  revalidatePath(`/tenant/instructeurs/${memberId}`);
+  return { ok: true, data: undefined };
 }
 
 export async function deleteAvailability(
@@ -167,6 +240,48 @@ export async function createUnavailability(
   return { ok: true, data };
 }
 
+export async function updateUnavailability(
+  input: UpdateUnavailabilityInput,
+): Promise<ActionResult> {
+  const parsed = updateUnavailabilitySchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("instructor_unavailability")
+    .select("id, member_id")
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id)
+    .maybeSingle();
+  if (!existing) return fail("Niet gevonden");
+  const memberId = (existing as { member_id: string }).member_id;
+  const { error } = await supabase
+    .from("instructor_unavailability")
+    .update({
+      starts_at: parsed.data.starts_at,
+      ends_at: parsed.data.ends_at,
+      reason: parsed.data.reason ?? null,
+      notes: parsed.data.notes ?? null,
+    })
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id);
+  if (error) {
+    if (error.code === "23P01") {
+      return fail("Overlapt met een bestaand afwezigheidsblok voor deze instructeur.");
+    }
+    return fail(error.message);
+  }
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    member_id: memberId,
+    action: "instructor.unavailability.updated",
+    meta: { unavailability_id: parsed.data.id },
+  });
+  revalidatePath(`/tenant/instructeurs/${memberId}`);
+  return { ok: true, data: undefined };
+}
+
 export async function deleteUnavailability(
   tenantId: string,
   unavailabilityId: string,
@@ -208,6 +323,9 @@ export async function assignSessionInstructor(
   }
   if (!(await assertMemberInTenant(parsed.data.tenant_id, parsed.data.member_id))) {
     return fail("Lid hoort niet bij deze tenant.");
+  }
+  if (!(await assertMemberHasTrainerRole(parsed.data.tenant_id, parsed.data.member_id))) {
+    return fail("Dit lid heeft geen trainer-rol en kan niet als instructeur worden toegewezen.");
   }
   if (parsed.data.replaces_member_id) {
     if (!(await assertMemberInTenant(parsed.data.tenant_id, parsed.data.replaces_member_id))) {
