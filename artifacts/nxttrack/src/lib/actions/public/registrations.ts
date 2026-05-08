@@ -171,6 +171,67 @@ export async function submitMembershipRegistration(
 
   const v = parsed.data;
   const admin = createAdminClient();
+
+  // Sprint 49 — Tenant-instelling intake_default bepaalt of het publieke
+  // formulier in `registrations` (default) of in `waitlist_entries` landt.
+  // Houtrust en alle bestaande tenants zijn gebackfilled op 'registration',
+  // dus géén regressie. Optionele per-target overrides:
+  // settings_json.intake_overrides_by_target = { "<target>": "waitlist" }.
+  let intakeMode: "registration" | "waitlist" = "registration";
+  try {
+    const { data: tRow } = await admin
+      .from("tenants")
+      .select("settings_json")
+      .eq("id", tenantId)
+      .maybeSingle();
+    const settings = (tRow?.settings_json ?? {}) as Record<string, unknown>;
+    const def = settings.intake_default;
+    if (def === "waitlist") intakeMode = "waitlist";
+    const overrides = settings.intake_overrides_by_target;
+    if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+      const o = (overrides as Record<string, unknown>)[v.registration_target];
+      if (o === "waitlist") intakeMode = "waitlist";
+      else if (o === "registration") intakeMode = "registration";
+    }
+  } catch {
+    // Bij read-fout vallen we veilig terug op 'registration'.
+  }
+
+  if (intakeMode === "waitlist") {
+    const { data: created, error: insErr } = await admin
+      .from("waitlist_entries")
+      .insert({
+        tenant_id: tenantId,
+        registration_target: v.registration_target,
+        parent_name: v.full_name,
+        parent_email: v.email,
+        parent_phone: v.phone,
+        address: v.address,
+        postal_code: v.postal_code,
+        city: v.city,
+        date_of_birth: v.registration_target === "self" ? v.date_of_birth : null,
+        player_type: v.registration_target === "self" ? v.player_type : null,
+        child_name:
+          v.registration_target === "child" && v.athletes[0]
+            ? v.athletes[0].full_name
+            : null,
+        extra_details: v.extra_details,
+        athletes_json: v.registration_target === "child" ? v.athletes : [],
+        agreed_terms: v.agreed_terms,
+        status: "waiting",
+        source: "public_form",
+      })
+      .select("id")
+      .single();
+    if (insErr || !created) {
+      return fail(
+        insErr?.message ??
+          "Aanmelding kon niet worden verwerkt. Probeer het opnieuw.",
+      );
+    }
+    return { ok: true, data: { id: created.id } };
+  }
+
   const { data: created, error: insErr } = await admin
     .from("registrations")
     .insert({

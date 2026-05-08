@@ -34,6 +34,22 @@ export const TERMINOLOGY_KEY_LABELS: Record<TerminologyKey, string> = {
   memberships_new_form_title:  "Lidmaatschappen — titel formulier 'nieuw lidmaatschap'",
   dashboard_participants_hint: "Dashboard 'coming soon' — hint deelnemers",
   dashboard_instructors_hint:  "Dashboard 'coming soon' — hint instructeurs",
+
+  waitlist_singular:           "Wachtlijst-aanvraag (enkelvoud)",
+  waitlist_plural:             "Wachtlijst-aanvragen (meervoud)",
+  waitlist_page_description:   "Wachtlijst-pagina beschrijving",
+  makeup_singular:             "Inhaalsessie (enkelvoud)",
+  makeup_plural:               "Inhaalsessies (meervoud)",
+  makeup_credit_singular:      "Inhaalcredit (enkelvoud)",
+  makeup_credit_plural:        "Inhaalcredits (meervoud)",
+  milestone_singular:          "Mijlpaal (enkelvoud)",
+  milestone_plural:            "Mijlpalen (meervoud)",
+  milestone_event_singular:    "Mijlpaal-event (enkelvoud)",
+  milestone_event_plural:      "Mijlpaal-events (meervoud)",
+  progress_module_singular:    "Voortgangsmodule (enkelvoud)",
+  progress_module_plural:      "Voortgangsmodules (meervoud)",
+  capacity_resource_singular:  "Capaciteit / locatie (enkelvoud)",
+  capacity_resource_plural:    "Capaciteiten / locaties (meervoud)",
 };
 
 export const TERMINOLOGY_KEYS = Object.keys(TERMINOLOGY_KEY_LABELS) as TerminologyKey[];

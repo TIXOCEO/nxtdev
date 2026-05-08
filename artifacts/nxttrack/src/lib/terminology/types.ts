@@ -51,6 +51,23 @@ export interface Terminology {
   dashboard_participants_hint: string;
   /** Hint onder dashboard-card "Coming soon" → instructeurs/trainers. */
   dashboard_instructors_hint: string;
+
+  // ── Sprint 47 — Zwemschool-modules (waitlist, makeup, milestone, capacity) ──
+  waitlist_singular: string;
+  waitlist_plural: string;
+  waitlist_page_description: string;
+  makeup_singular: string;
+  makeup_plural: string;
+  makeup_credit_singular: string;
+  makeup_credit_plural: string;
+  milestone_singular: string;
+  milestone_plural: string;
+  milestone_event_singular: string;
+  milestone_event_plural: string;
+  progress_module_singular: string;
+  progress_module_plural: string;
+  capacity_resource_singular: string;
+  capacity_resource_plural: string;
 }
 
 export type TerminologyKey = keyof Terminology;

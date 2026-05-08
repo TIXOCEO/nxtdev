@@ -41,6 +41,22 @@ export const TerminologySchema: z.ZodType<Partial<Terminology>> = z.object({
   memberships_new_form_title:  NonEmpty.optional(),
   dashboard_participants_hint: NonEmpty.optional(),
   dashboard_instructors_hint:  NonEmpty.optional(),
+
+  waitlist_singular:           NonEmpty.optional(),
+  waitlist_plural:             NonEmpty.optional(),
+  waitlist_page_description:   NonEmpty.optional(),
+  makeup_singular:             NonEmpty.optional(),
+  makeup_plural:               NonEmpty.optional(),
+  makeup_credit_singular:      NonEmpty.optional(),
+  makeup_credit_plural:        NonEmpty.optional(),
+  milestone_singular:          NonEmpty.optional(),
+  milestone_plural:            NonEmpty.optional(),
+  milestone_event_singular:    NonEmpty.optional(),
+  milestone_event_plural:      NonEmpty.optional(),
+  progress_module_singular:    NonEmpty.optional(),
+  progress_module_plural:      NonEmpty.optional(),
+  capacity_resource_singular:  NonEmpty.optional(),
+  capacity_resource_plural:    NonEmpty.optional(),
 });
 
 /**
