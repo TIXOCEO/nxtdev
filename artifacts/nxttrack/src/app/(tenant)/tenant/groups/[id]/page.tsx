@@ -15,6 +15,8 @@ import { getGroupDetail } from "@/lib/db/groups";
 import { AddMemberPopover } from "../_add-member-popover";
 import { GroupMemberRow } from "./_member-row";
 import { CsvImport } from "./_csv-import";
+import { MinInstructorsField } from "@/components/tenant/min-instructors-field";
+import { getTenantTerminology } from "@/lib/terminology/resolver";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -54,6 +56,9 @@ export default async function GroupDetailPage({
 
   const detail = await getGroupDetail(id, result.tenant.id);
   if (!detail) notFound();
+  const terminology = await getTenantTerminology(result.tenant.id);
+  const groupRow = detail.group as { default_min_instructors?: number | null } & typeof detail.group;
+  const defaultMinInstructors = groupRow.default_min_instructors ?? null;
 
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(sp.tab ?? "")
     ? (sp.tab as TabKey)
@@ -200,6 +205,19 @@ export default async function GroupDetailPage({
           </div>
         }
       />
+
+      <div
+        className="mt-3 mb-4 rounded-xl border px-3 py-2"
+        style={{ backgroundColor: "var(--surface-soft)", borderColor: "var(--surface-border)" }}
+      >
+        <MinInstructorsField
+          tenantId={result.tenant.id}
+          scope={{ kind: "group", groupId: id }}
+          initialValue={defaultMinInstructors}
+          label={`Minimum aantal ${terminology.instructor_plural.toLowerCase()} per sessie`}
+          helpText="leeg = 1 als fallback"
+        />
+      </div>
 
       {/* Add member bar + CSV import */}
       <section

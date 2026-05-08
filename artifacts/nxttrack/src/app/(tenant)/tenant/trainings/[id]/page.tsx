@@ -10,6 +10,7 @@ import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { TrainingStatusActions } from "./_status-actions";
 import { ReminderButton } from "./_reminder-button";
 import { SessionInstructorsBlock } from "./_instructors-block";
+import { MinInstructorsField } from "@/components/tenant/min-instructors-field";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -155,6 +156,19 @@ export default async function TrainingDetailPage({ params }: PageProps) {
         eligible={eligibleInstructors}
         labels={{ singular: terminology.instructor_singular, plural: terminology.instructor_plural }}
       />
+
+      <div
+        className="rounded-xl border px-3 py-2"
+        style={{ backgroundColor: "var(--surface-soft)", borderColor: "var(--surface-border)" }}
+      >
+        <MinInstructorsField
+          tenantId={result.tenant.id}
+          scope={{ kind: "session", sessionId: id }}
+          initialValue={(detail.session as { min_instructors?: number | null }).min_instructors ?? null}
+          label={`Minimum aantal ${terminology.instructor_plural.toLowerCase()} voor deze sessie`}
+          helpText="leeg = gebruik groep-default"
+        />
+      </div>
 
       <section
         className="rounded-2xl border p-4 sm:p-6"

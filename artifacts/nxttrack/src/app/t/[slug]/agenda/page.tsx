@@ -15,12 +15,14 @@ interface PageProps {
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABEL: Record<string, string> = {
-  primary: "Hoofdinstructeur",
-  assistant: "Assistent",
-  substitute: "Vervanger",
-  observer: "Observer",
-};
+function buildTypeLabels(singular: string): Record<string, string> {
+  return {
+    primary: `Hoofd${singular.toLowerCase()}`,
+    assistant: "Assistent",
+    substitute: "Vervanger",
+    observer: "Observer",
+  };
+}
 
 function fmt(iso: string): string {
   return new Date(iso).toLocaleString("nl-NL", {
@@ -42,6 +44,7 @@ export default async function PublicAgendaPage({ params }: PageProps) {
 
   const terminology = await getTenantTerminology(tenant.id);
   const pageTitle = `Mijn ${terminology.instructor_singular.toLowerCase()}-agenda`;
+  const TYPE_LABEL = buildTypeLabels(terminology.instructor_singular);
 
   const admin = createAdminClient();
   const { data: ownMembers } = await admin

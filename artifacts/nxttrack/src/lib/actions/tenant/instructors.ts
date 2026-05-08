@@ -98,6 +98,9 @@ export async function createAvailability(
   if (!(await assertMemberInTenant(parsed.data.tenant_id, parsed.data.member_id))) {
     return fail("Lid hoort niet bij deze tenant.");
   }
+  if (!(await assertMemberHasTrainerRole(parsed.data.tenant_id, parsed.data.member_id))) {
+    return fail("Dit lid heeft geen trainer-rol; planning-records kunnen niet worden aangemaakt.");
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -208,6 +211,9 @@ export async function createUnavailability(
   const user = await assertTenantAccess(parsed.data.tenant_id);
   if (!(await assertMemberInTenant(parsed.data.tenant_id, parsed.data.member_id))) {
     return fail("Lid hoort niet bij deze tenant.");
+  }
+  if (!(await assertMemberHasTrainerRole(parsed.data.tenant_id, parsed.data.member_id))) {
+    return fail("Dit lid heeft geen trainer-rol; planning-records kunnen niet worden aangemaakt.");
   }
 
   const supabase = await createClient();

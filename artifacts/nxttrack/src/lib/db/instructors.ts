@@ -399,7 +399,14 @@ export async function getInstructorMember(
     .eq("id", memberId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
-  return (data ?? null) as { id: string; full_name: string; email: string | null } | null;
+  if (!data) return null;
+  // Vereis trainer-rol om dit als instructeur-detail te tonen.
+  const [{ data: directRole }, { data: tenantRole }] = await Promise.all([
+    admin.from("member_roles").select("member_id").eq("member_id", memberId).eq("role", "trainer").limit(1).maybeSingle(),
+    admin.from("tenant_member_roles").select("member_id, tenant_roles!inner(is_trainer_role)").eq("tenant_id", tenantId).eq("member_id", memberId).eq("tenant_roles.is_trainer_role", true).limit(1).maybeSingle(),
+  ]);
+  if (!directRole && !tenantRole) return null;
+  return data as { id: string; full_name: string; email: string | null };
 }
 
 export interface MemberGroupRow {

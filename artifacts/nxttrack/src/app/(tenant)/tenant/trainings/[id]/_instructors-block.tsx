@@ -125,7 +125,7 @@ export function SessionInstructorsBlock({
             className="rounded-full px-2 py-0.5 text-[10px]"
             style={{ backgroundColor: "var(--surface-soft)", color: "var(--text-secondary)" }}
           >
-            impliciet (alle trainers van de groep)
+            impliciet (alle {labels.plural.toLowerCase()} van de groep)
           </span>
         )}
       </div>
