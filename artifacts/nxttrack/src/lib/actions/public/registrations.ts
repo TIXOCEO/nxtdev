@@ -177,24 +177,30 @@ export async function submitMembershipRegistration(
   // Houtrust en alle bestaande tenants zijn gebackfilled op 'registration',
   // dus géén regressie. Optionele per-target overrides:
   // settings_json.intake_overrides_by_target = { "<target>": "waitlist" }.
+  //
+  // Als de settings-read faalt willen we het NIET stilletjes maskeren — dat
+  // zou een tenant die op wachtlijst staat per ongeluk kunnen omleiden naar
+  // registrations. We propageren de fout zodat de inzender een zichtbare
+  // foutmelding krijgt en de operator alerts ziet.
   let intakeMode: "registration" | "waitlist" = "registration";
-  try {
-    const { data: tRow } = await admin
-      .from("tenants")
-      .select("settings_json")
-      .eq("id", tenantId)
-      .maybeSingle();
-    const settings = (tRow?.settings_json ?? {}) as Record<string, unknown>;
-    const def = settings.intake_default;
-    if (def === "waitlist") intakeMode = "waitlist";
-    const overrides = settings.intake_overrides_by_target;
-    if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
-      const o = (overrides as Record<string, unknown>)[v.registration_target];
-      if (o === "waitlist") intakeMode = "waitlist";
-      else if (o === "registration") intakeMode = "registration";
-    }
-  } catch {
-    // Bij read-fout vallen we veilig terug op 'registration'.
+  const { data: tRow, error: tenantReadErr } = await admin
+    .from("tenants")
+    .select("settings_json")
+    .eq("id", tenantId)
+    .maybeSingle();
+  if (tenantReadErr) {
+    return fail(
+      "Aanmelding kan tijdelijk niet verwerkt worden. Probeer het later opnieuw.",
+    );
+  }
+  const settings = (tRow?.settings_json ?? {}) as Record<string, unknown>;
+  const def = settings.intake_default;
+  if (def === "waitlist") intakeMode = "waitlist";
+  const overrides = settings.intake_overrides_by_target;
+  if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+    const o = (overrides as Record<string, unknown>)[v.registration_target];
+    if (o === "waitlist") intakeMode = "waitlist";
+    else if (o === "registration") intakeMode = "registration";
   }
 
   if (intakeMode === "waitlist") {
