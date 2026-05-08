@@ -590,7 +590,23 @@ Sprint 60 voegt geen notification-sources toe. Sprint 64 (waitlist-koppeling) vo
 
 ---
 
-## 8. MVP-definitie (Sprint 60 alleen)
+## 8. Beslisblok — pakket-aanbeveling met tijds- en risico-inschatting
+
+Per Task #93 stap 11 een expliciete eindaanbeveling met drie pakket-keuzes. Tijds-inschatting is in **agent-werk-dagen** (vergelijkbaar met Sprint 47-59 doorlooptijd), risico is t.o.v. Houtrust-regressie + scope-creep.
+
+| Pakket | Inhoud | Levert | Tijd | Risico | Aanbevolen voor |
+|---|---|---|---|---|---|
+| **A. Alleen Sprint 60 (v0.16.0)** | Programs CRUD + program_groups + 2 tabs (Overzicht, Groepen). Geen cascade, geen marketplace. | Tenant-admin kan programma's modelleren en groepen koppelen — nuttig als demo/positionering, maar nog geen operationele winst. | 1-2 dagen | **Laag** — alleen nieuwe tabellen + 1 trigger; geen view-rewrites, geen RPC-rewrites; Houtrust ziet 0 wijzigingen in eigen flows. | Tenants die alleen organisatie-overzicht willen of die wachten op ABC-program-import voordat ze échte planning doen. |
+| **B. Sprint 60 + 61 + 62 (v0.16.0 → v0.16.2) — aanbevolen MVP** | Pakket A + program-instructeurs + program-resources defaults + view-rewrite met 3e fallback + RPC-rewrite + cascade-helpers + `program_capacity_overview`-view + capaciteitsdashboard `/tenant/planning/capaciteit` + `program_membership_plans`. | **Volledig operationeel intern fundament**: tenants definiëren één keer hun programma + defaults, alle nieuwe sessies erven instructeurs, resources, capaciteit; admin ziet kleur-dashboard. Geen publieke laag, geen waitlist-koppeling. | 5-7 dagen | **Midden** — view-rewrite (`session_instructors_effective`) + RPC-rewrite (`detect_instructor_conflicts`) + capacity-view raken bestaande paden. Mitigatie: snapshot-test Sprint 61 (R5) + `program_id IS NULL`-coalesce overal. Houtrust draait identiek. | **Default-aanbeveling**: tenants die programma's vandaag al gebruiken in hun planning + zwemschool-tenants die capaciteitskleuren willen. |
+| **C. Pakket B + Sprint 63 + 64 (v0.17.0 → v0.17.1) — full programma-laag** | Pakket B + publieke marketplace `/t/[slug]/programmas` + detail + `?program=`-deeplink + `registrations.program_id` + waitlist-koppeling op program-niveau + `intake_overrides_by_program`. | **Volledige programma-laag inclusief publieke marktplaats en intake-routing per programma**. Bereidt smart-waitlist-placement voor. | 9-12 dagen totaal | **Midden-hoog** — publieke RLS-policy + tenant-leak-risico (R4) + dedup-index uitbreiden (Sprint 41/43-patroon, R6). Mitigatie: expliciete RLS-test (Sprint 63), drop+recreate index met spiegeling van `on conflict where`-predicate (Sprint 64). | Tenants die actief leden werven via publieke pagina (zwemscholen, recreatieve trainingen, open cursussen) of die wachtlijsten op aanbod-niveau willen openen voordat de groepen bestaan. |
+
+### Aanbeveling
+
+**Begin met pakket B** (Sprint 60+61+62) als one-shot vrijgave-traject. Het levert binnen ~1 sprint week het volledige interne fundament zonder publieke afhankelijkheden. Na pakket B is het veilig om óf direct door te schuiven naar pakket C (publieke marketplace + waitlist), óf eerst smart-waitlist-placement als aparte taak op te pakken — het schema in pakket B is op beide voorbereid (zie §6.2 "wat we expliciet alvast vrijhouden"). Pakket A alleen heeft beperkte standalone waarde en wordt afgeraden tenzij er externe blokkers zijn voor verder bouwen.
+
+---
+
+## 8a. MVP-definitie (Sprint 60 alleen)
 
 - Programs CRUD met velden uit §3.2 minus marketplace-velden (`marketing_title`, `marketing_description`, `hero_image_url`, `cta_label`, `public_slug`, `age_min/max`, `highlights_json` mogen leeg blijven; `visibility` mag enkel `internal` of `archived` zijn — `public` wordt pas relevant in Sprint 63).
 - `program_groups` koppel-tabel met add/remove/sort/`is_primary`.
