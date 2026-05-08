@@ -70,7 +70,7 @@ Het datamodel kent geen sector-kolom op `programs` — sector wordt impliciet be
 | **D1.** Tenant-admin kan een program definiëren met defaults (capaciteit, flex-capaciteit, capacity-purpose-defaults, min-instructeurs, resources, hoofdinstructeur, marketplace-zichtbaarheid, optioneel gekoppelde membership_plans). | CRUD-screen onder `/tenant/programmas`, server-actions met `assertTenantAccess` + Zod, audit-keys `program.{created,updated,published,archived}`. |
 | **D2.** Bestaande groups en training_sessions kunnen optioneel aan een program hangen, met identiek gedrag bij `program_id IS NULL`. | Nieuwe FK's nullable + RLS ongewijzigd; UI toont program-badge alleen als gekoppeld; cron / dedup / e-mail-templates blijven werken. |
 | **D3.** Layered defaults zonder code-duplicatie. | Eén lees-helper `getEffectiveSessionConstraints(sessionId)` in `lib/db/sessions.ts` die de cascade implementeert; view `session_instructors_effective` krijgt program-fallback inline. |
-| **D4.** Publieke marketplace op route `/t/[slug]/programmas` + detail `/t/[slug]/programmas/[publicSlug]` (label uit `terminology.program_plural`) toont alle programs met `visibility='public'` en deeplinkt naar het bestaande aanmeld-formulier (`?program=<publicSlug>`). | Server-rendered, indexeerbaar, respecteert `programs.visibility='public'` én aanwezigheid van `public_slug`. `internal` = alleen voor ingelogde tenant-admins; `archived` = nergens zichtbaar (alleen historische data-retentie). Houtrust ziet niets nieuws (geen programs = lege lijst, route blijft 404). |
+| **D4.** Publieke marketplace op route `/t/[slug]/programmas` + detail `/t/[slug]/programmas/[publicSlug]` (label uit `terminology.program_plural`) toont alle programs met `visibility='public'` en deeplinkt naar het bestaande aanmeld-formulier (`?program=<publicSlug>`). | Server-rendered, indexeerbaar, respecteert `programs.visibility='public'` én aanwezigheid van `public_slug`. `internal` = alleen voor ingelogde tenant-admins; `archived` = nergens zichtbaar (alleen historische data-retentie). De pagina **rendert ook met een lege state wanneer een tenant 0 publieke programs heeft** (terminology-driven heading + intro + CTA-card "Neem contact op") — dus geen 404 voor Houtrust; alléén individuele detail-paths `/programmas/[publicSlug]` retourneren 404 als de slug niet bestaat. Zo blijft de URL in sitemap/links bruikbaar zodra een tenant zijn eerste program publiceert. |
 | **D5.** Wachtlijst kan op program-niveau worden geopend (i.p.v. alleen per groep), inclusief intake-routing override per program. | `waitlists.program_id`, `waitlist_entries.program_id` nullable; `submitMembershipRegistration` leest `intake_overrides_by_program[program.slug]` voor route-keuze. |
 | **D6.** Houtrust-veiligheid. | Geen verplichte program_id ergens; backfill in geen enkele migratie raakt Houtrust-data; alle nieuwe RLS via `has_tenant_access`; dedup-index breidt het predicate uit i.p.v. herstructureren. |
 | **D7.** Voorbereiding op Smart Waitlist & Placement (Task TBD). | Programs worden de "matchbare aanbod-eenheid": placement-RPC krijgt `program_id`-input, leest preferences, scoort tegen actieve groups + capaciteit. Schema in deze taak is daar al op afgesteld (zie §6 risico-paragraaf "Wat we expliciet alvast vrijhouden"). |
@@ -350,7 +350,7 @@ Onderstaande matrix vat alle voorgestelde wijzigingen samen volgens de in Task #
 | `/tenant/planning/capaciteit` dashboard | UI-only | 62 | toont Houtrust-data zonder programma-rij |
 | `programs_public_read` policy | migration | 63 | none — Houtrust heeft geen public programs |
 | `registrations.program_id` (kolom, nullable) | new column | 63 | none — blijft NULL |
-| `/t/[slug]/programmas` + `/t/[slug]/programmas/[publicSlug]` | UI-only | 63 | 404 voor Houtrust (geen public programs) |
+| `/t/[slug]/programmas` + `/t/[slug]/programmas/[publicSlug]` | UI-only | 63 | lijst rendert lege state voor Houtrust (heading + intro + contact-CTA, geen 404); detail 404 op onbekende slug |
 | `?program=<publicSlug>` deeplink in `submitMembershipRegistration` | UI-only (server-action) | 63 | none — backwards compatible |
 | `waitlists.program_id`, `waitlist_entries.program_id` (kolommen, nullable) | new column | 64 | none — blijven NULL |
 | `notifications.source='waitlist_entry_program_assigned'` (dedup-index uitbreiden) | migration | 64 | drop+recreate index + spiegelen `on conflict where` |
@@ -393,7 +393,7 @@ Hergebruik `program_singular`/`program_plural` (al bestaand). Nieuwe keys:
 
 Routes volgen exact de spec in Task #93 stap 6:
 
-- **`/t/[slug]/programmas`** — server-rendered grid van marketplace-cards (`marketing_title` met fallback naar `name`, `marketing_description`, `hero_image_url`, age-range, highlights, CTA-label uit `cta_label` met fallback naar terminology). Pagina-titel uit `terminology.program_plural`. Lege state: voor Houtrust (geen public programs) blijft 404 actief.
+- **`/t/[slug]/programmas`** — server-rendered grid van marketplace-cards (`marketing_title` met fallback naar `name`, `marketing_description`, `hero_image_url`, age-range, highlights, CTA-label uit `cta_label` met fallback naar terminology). Pagina-titel uit `terminology.program_plural`, intro uit `terminology.programs_marketplace_intro`. **Lege state**: wanneer er geen public programs zijn (Houtrust-scenario) rendert de pagina alsnog netjes met heading + intro + één CTA-card "Neem contact op met de organisatie" die linkt naar `/t/[slug]/contact` (of, als die niet bestaat, de generieke `/t/[slug]/inschrijven`-flow). Geen 404. Detail-paths `/programmas/[publicSlug]` retourneren wél 404 voor onbekende slugs.
 - **`/t/[slug]/programmas/[publicSlug]`** — detail-pagina met TipTap-render van `marketing_description`, gekoppelde groepen (publiek-veilige metadata: naam, dagdelen uit `training_sessions` aggregaat), highlights, "Direct aanmelden"-CTA die naar `/t/[slug]/aanmelden?program=<publicSlug>` linkt.
 - **`/t/[slug]/aanmelden?program=<publicSlug>`** — bestaande registratie-wizard krijgt een optionele `?program=`-query. `submitMembershipRegistration` resolveert het program (per `(tenant_id, public_slug)`), schrijft `registrations.program_id` (nieuwe nullable kolom in Sprint 63) en bepaalt intake-route via `intake_overrides_by_program` (Sprint 64) → `intake_overrides_by_target` → `intake_default`.
 
@@ -570,7 +570,7 @@ Sprint 60 voegt geen notification-sources toe. Sprint 64 (waitlist-koppeling) vo
 - `submitMembershipRegistration` leest `program` query-param, valideert per `(tenant_id, public_slug)`, schrijft `registrations.program_id`. Tenant-scoping in query-laag (§3.5, R4).
 - Tenant-admin krijgt nieuwe knop "Marketplace voorbeeld" op program-detail die `?preview=1` gebruikt om ook `internal`-programs te tonen (sessie-only, met cookie-token, tenant-admin-only).
 
-**Acceptatie**: Houtrust → `/t/houtrust/programmas` blijft 404 (geen public programs). Tenant met 1 public program ziet card + detail correct.
+**Acceptatie**: Houtrust → `/t/houtrust/programmas` rendert met lege state (heading + intro + contact-CTA), géén 404. Tenant met 1 public program ziet card + detail correct. Een onbekende detail-slug retourneert wél 404.
 
 ### Sprint 64 — Waitlist program-koppeling + intake-overrides (v0.17.1)
 
@@ -639,6 +639,7 @@ Per Task #93 stap 11 een expliciete eindaanbeveling met drie pakket-keuzes. Tijd
 | **DB** | Sync-trigger `enforce_group_primary_program`: insert/update/delete-paden met assertions op `groups.program_id` | Sprint 60 |
 | **RLS** | Publieke selects op `programs` — anonieme client mag alleen `visibility='public' AND public_slug IS NOT NULL` zien, en moet expliciet aantonen dat die select cross-tenant data oplevert (= bewijs dat de query-laag verantwoordelijk is voor tenant-scoping) | Sprint 63, in `supabase/tests/sprint63_programs_public_rls.sql` |
 | **E2E** | Playwright via testing-skill: tenant maakt program → koppelt groep → zet visibility=public + public_slug → bezoekt `/t/[slug]/programmas` → klikt CTA → komt op aanmeldformulier met program-pre-fill | Sprint 63 |
+| **E2E** | Lege-state-test: bezoek `/t/houtrust/programmas` (0 public programs) → pagina rendert met heading + intro + contact-CTA (status 200, niet 404) | Sprint 63 |
 | **E2E** | Tenant zet `intake_overrides_by_program[slug]='waitlist'` → publieke aanmelding voor dat program landt op `waitlist_entries`, andere program blijft op `registrations` | Sprint 64 |
 | **Regression** | Houtrust-walk-through (groepen, sessies, wachtlijst, instructeurs) na elke sprint | Sprint 60-64 |
 
