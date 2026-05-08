@@ -5,8 +5,10 @@ import { PageHeading } from "@/components/ui/page-heading";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getTrainingSessionDetail } from "@/lib/db/trainings";
+import { listSessionInstructorsExplicit, listSessionInstructorsEffective, listInstructors } from "@/lib/db/instructors";
 import { TrainingStatusActions } from "./_status-actions";
 import { ReminderButton } from "./_reminder-button";
+import { SessionInstructorsBlock } from "./_instructors-block";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -49,6 +51,27 @@ export default async function TrainingDetailPage({ params }: PageProps) {
 
   const detail = await getTrainingSessionDetail(id, result.tenant.id);
   if (!detail) notFound();
+
+  const [explicitInstructors, effectiveInstructors, allInstructors] = await Promise.all([
+    listSessionInstructorsExplicit(result.tenant.id, id),
+    listSessionInstructorsEffective(result.tenant.id, id),
+    // Eligible: alle leden met de trainer-rol binnen deze tenant. We staan
+    // bewust toe een trainer toe te wijzen die niet in de groep zit (bv.
+    // vervangers uit een andere groep / poule).
+    listInstructors(result.tenant.id),
+  ]);
+  const eligibleMap = new Map<string, { id: string; full_name: string }>();
+  for (const t of allInstructors) {
+    eligibleMap.set(t.member_id, { id: t.member_id, full_name: t.full_name });
+  }
+  // Houd reeds-toegewezen leden ook in de lijst zelfs als ze (nog) geen
+  // trainer-rol meer hebben — anders kan je ze niet meer verwijderen via UI.
+  for (const e of explicitInstructors) {
+    if (!eligibleMap.has(e.member_id)) {
+      eligibleMap.set(e.member_id, { id: e.member_id, full_name: e.full_name });
+    }
+  }
+  const eligibleInstructors = Array.from(eligibleMap.values()).sort((a, b) => a.full_name.localeCompare(b.full_name, "nl"));
 
   const counts = detail.attendance.reduce(
     (acc, a) => {
@@ -121,6 +144,14 @@ export default async function TrainingDetailPage({ params }: PageProps) {
           <ReminderButton tenantId={result.tenant.id} sessionId={id} />
         </div>
       </div>
+
+      <SessionInstructorsBlock
+        tenantId={result.tenant.id}
+        sessionId={id}
+        explicit={explicitInstructors}
+        effective={effectiveInstructors}
+        eligible={eligibleInstructors}
+      />
 
       <section
         className="rounded-2xl border p-4 sm:p-6"

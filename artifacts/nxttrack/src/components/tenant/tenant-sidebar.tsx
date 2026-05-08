@@ -87,8 +87,11 @@ function buildNavGroups(t: Terminology): NavGroup[] { return [
     id: "planning",
     label: `Planning & ${t.program_singular.toLowerCase()}`,
     items: [
-      { label: t.session_plural, icon: CalendarDays,  href: "/tenant/trainings" },
-      { label: t.program_plural, icon: CreditCard,    href: "/tenant/memberships" },
+      { label: t.session_plural,      icon: CalendarDays,  href: "/tenant/trainings" },
+      { label: t.instructor_plural,   icon: Users,         href: "/tenant/instructeurs" },
+      { label: "Planningsconflicten", icon: AlertTriangle, href: "/tenant/planning/conflicten" },
+      { label: "Onbemande sessies",   icon: Bell,          href: "/tenant/planning/onbemand" },
+      { label: t.program_plural,      icon: CreditCard,    href: "/tenant/memberships" },
     ],
   },
   {
