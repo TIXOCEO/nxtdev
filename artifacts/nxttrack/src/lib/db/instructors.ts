@@ -449,15 +449,25 @@ export async function listMemberGroups(
     countMap.set(c.group_id, (countMap.get(c.group_id) ?? 0) + 1);
   }
 
-  // trainer-rol via member_roles
-  const { data: directRole } = await admin
-    .from("member_roles")
-    .select("member_id")
-    .eq("member_id", memberId)
-    .eq("role", "trainer")
-    .limit(1)
-    .maybeSingle();
-  const isTrainer = Boolean(directRole);
+  // trainer-rol via member_roles OF custom tenant_roles.is_trainer_role=true
+  const [{ data: directRole }, { data: tenantRole }] = await Promise.all([
+    admin
+      .from("member_roles")
+      .select("member_id")
+      .eq("member_id", memberId)
+      .eq("role", "trainer")
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("tenant_member_roles")
+      .select("member_id, tenant_roles!inner(is_trainer_role)")
+      .eq("tenant_id", tenantId)
+      .eq("member_id", memberId)
+      .eq("tenant_roles.is_trainer_role", true)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const isTrainer = Boolean(directRole) || Boolean(tenantRole);
 
   return rows
     .map((r) => ({
