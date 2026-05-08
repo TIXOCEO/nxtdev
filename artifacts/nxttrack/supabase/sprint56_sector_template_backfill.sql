@@ -12,9 +12,12 @@
 -- wordt toegevoegd zou Houtrust die niet zien.
 --
 -- Deze migratie zet beide voetbal-tenants op `football_school`.
--- Idempotent: alleen als de huidige waarde NULL is. Tenants die
--- bewust op NULL of een andere template zijn gezet door een platform-
--- admin worden niet overschreven.
+-- Idempotent: alleen als de huidige waarde NULL is. Voor de twee
+-- expliciet genoemde slugs (`voetbalschool-houtrust`,
+-- `duindorp-sv`) interpreteren we NULL als "nog niet ingevuld" en
+-- niet als bewuste keuze; dat is het hele punt van deze backfill.
+-- Tenants die op een andere template-key staan worden niet
+-- aangeraakt. Andere tenants met NULL worden niet aangeraakt.
 --
 -- Operator-noot: als Duindorp SV bij nader inzien op `generic` moet
 -- staan, wijzig dit dan na de run handmatig via het platform-admin-
