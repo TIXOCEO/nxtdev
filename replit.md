@@ -91,6 +91,7 @@ I prefer the AI to
 
 ## Pointers
 
+- **Swimming-school research (Task #80)**: `artifacts/nxttrack/docs/swimming-school-research.md` — onderzoek + gefaseerd plan voor wachtlijst, inhaallessen, positieve voortgang, afzwem-event-planning en capaciteitsplanning, allemaal generiek opgezet bovenop het bestaande sector-template-fundament.
 - **Supabase Docs**: `https://supabase.com/docs`
 - **Next.js Docs**: `https://nextjs.org/docs`
 - **Drizzle ORM Docs**: `https://orm.drizzle.team/docs/overview`
