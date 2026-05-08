@@ -58,6 +58,11 @@
 
 ## 3. Voorgestelde architectuur — concrete tabellen
 
+> **Naming-mapping t.o.v. de oorspronkelijke acceptatiecheck:**
+> - de gevraagde `session_capacity` is hier gerealiseerd als `session_resources.max_participants` (één koppel-tabel doet capaciteit én resource-binding);
+> - de gevraagde `event_participants` is hier gerealiseerd als `milestone_event_invites` (één tabel houdt zowel uitnodigings-status als eindresultaat, conform de toelichting in de feasibility-matrix).
+
+
 > Alle nieuwe tabellen zijn **tenant-scoped** met `tenant_id uuid not null references public.tenants(id) on delete cascade`, RLS aan via `using (public.has_tenant_access(tenant_id))`. Iedere tabel met door-de-mens-bewerkbare data krijgt `created_at` + `updated_at` met `handle_updated_at()`-trigger (zoals bestaande tabellen).
 
 ### 3.1 Wachtlijsten
