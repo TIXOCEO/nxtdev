@@ -114,6 +114,7 @@ Verificatie-query na prod-migratie geeft altijd: release-row, count nieuwe tabel
 ## Pointers
 
 - **Swimming-school research (Task #80)**: `artifacts/nxttrack/docs/swimming-school-research.md` — onderzoek + gefaseerd plan voor wachtlijst, inhaallessen, positieve voortgang, afzwem-event-planning en capaciteitsplanning, allemaal generiek opgezet bovenop het bestaande sector-template-fundament.
+- **Programs-fundament research (Task #93)**: `artifacts/nxttrack/docs/programs-foundation-research.md` — onderzoek + gefaseerd plan (Sprint 60-64) voor programs als planning-laag bovenop bestaande groups/training_sessions/instructors/capacity_resources/waitlists, met layered capacity-cascade, instructor-view-uitbreiding, publieke marketplace en waitlist-koppeling. Houtrust-veilig (alle program-FK's nullable).
 - **Sprint history archive**: `artifacts/nxttrack/docs/sprint-history.md`
 - **Supabase Docs**: `https://supabase.com/docs`
 - **Next.js Docs**: `https://nextjs.org/docs`
