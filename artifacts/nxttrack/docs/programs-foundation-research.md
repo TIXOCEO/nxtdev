@@ -323,6 +323,17 @@ Voor `program_groups` / `program_instructors` / `program_resources` /
 read). Publieke route leest alléén uit `programs` zelf en hydrateert
 losse data via tenant-gescopede service-role-queries.
 
+### 3.6b Bewuste afwijking: geen aparte `program_sessions`-koppeltabel
+
+Task #93 stap 4 noemt expliciet een `program_sessions`-relatie-tabel. Dit voorstel kiest bewust voor **directe nullable FK `training_sessions.program_id`** in plaats van een dedicated join-tabel, om de volgende redenen:
+
+1. **Cardinaliteit is 1-N, niet N-N.** Een sessie hoort altijd bij hooguit één programma (zoals ze nu ook hooguit bij één groep horen). Een join-tabel modelleert N-N en zou hier alleen een lege laag toevoegen.
+2. **Cascade leest sneller.** `getEffectiveCapacity` en `session_instructors_effective` doen één extra `left join programs p on p.id = s.program_id`. Een join-tabel zou dat een extra hop maken zonder semantische winst.
+3. **Houtrust-veiligheid identiek.** De FK is nullable + indexed; een join-tabel met 0 rijen geeft exact dezelfde regressie-garantie maar voegt onderhoud toe (RLS-policy, tenant-FK, dedup-rules).
+4. **N-N-koppeling tussen programma's en groepen blijft wél een join-tabel** (`program_groups`), omdat dáár wél meerdere programma's één groep kunnen delen (bijv. één "selectie A1"-groep die zowel "Voorjaars-clinic" als "ABC-traject" voedt).
+
+Conclusie: de geest van stap 4 (programma ↔ sessie koppelen zonder bestaand sessie-schema te breken) is gehonoreerd; de letterlijke `program_sessions`-tabel is vervangen door een goedkoper en cardinaliteit-correct alternatief. Mocht een latere sprint expliciet N-N nodig krijgen (sessie deelbaar tussen meerdere programma's), dan kan `program_sessions` alsnog additief worden toegevoegd.
+
 ### 3.7 Data model classification matrix
 
 Onderstaande matrix vat alle voorgestelde wijzigingen samen volgens de in Task #93 stap 4 gevraagde labels: **new table** / **new column** / **migration** (data-aanpassing of constraint) / **view** / **UI-only** / **later phase** (pas na Sprint 60-64).
