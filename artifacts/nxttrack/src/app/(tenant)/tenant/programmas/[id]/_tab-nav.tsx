@@ -1,13 +1,14 @@
 import Link from "next/link";
 
-export type ProgramDetailTab = "overzicht" | "groepen" | "instructeurs" | "resources";
+export type ProgramDetailTab = "overzicht" | "groepen" | "instructeurs" | "resources" | "lidmaatschap";
 
-const ORDER: ProgramDetailTab[] = ["overzicht", "groepen", "instructeurs", "resources"];
+const ORDER: ProgramDetailTab[] = ["overzicht", "groepen", "instructeurs", "resources", "lidmaatschap"];
 const LABELS: Record<ProgramDetailTab, string> = {
   overzicht: "Overzicht",
   groepen: "Groepen",
   instructeurs: "Instructeurs",
   resources: "Resources",
+  lidmaatschap: "Lidmaatschap",
 };
 
 export function ProgramDetailTabs({

@@ -4,7 +4,9 @@ import { PageHeading } from "@/components/ui/page-heading";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getGroupsByTenant } from "@/lib/db/groups";
-import { TrainingSessionForm } from "../_session-form";
+import { listProgramsPage } from "@/lib/db/programs";
+import { listProgramMembershipPlans } from "@/lib/db/program-membership-plans";
+import { TrainingSessionForm, type SessionFormProgram } from "../_session-form";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,29 @@ export default async function NewTrainingPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const groups = await getGroupsByTenant(result.tenant.id);
+  const tenantId = result.tenant.id;
+
+  const [groups, programs] = await Promise.all([
+    getGroupsByTenant(tenantId),
+    listProgramsPage(tenantId),
+  ]);
+
+  const selectablePrograms = programs.filter((p) => p.visibility !== "archived");
+  const programsWithPlans: SessionFormProgram[] = await Promise.all(
+    selectablePrograms.map(async (p) => {
+      const plans = await listProgramMembershipPlans(tenantId, p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        plans: plans.map((pl) => ({
+          name: pl.plan_name,
+          price: pl.price,
+          billing_period: pl.billing_period,
+          is_default: pl.is_default,
+        })),
+      };
+    }),
+  );
 
   return (
     <>
@@ -38,8 +62,9 @@ export default async function NewTrainingPage() {
         }}
       >
         <TrainingSessionForm
-          tenantId={result.tenant.id}
+          tenantId={tenantId}
           groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+          programs={programsWithPlans}
         />
       </div>
     </>

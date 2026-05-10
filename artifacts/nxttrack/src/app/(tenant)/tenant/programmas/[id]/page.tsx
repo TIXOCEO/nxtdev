@@ -16,11 +16,16 @@ import {
   listProgramResources,
   listAvailableResourcesForProgram,
 } from "@/lib/db/program-planning";
+import {
+  listProgramMembershipPlans,
+  listAvailableMembershipPlansForProgram,
+} from "@/lib/db/program-membership-plans";
 import { ProgramDetailTabs, isValidTab } from "./_tab-nav";
 import { OverviewForm } from "./_overview-form";
 import { GroupsTab } from "./_groups-tab";
 import { InstructorsTab } from "./_instructors-tab";
 import { ResourcesTab } from "./_resources-tab";
+import { MembershipPlansTab } from "./_membership-plans-tab";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -86,7 +91,32 @@ export default async function ProgramDetailPage({ params, searchParams }: PagePr
       {activeTab === "resources" && (
         <ResourcesTabSection tenantId={tenantId} programId={program.id} />
       )}
+
+      {activeTab === "lidmaatschap" && (
+        <MembershipPlansTabSection tenantId={tenantId} programId={program.id} />
+      )}
     </>
+  );
+}
+
+async function MembershipPlansTabSection({
+  tenantId,
+  programId,
+}: {
+  tenantId: string;
+  programId: string;
+}) {
+  const [assigned, available] = await Promise.all([
+    listProgramMembershipPlans(tenantId, programId),
+    listAvailableMembershipPlansForProgram(tenantId, programId),
+  ]);
+  return (
+    <MembershipPlansTab
+      tenantId={tenantId}
+      programId={programId}
+      assigned={assigned}
+      available={available}
+    />
   );
 }
 
