@@ -28,6 +28,9 @@ export const createTrainingSessionSchema = z
   .object({
     tenant_id: z.string().uuid(),
     group_id: z.string().uuid({ message: "Selecteer een groep" }),
+    /** Sprint 61: optionele program-koppeling. Bij gevulde program_id worden
+     *  default-resources van het programma automatisch op de sessie gezet. */
+    program_id: z.string().uuid().or(z.literal("")).nullish(),
     title: z.string().trim().min(2, "Titel is verplicht").max(160),
     description: optStr(2000),
     location: optStr(200),

@@ -61,11 +61,27 @@ export async function createTrainingSession(
     .maybeSingle();
   if (!g) return fail("Groep niet gevonden.");
 
+  // Sprint 61: optionele program_id moet binnen dezelfde tenant liggen.
+  const programId =
+    parsed.data.program_id && parsed.data.program_id !== ""
+      ? parsed.data.program_id
+      : null;
+  if (programId) {
+    const { data: prog } = await supabase
+      .from("programs")
+      .select("id")
+      .eq("id", programId)
+      .eq("tenant_id", parsed.data.tenant_id)
+      .maybeSingle();
+    if (!prog) return fail("Programma niet gevonden of niet toegankelijk.");
+  }
+
   const { data: created, error } = await supabase
     .from("training_sessions")
     .insert({
       tenant_id: parsed.data.tenant_id,
       group_id: parsed.data.group_id,
+      program_id: programId,
       title: parsed.data.title,
       description: parsed.data.description,
       starts_at: parsed.data.starts_at,
@@ -77,6 +93,44 @@ export async function createTrainingSession(
     .select("id")
     .single();
   if (error || !created) return fail(error?.message ?? "Kon training niet aanmaken.");
+
+  // Sprint 61: kopieer program_resources → session_resources zodat de
+  // bestaande btree_gist exclusion-constraint op session_resources
+  // (Sprint 55) automatisch dubbel-boekingen detecteert.
+  if (programId) {
+    const { data: programResources } = await admin
+      .from("program_resources")
+      .select("resource_id, max_participants, notes")
+      .eq("tenant_id", parsed.data.tenant_id)
+      .eq("program_id", programId);
+    const rows = ((programResources ?? []) as Array<{
+      resource_id: string;
+      max_participants: number | null;
+      notes: string | null;
+    }>).map((r) => ({
+      tenant_id: parsed.data.tenant_id,
+      session_id: created.id,
+      resource_id: r.resource_id,
+      max_participants: r.max_participants,
+      notes: r.notes,
+      starts_at: parsed.data.starts_at,
+      ends_at: parsed.data.ends_at,
+    }));
+    if (rows.length > 0) {
+      const { error: resErr } = await admin.from("session_resources").insert(rows);
+      if (resErr) {
+        // Sprint 55 exclusion-constraint = '23P01' (exclusion_violation)
+        if (resErr.code === "23P01") {
+          logErr(
+            "session_resources_overlap",
+            `Programma-resource ging door, maar 1+ resource is al dubbel geboekt: ${resErr.message}`,
+          );
+        } else {
+          logErr("session_resources_copy", resErr);
+        }
+      }
+    }
+  }
 
   // Auto-create attendance rows for current group members.
   const { data: gm } = await admin

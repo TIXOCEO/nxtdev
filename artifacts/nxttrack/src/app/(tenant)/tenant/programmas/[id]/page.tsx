@@ -10,9 +10,17 @@ import {
   listProgramGroups,
   listAvailableGroupsForProgram,
 } from "@/lib/db/programs";
+import {
+  listProgramInstructors,
+  listAvailableTrainersForProgram,
+  listProgramResources,
+  listAvailableResourcesForProgram,
+} from "@/lib/db/program-planning";
 import { ProgramDetailTabs, isValidTab } from "./_tab-nav";
 import { OverviewForm } from "./_overview-form";
 import { GroupsTab } from "./_groups-tab";
+import { InstructorsTab } from "./_instructors-tab";
+import { ResourcesTab } from "./_resources-tab";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -66,6 +74,18 @@ export default async function ProgramDetailPage({ params, searchParams }: PagePr
       {activeTab === "groepen" && (
         <GroupsTabSection tenantId={tenantId} programId={program.id} />
       )}
+
+      {activeTab === "instructeurs" && (
+        <InstructorsTabSection
+          tenantId={tenantId}
+          programId={program.id}
+          leadLabel={terminology.program_assignment_lead_label}
+        />
+      )}
+
+      {activeTab === "resources" && (
+        <ResourcesTabSection tenantId={tenantId} programId={program.id} />
+      )}
     </>
   );
 }
@@ -80,6 +100,45 @@ async function GroupsTabSection({ tenantId, programId }: { tenantId: string; pro
       tenantId={tenantId}
       programId={programId}
       linked={linked}
+      available={available}
+    />
+  );
+}
+
+async function InstructorsTabSection({
+  tenantId,
+  programId,
+  leadLabel,
+}: {
+  tenantId: string;
+  programId: string;
+  leadLabel: string;
+}) {
+  const [assigned, available] = await Promise.all([
+    listProgramInstructors(tenantId, programId),
+    listAvailableTrainersForProgram(tenantId, programId),
+  ]);
+  return (
+    <InstructorsTab
+      tenantId={tenantId}
+      programId={programId}
+      assigned={assigned}
+      available={available}
+      leadLabel={leadLabel}
+    />
+  );
+}
+
+async function ResourcesTabSection({ tenantId, programId }: { tenantId: string; programId: string }) {
+  const [assigned, available] = await Promise.all([
+    listProgramResources(tenantId, programId),
+    listAvailableResourcesForProgram(tenantId, programId),
+  ]);
+  return (
+    <ResourcesTab
+      tenantId={tenantId}
+      programId={programId}
+      assigned={assigned}
       available={available}
     />
   );
