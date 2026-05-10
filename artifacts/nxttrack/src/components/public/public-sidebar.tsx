@@ -30,6 +30,7 @@ export type PublicNavKey =
   | "nieuws"
   | "agenda"
   | "proefles"
+  | "programmas"
   | "inschrijven"
   | "login"
   | "notifications"
@@ -47,6 +48,8 @@ export interface PublicSidebarProps {
   isAuthenticated?: boolean;
   showKinderen?: boolean;
   showGroepen?: boolean;
+  /** Sprint 63 — Toont alleen wanneer tenant ≥1 publiek programma heeft. */
+  showProgrammas?: boolean;
   unreadCount?: number;
   messagesUnread?: number;
   /** Tenant-defined pages, already filtered for visibility. */
@@ -97,26 +100,33 @@ function buildSections(
   isAuthed: boolean,
   showKinderen: boolean,
   showGroepen: boolean,
+  showProgrammas: boolean,
   unreadCount: number,
   messagesUnread: number,
   customPages: CustomPageNode[],
 ): NavSection[] {
-  const general: NavSection = {
-    heading: "Algemeen",
-    items: [
-      { key: "home", label: "Home", href: `/t/${slug}`, icon: Home },
-      { key: "nieuws", label: "Nieuws", href: `/t/${slug}/nieuws`, icon: Newspaper },
-      { key: "agenda", label: "Agenda", href: `/t/${slug}/schedule`, icon: CalendarDays },
-      { key: "feed", label: "Feed", href: `/t/${slug}/feed`, icon: Rss },
-      { key: "proefles", label: "Proefles", href: `/t/${slug}/proefles`, icon: CalendarPlus },
-      {
-        key: "inschrijven",
-        label: "Inschrijven",
-        href: `/t/${slug}/inschrijven`,
-        icon: ClipboardList,
-      },
-    ],
-  };
+  const generalItems: NavItem[] = [
+    { key: "home", label: "Home", href: `/t/${slug}`, icon: Home },
+    { key: "nieuws", label: "Nieuws", href: `/t/${slug}/nieuws`, icon: Newspaper },
+    { key: "agenda", label: "Agenda", href: `/t/${slug}/schedule`, icon: CalendarDays },
+    { key: "feed", label: "Feed", href: `/t/${slug}/feed`, icon: Rss },
+    { key: "proefles", label: "Proefles", href: `/t/${slug}/proefles`, icon: CalendarPlus },
+  ];
+  if (showProgrammas) {
+    generalItems.push({
+      key: "programmas",
+      label: "Programma's",
+      href: `/t/${slug}/programmas`,
+      icon: Layers,
+    });
+  }
+  generalItems.push({
+    key: "inschrijven",
+    label: "Inschrijven",
+    href: `/t/${slug}/inschrijven`,
+    icon: ClipboardList,
+  });
+  const general: NavSection = { heading: "Algemeen", items: generalItems };
 
   const sections: NavSection[] = [general];
 
@@ -198,6 +208,7 @@ export function PublicSidebar({
   isAuthenticated,
   showKinderen,
   showGroepen,
+  showProgrammas,
   unreadCount = 0,
   messagesUnread = 0,
   customPages = [],
@@ -210,6 +221,7 @@ export function PublicSidebar({
     !!isAuthenticated,
     !!showKinderen,
     !!showGroepen,
+    !!showProgrammas,
     unreadCount,
     messagesUnread,
     customPages,

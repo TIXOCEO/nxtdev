@@ -21,6 +21,8 @@ export interface PublicHeaderProps {
   isAuthenticated?: boolean;
   showKinderen?: boolean;
   showGroepen?: boolean;
+  /** Sprint 63 — Toont alleen wanneer tenant ≥1 publiek programma heeft. */
+  showProgrammas?: boolean;
   /** Sprint 14: precomputed by the shell so we don't double-query. */
   unreadCount?: number;
   /** Sprint 15: forwarded to the mobile drawer. */
@@ -37,6 +39,7 @@ export async function PublicHeader({
   isAuthenticated,
   showKinderen,
   showGroepen,
+  showProgrammas,
   unreadCount,
   customPages,
   customActivePath,
@@ -84,6 +87,7 @@ export async function PublicHeader({
         isAuthenticated={isAuthenticated}
         showKinderen={showKinderen}
         showGroepen={showGroepen}
+        showProgrammas={showProgrammas}
         unreadCount={unread}
         customPages={customPages}
         customActivePath={customActivePath}

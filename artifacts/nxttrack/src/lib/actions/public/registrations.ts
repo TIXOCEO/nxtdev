@@ -421,6 +421,26 @@ export async function submitPublicRegistration(
   }
 
   const admin = createAdminClient();
+
+  // Sprint 63 — Validate program-deeplink: programma moet bestaan
+  // binnen deze tenant én publiek zijn (visibility='public' + slug).
+  // De RPC heeft hetzelfde defense-in-depth-check, maar door hier
+  // expliciet te falen krijgt de gebruiker een nette foutmelding ipv
+  // een ruwe RPC-exception.
+  if (v.program_id) {
+    const { data: progRow, error: progErr } = await admin
+      .from("programs")
+      .select("id")
+      .eq("id", v.program_id)
+      .eq("tenant_id", tenant.id)
+      .eq("visibility", "public")
+      .not("public_slug", "is", null)
+      .maybeSingle();
+    if (progErr || !progRow) {
+      return fail("Het gekozen programma is niet (meer) beschikbaar.");
+    }
+  }
+
   const fullName = `${v.first_name.trim()} ${v.last_name.trim()}`.trim();
   const status = ACCOUNT_TYPE_STATUS[v.account_type];
 
@@ -461,6 +481,8 @@ export async function submitPublicRegistration(
       p_status: status,
       p_role: ACCOUNT_TYPE_TO_ROLE[v.account_type],
       p_children: childrenPayload,
+      // Sprint 63 — optionele program-deeplink (al gevalideerd hierboven).
+      p_program_id: v.program_id ?? null,
     },
   );
 

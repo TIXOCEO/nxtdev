@@ -17,6 +17,7 @@ import {
   buildPageTree,
   type CustomPageNode,
 } from "@/lib/db/custom-pages";
+import { countPublicMarketplacePrograms } from "@/lib/db/programs-public";
 import { PublicSidebar, type PublicNavKey } from "./public-sidebar";
 import { SocialBar } from "./social-bar";
 import { getMyMember, getMessagesUnreadCount } from "@/lib/db/messages";
@@ -90,11 +91,16 @@ export async function PublicTenantShell({
   }
 
   // Resolve themes for both modes so the toggle works without a refetch.
-  const [lightTheme, darkTheme, customRows] = await Promise.all([
+  // Sprint 63 — `publicProgramCount` bepaalt of de "Programma's"-link in
+  // de sidebar/header verschijnt; voor Houtrust (0 publieke programma's)
+  // blijft de nav dus identiek aan vóór deze sprint.
+  const [lightTheme, darkTheme, customRows, publicProgramCount] = await Promise.all([
     resolveActiveTheme(tenant.id, user?.id ?? null, "light"),
     resolveActiveTheme(tenant.id, user?.id ?? null, "dark"),
     listEnabledCustomPages(tenant.id),
+    countPublicMarketplacePrograms(tenant.id),
   ]);
+  const showProgrammas = publicProgramCount > 0;
 
   // Custom pages: hide auth-required pages when not logged in.
   const visibleCustomRows = customRows.filter((p) =>
@@ -138,6 +144,7 @@ export async function PublicTenantShell({
               isAuthenticated={!!user}
               showKinderen={showKinderen}
               showGroepen={showGroepen}
+              showProgrammas={showProgrammas}
               unreadCount={unreadCount}
               messagesUnread={messagesUnread}
               customPages={customTree}
@@ -153,6 +160,7 @@ export async function PublicTenantShell({
               isAuthenticated={!!user}
               showKinderen={showKinderen}
               showGroepen={showGroepen}
+              showProgrammas={showProgrammas}
               unreadCount={unreadCount}
               messagesUnread={messagesUnread}
               customPages={customTree}

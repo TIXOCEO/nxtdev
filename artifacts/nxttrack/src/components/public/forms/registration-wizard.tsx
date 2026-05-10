@@ -78,11 +78,20 @@ const DEFAULTS = (slug: string): FormValues => ({
   agreed_terms: false,
 });
 
+export interface RegistrationWizardProgramRef {
+  id: string;
+  name: string;
+  marketingTitle?: string | null;
+  ctaLabel?: string | null;
+}
+
 export interface RegistrationWizardProps {
   tenantSlug: string;
   tenantName: string;
   accentColor?: string | null;
   allowStaffRegistration: boolean;
+  /** Sprint 63 — Optioneel: programma vooraf gekozen via ?program=<slug>. */
+  program?: RegistrationWizardProgramRef | null;
 }
 
 export function RegistrationWizard({
@@ -90,6 +99,7 @@ export function RegistrationWizard({
   tenantName,
   accentColor,
   allowStaffRegistration,
+  program,
 }: RegistrationWizardProps) {
   const accent =
     accentColor && /^#[0-9a-fA-F]{6}$/.test(accentColor)
@@ -189,6 +199,7 @@ export function RegistrationWizard({
               : [],
           extra_details: values.extra_details || null,
           agreed_terms: true as const,
+          program_id: program?.id ?? null,
         };
         const res = await submitPublicRegistration(payload);
         if (!res.ok) {
@@ -225,6 +236,26 @@ export function RegistrationWizard({
 
   return (
     <Wizard>
+      {program && (
+        <div
+          className="mb-3 rounded-[var(--radius-nxt-lg)] border px-4 py-3 text-sm"
+          style={{
+            borderColor: "color-mix(in srgb, var(--tenant-accent) 35%, var(--surface-border))",
+            backgroundColor: "color-mix(in srgb, var(--tenant-accent) 8%, transparent)",
+            color: "var(--text-primary)",
+          }}
+          data-testid="registration-program-banner"
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
+            Gekozen programma
+          </p>
+          <p className="mt-0.5 font-semibold">{program.marketingTitle || program.name}</p>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
+            Je inschrijving wordt automatisch gekoppeld aan dit programma.
+          </p>
+        </div>
+      )}
+
       <WizardProgress steps={steps} current={step} accentColor={accent} />
 
       <form

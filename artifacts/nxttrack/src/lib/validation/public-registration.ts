@@ -344,6 +344,14 @@ export const publicOnboardingSchema = z
     children: z.array(publicChildEntrySchema).default([]),
     extra_details: extraDetails,
     agreed_terms: agreedTerms,
+    // Sprint 63 — optionele program-deeplink. Als gezet wordt het
+    // gekozen programma als intentie op de nieuwe member opgeslagen
+    // (kinderen erven hetzelfde programma). Server-laag valideert
+    // tenant + visibility=public; defense-in-depth in RPC.
+    program_id: z
+      .union([z.string().uuid(), z.literal(""), z.null()])
+      .optional()
+      .transform((v) => (v && v !== "" ? v : null)),
   })
   .superRefine((v, ctx) => {
     if (v.account_type === "adult_athlete") {
