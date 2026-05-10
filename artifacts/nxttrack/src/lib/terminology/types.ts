@@ -68,6 +68,15 @@ export interface Terminology {
   progress_module_plural: string;
   capacity_resource_singular: string;
   capacity_resource_plural: string;
+
+  // ── Sprint 60 — Programs MVP ──────────────────────────────────────────
+  programs_page_description: string;
+  programs_marketplace_title: string;
+  programs_marketplace_intro: string;
+  programs_new_button: string;
+  program_assignment_lead_label: string;
+  membership_plan_singular: string;
+  membership_plan_plural: string;
 }
 
 export type TerminologyKey = keyof Terminology;

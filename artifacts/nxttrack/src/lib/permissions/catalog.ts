@@ -130,6 +130,22 @@ export const PERMISSION_CATALOG: PermissionGroup[] = [
     ],
   },
   {
+    id: "programs",
+    label: "Programma's",
+    description: "Wie mag programma's (planning-laag boven groepen) beheren.",
+    permissions: [
+      { key: "programs.read", label: "Programma's bekijken" },
+      { key: "programs.write", label: "Programma's aanmaken / bewerken" },
+      { key: "programs.publish", label: "Programma publiceren (zichtbaarheid op publiek)" },
+      { key: "programs.assign_instructors", label: "Standaard-instructeurs toewijzen aan programma" },
+      { key: "programs.manage_resources", label: "Standaard-resources koppelen aan programma" },
+      { key: "programs.manage_capacity", label: "Capaciteit-defaults op programma beheren" },
+      { key: "programs.override_capacity", label: "Capaciteit op groep/sessie overschrijven" },
+      { key: "programs.link_membership_plan", label: "Plannen koppelen aan programma" },
+      { key: "programs.view_capacity_dashboard", label: "Capaciteit-dashboard bekijken" },
+    ],
+  },
+  {
     id: "roles",
     label: "Rollen & Permissies",
     description: "Geef alleen aan vertrouwde personen — ze kunnen rechten herverdelen.",

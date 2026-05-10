@@ -57,6 +57,14 @@ export const TerminologySchema: z.ZodType<Partial<Terminology>> = z.object({
   progress_module_plural:      NonEmpty.optional(),
   capacity_resource_singular:  NonEmpty.optional(),
   capacity_resource_plural:    NonEmpty.optional(),
+
+  programs_page_description:     NonEmpty.optional(),
+  programs_marketplace_title:    NonEmpty.optional(),
+  programs_marketplace_intro:    NonEmpty.optional(),
+  programs_new_button:           NonEmpty.optional(),
+  program_assignment_lead_label: NonEmpty.optional(),
+  membership_plan_singular:      NonEmpty.optional(),
+  membership_plan_plural:        NonEmpty.optional(),
 });
 
 /**

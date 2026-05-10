@@ -56,4 +56,12 @@ export const DEFAULT_TERMINOLOGY: Terminology = {
   progress_module_plural: "Voortgangsmodules",
   capacity_resource_singular: "Capaciteit",
   capacity_resource_plural: "Capaciteiten",
+
+  programs_page_description: "Beheer programma's en publieke zichtbaarheid.",
+  programs_marketplace_title: "Ons aanbod",
+  programs_marketplace_intro: "Bekijk ons volledige aanbod.",
+  programs_new_button: "Nieuw programma",
+  program_assignment_lead_label: "Hoofdbegeleider",
+  membership_plan_singular: "Plan",
+  membership_plan_plural: "Plannen",
 };

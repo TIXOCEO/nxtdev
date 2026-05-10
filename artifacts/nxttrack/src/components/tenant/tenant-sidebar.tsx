@@ -91,7 +91,8 @@ function buildNavGroups(t: Terminology): NavGroup[] { return [
       { label: t.instructor_plural,   icon: Users,         href: "/tenant/instructeurs" },
       { label: "Planningsconflicten", icon: AlertTriangle, href: "/tenant/planning/conflicten" },
       { label: "Onbemande sessies",   icon: Bell,          href: "/tenant/planning/onbemand" },
-      { label: t.program_plural,      icon: CreditCard,    href: "/tenant/memberships" },
+      { label: t.program_plural,      icon: CreditCard,    href: "/tenant/programmas" },
+      { label: t.membership_plan_plural, icon: CreditCard, href: "/tenant/memberships" },
     ],
   },
   {

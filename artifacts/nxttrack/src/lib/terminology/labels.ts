@@ -50,6 +50,14 @@ export const TERMINOLOGY_KEY_LABELS: Record<TerminologyKey, string> = {
   progress_module_plural:      "Voortgangsmodules (meervoud)",
   capacity_resource_singular:  "Capaciteit / locatie (enkelvoud)",
   capacity_resource_plural:    "Capaciteiten / locaties (meervoud)",
+
+  programs_page_description:     "Programma's-pagina beschrijving",
+  programs_marketplace_title:    "Programma's — marketplace titel",
+  programs_marketplace_intro:    "Programma's — marketplace intro",
+  programs_new_button:           "Programma's — knop 'nieuw programma'",
+  program_assignment_lead_label: "Programma — label voor hoofdrol-toewijzing",
+  membership_plan_singular:      "Plan / tarief (enkelvoud)",
+  membership_plan_plural:        "Plannen / tarieven (meervoud)",
 };
 
 export const TERMINOLOGY_KEYS = Object.keys(TERMINOLOGY_KEY_LABELS) as TerminologyKey[];
