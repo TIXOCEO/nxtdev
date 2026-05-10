@@ -426,11 +426,13 @@ export async function submitPublicRegistration(
   // binnen deze tenant én publiek zijn (visibility='public' + slug).
   // De RPC heeft hetzelfde defense-in-depth-check, maar door hier
   // expliciet te falen krijgt de gebruiker een nette foutmelding ipv
-  // een ruwe RPC-exception.
+  // een ruwe RPC-exception. Sprint 64 — we lezen ook `public_slug`
+  // om de intake-cascade hieronder te kunnen voeden.
+  let programPublicSlug: string | null = null;
   if (v.program_id) {
     const { data: progRow, error: progErr } = await admin
       .from("programs")
-      .select("id")
+      .select("id, public_slug")
       .eq("id", v.program_id)
       .eq("tenant_id", tenant.id)
       .eq("visibility", "public")
@@ -439,10 +441,101 @@ export async function submitPublicRegistration(
     if (progErr || !progRow) {
       return fail("Het gekozen programma is niet (meer) beschikbaar.");
     }
+    programPublicSlug = (progRow.public_slug as string | null) ?? null;
   }
 
   const fullName = `${v.first_name.trim()} ${v.last_name.trim()}`.trim();
   const status = ACCOUNT_TYPE_STATUS[v.account_type];
+
+  // Sprint 64 — Intake-routing-cascade voor parent/adult_athlete-aanmeldingen
+  // (wizard). Voor trainer/staff is wachtlijst niet zinvol → altijd registration.
+  // Cascade: `intake_overrides_by_program[public_slug]`
+  //   → `intake_overrides_by_target[target]`
+  //   → `intake_default`.
+  // Bij parent met koppelcode-children blijven we sowieso in registration-modus:
+  // de child is een bestaand member — die kun je niet op een wachtlijst plaatsen.
+  let intakeMode: "registration" | "waitlist" = "registration";
+  const isWaitlistEligibleAccount =
+    v.account_type === "parent" || v.account_type === "adult_athlete";
+  const hasLinkModeChild =
+    v.account_type === "parent" &&
+    v.children.some((c) => c.mode === "link");
+  if (isWaitlistEligibleAccount && !hasLinkModeChild) {
+    const settings = tenant.settings_json;
+    const def = settings.intake_default;
+    if (def === "waitlist") intakeMode = "waitlist";
+    const targetKey = v.account_type === "parent" ? "child" : "self";
+    const tOver = settings.intake_overrides_by_target;
+    if (tOver && typeof tOver === "object" && !Array.isArray(tOver)) {
+      const o = (tOver as Record<string, unknown>)[targetKey];
+      if (o === "waitlist") intakeMode = "waitlist";
+      else if (o === "registration") intakeMode = "registration";
+    }
+    if (programPublicSlug) {
+      const pOver = settings.intake_overrides_by_program;
+      if (pOver && typeof pOver === "object" && !Array.isArray(pOver)) {
+        const o = (pOver as Record<string, unknown>)[programPublicSlug];
+        if (o === "waitlist") intakeMode = "waitlist";
+        else if (o === "registration") intakeMode = "registration";
+      }
+    }
+  }
+
+  // Sprint 64 — Bij wachtlijst-modus omleiden naar `waitlist_entries`. We
+  // schrijven géén `members`-rij en sturen géén invite — pas wanneer de
+  // tenant-admin een aanbod doet (waitlist_offers) wordt er een echte member
+  // aangemaakt. `program_id` wordt mee-opgeslagen wanneer beschikbaar.
+  if (intakeMode === "waitlist") {
+    const childrenForJson =
+      v.account_type === "parent"
+        ? v.children
+            .filter((c) => c.mode === "new")
+            .map((c) => ({
+              full_name: `${c.first_name.trim()} ${c.last_name.trim()}`.trim(),
+              first_name: c.first_name.trim(),
+              last_name: c.last_name.trim(),
+              date_of_birth: c.birth_date,
+              player_type: c.player_type ?? null,
+            }))
+        : [];
+    const firstChildName =
+      v.account_type === "parent" && childrenForJson[0]
+        ? (childrenForJson[0].full_name as string)
+        : null;
+    const { data: wlRow, error: wlErr } = await admin
+      .from("waitlist_entries")
+      .insert({
+        tenant_id: tenant.id,
+        program_id: v.program_id ?? null,
+        registration_target: v.account_type === "parent" ? "child" : "self",
+        parent_name: fullName,
+        parent_email: v.email,
+        parent_phone: v.phone,
+        date_of_birth:
+          v.account_type === "adult_athlete" ? v.birth_date : null,
+        player_type:
+          v.account_type === "adult_athlete" ? v.player_type ?? null : null,
+        child_name: firstChildName,
+        athletes_json: childrenForJson,
+        agreed_terms: true,
+        status: "waiting",
+        source: "public_form",
+      })
+      .select("id")
+      .single();
+    if (wlErr || !wlRow) {
+      return fail(
+        wlErr?.message ?? "Aanmelding kon niet worden opgeslagen.",
+      );
+    }
+    return {
+      ok: true,
+      data: {
+        member_id: wlRow.id as string,
+        account_type: v.account_type,
+      },
+    };
+  }
 
   // 1. Atomic write (parent + children + roles + links) via Postgres-RPC.
   //    De RPC `public.create_public_registration` voert alles binnen één

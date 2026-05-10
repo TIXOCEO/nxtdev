@@ -17,16 +17,35 @@ export interface IntakeSettingsFormProps {
   initial: {
     intake_default: Mode;
     overrides: Record<string, Mode>;
+    /** Sprint 64 — Sleutel = `programs.public_slug`. */
+    programOverrides: Record<string, Mode>;
   };
+  /** Sprint 64 — Alleen publieke programma's (deeplink-relevant). */
+  programs: Array<{
+    public_slug: string;
+    name: string;
+    marketing_title: string | null;
+  }>;
 }
 
-export function IntakeSettingsForm({ tenantId, initial }: IntakeSettingsFormProps) {
+export function IntakeSettingsForm({
+  tenantId,
+  initial,
+  programs,
+}: IntakeSettingsFormProps) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [def, setDef] = useState<Mode>(initial.intake_default);
   const [over, setOver] = useState<Record<string, OverrideMode>>(() => {
     const out: Record<string, OverrideMode> = {};
     for (const t of TARGETS) out[t.key] = initial.overrides[t.key] ?? "default";
+    return out;
+  });
+  const [progOver, setProgOver] = useState<Record<string, OverrideMode>>(() => {
+    const out: Record<string, OverrideMode> = {};
+    for (const p of programs) {
+      out[p.public_slug] = initial.programOverrides[p.public_slug] ?? "default";
+    }
     return out;
   });
   const [msg, setMsg] = useState<string | null>(null);
@@ -37,14 +56,19 @@ export function IntakeSettingsForm({ tenantId, initial }: IntakeSettingsFormProp
     setMsg(null);
     setErr(null);
     start(async () => {
-      const overridesPayload: Record<string, OverrideMode> = {};
+      const targetPayload: Record<string, OverrideMode> = {};
       for (const [k, v] of Object.entries(over)) {
-        if (v === "registration" || v === "waitlist") overridesPayload[k] = v;
+        if (v === "registration" || v === "waitlist") targetPayload[k] = v;
+      }
+      const programPayload: Record<string, OverrideMode> = {};
+      for (const [k, v] of Object.entries(progOver)) {
+        if (v === "registration" || v === "waitlist") programPayload[k] = v;
       }
       const res = await updateIntakeSettings({
         tenant_id: tenantId,
         intake_default: def,
-        intake_overrides_by_target: overridesPayload,
+        intake_overrides_by_target: targetPayload,
+        intake_overrides_by_program: programPayload,
       });
       if (!res.ok) {
         setErr(res.error);
@@ -138,6 +162,73 @@ export function IntakeSettingsForm({ tenantId, initial }: IntakeSettingsFormProp
             </div>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+          Per programma overrides (optioneel)
+        </legend>
+        <p className="text-xs" style={labelStyle}>
+          Wint van de doelgroep-uitzondering wanneer een aanmelding via een
+          publieke programma-link binnenkomt (?program=&lt;slug&gt;). Alleen
+          publieke programma&apos;s zijn hieronder zichtbaar.
+        </p>
+        {programs.length === 0 ? (
+          <p
+            className="rounded-xl border p-3 text-xs"
+            style={{
+              ...cardStyle,
+              color: "var(--text-secondary)",
+            }}
+          >
+            Er zijn nog geen publieke programma&apos;s voor deze vereniging.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {programs.map((p) => (
+              <div
+                key={p.public_slug}
+                className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
+                style={cardStyle}
+              >
+                <div className="min-w-0">
+                  <p
+                    className="truncate text-sm font-medium"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {p.marketing_title || p.name}
+                  </p>
+                  <p
+                    className="truncate text-[11px]"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    /programmas/{p.public_slug}
+                  </p>
+                </div>
+                <select
+                  value={progOver[p.public_slug] ?? "default"}
+                  onChange={(e) =>
+                    setProgOver((s) => ({
+                      ...s,
+                      [p.public_slug]: e.target.value as OverrideMode,
+                    }))
+                  }
+                  disabled={pending}
+                  className="h-9 rounded-xl border bg-transparent px-2 text-sm"
+                  style={{
+                    borderColor: "var(--surface-border)",
+                    color: "var(--text-primary)",
+                    backgroundColor: "var(--surface-main)",
+                  }}
+                >
+                  <option value="default">Volg standaard / doelgroep</option>
+                  <option value="registration">Altijd inschrijving</option>
+                  <option value="waitlist">Altijd wachtlijst</option>
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
       </fieldset>
 
       {err && <p className="text-sm text-red-600">{err}</p>}

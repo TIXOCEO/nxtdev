@@ -17,6 +17,12 @@ const inputSchema = z.object({
   intake_overrides_by_target: z
     .record(z.string(), z.enum(["registration", "waitlist", "default"]))
     .default({}),
+  // Sprint 64 — Optionele per-programma overrides. Sleutel = `programs.public_slug`
+  // (niet program_id) zodat de waarde stabiel blijft als de admin de URL kent.
+  // Een 'default'-waarde verwijdert de override.
+  intake_overrides_by_program: z
+    .record(z.string(), z.enum(["registration", "waitlist", "default"]))
+    .default({}),
 });
 
 export type UpdateIntakeSettingsInput = z.infer<typeof inputSchema>;
@@ -26,6 +32,10 @@ export type UpdateIntakeSettingsInput = z.infer<typeof inputSchema>;
  * van het publieke aanmeldformulier. Schrijft naar
  * `tenants.settings_json.intake_default` (+ optionele overrides) en
  * laat andere settings ongemoeid.
+ *
+ * Sprint 64 — Uitgebreid met `intake_overrides_by_program` (sleutel =
+ * `programs.public_slug`). De cascade in de publieke registratie-actie is
+ * `program → target → default`.
  */
 export async function updateIntakeSettings(
   input: UpdateIntakeSettingsInput,
@@ -54,15 +64,27 @@ export async function updateIntakeSettings(
   const next: Record<string, unknown> = { ...current };
   next.intake_default = parsed.data.intake_default;
 
-  // Strip 'default' / lege waarden uit de overrides-map.
-  const overrides: Record<string, "registration" | "waitlist"> = {};
+  // Strip 'default' / lege waarden uit beide override-maps. Een lege map
+  // verwijderen we volledig zodat oude rijen die ooit met overrides werden
+  // gevuld weer naar "geen overrides" terug kunnen.
+  const targetOverrides: Record<string, "registration" | "waitlist"> = {};
   for (const [k, v] of Object.entries(parsed.data.intake_overrides_by_target)) {
-    if (v === "registration" || v === "waitlist") overrides[k] = v;
+    if (v === "registration" || v === "waitlist") targetOverrides[k] = v;
   }
-  if (Object.keys(overrides).length === 0) {
+  if (Object.keys(targetOverrides).length === 0) {
     delete next.intake_overrides_by_target;
   } else {
-    next.intake_overrides_by_target = overrides;
+    next.intake_overrides_by_target = targetOverrides;
+  }
+
+  const programOverrides: Record<string, "registration" | "waitlist"> = {};
+  for (const [k, v] of Object.entries(parsed.data.intake_overrides_by_program)) {
+    if (v === "registration" || v === "waitlist") programOverrides[k] = v;
+  }
+  if (Object.keys(programOverrides).length === 0) {
+    delete next.intake_overrides_by_program;
+  } else {
+    next.intake_overrides_by_program = programOverrides;
   }
 
   const { error: updErr } = await supabase
@@ -77,7 +99,8 @@ export async function updateIntakeSettings(
     action: "tenant_intake.update",
     meta: {
       intake_default: parsed.data.intake_default,
-      override_count: Object.keys(overrides).length,
+      override_count: Object.keys(targetOverrides).length,
+      program_override_count: Object.keys(programOverrides).length,
     },
   });
 

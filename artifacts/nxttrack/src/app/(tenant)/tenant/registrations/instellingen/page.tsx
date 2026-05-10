@@ -9,6 +9,14 @@ export const dynamic = "force-dynamic";
 interface IntakeSettings {
   intake_default: "registration" | "waitlist";
   overrides: Record<string, "registration" | "waitlist">;
+  /** Sprint 64 — Sleutel = `programs.public_slug`. */
+  programOverrides: Record<string, "registration" | "waitlist">;
+}
+
+interface PublicProgramOption {
+  public_slug: string;
+  name: string;
+  marketing_title: string | null;
 }
 
 async function readIntakeSettings(tenantId: string): Promise<IntakeSettings> {
@@ -20,14 +28,50 @@ async function readIntakeSettings(tenantId: string): Promise<IntakeSettings> {
     .maybeSingle();
   const s = (data?.settings_json ?? {}) as Record<string, unknown>;
   const def = s.intake_default === "waitlist" ? "waitlist" : "registration";
-  const rawOverrides = s.intake_overrides_by_target;
+
+  const rawTargets = s.intake_overrides_by_target;
   const overrides: Record<string, "registration" | "waitlist"> = {};
-  if (rawOverrides && typeof rawOverrides === "object" && !Array.isArray(rawOverrides)) {
-    for (const [k, v] of Object.entries(rawOverrides as Record<string, unknown>)) {
+  if (rawTargets && typeof rawTargets === "object" && !Array.isArray(rawTargets)) {
+    for (const [k, v] of Object.entries(rawTargets as Record<string, unknown>)) {
       if (v === "registration" || v === "waitlist") overrides[k] = v;
     }
   }
-  return { intake_default: def, overrides };
+
+  const rawPrograms = s.intake_overrides_by_program;
+  const programOverrides: Record<string, "registration" | "waitlist"> = {};
+  if (rawPrograms && typeof rawPrograms === "object" && !Array.isArray(rawPrograms)) {
+    for (const [k, v] of Object.entries(rawPrograms as Record<string, unknown>)) {
+      if (v === "registration" || v === "waitlist") programOverrides[k] = v;
+    }
+  }
+
+  return { intake_default: def, overrides, programOverrides };
+}
+
+/**
+ * Sprint 64 — Alleen publieke programs (visibility='public' + public_slug not null)
+ * zijn relevant voor de override-cascade, want alleen die programma's komen
+ * via een `?program=<public_slug>`-deeplink in de publieke wizard binnen.
+ * Internal/archived programma's worden uitgesloten zodat het paneel niet
+ * vervuilt met dead-weight rijen.
+ */
+async function listPublicProgramOptions(
+  tenantId: string,
+): Promise<PublicProgramOption[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("programs")
+    .select("public_slug, name, marketing_title")
+    .eq("tenant_id", tenantId)
+    .eq("visibility", "public")
+    .not("public_slug", "is", null)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  return (data ?? []).map((r) => ({
+    public_slug: r.public_slug as string,
+    name: r.name as string,
+    marketing_title: (r.marketing_title as string | null) ?? null,
+  }));
 }
 
 export default async function IntakeSettingsPage() {
@@ -35,7 +79,10 @@ export default async function IntakeSettingsPage() {
   const result = await getActiveTenant(requested);
   if (result.kind !== "ok") return null;
 
-  const settings = await readIntakeSettings(result.tenant.id);
+  const [settings, programs] = await Promise.all([
+    readIntakeSettings(result.tenant.id),
+    listPublicProgramOptions(result.tenant.id),
+  ]);
 
   return (
     <>
@@ -50,7 +97,11 @@ export default async function IntakeSettingsPage() {
           borderColor: "var(--surface-border)",
         }}
       >
-        <IntakeSettingsForm tenantId={result.tenant.id} initial={settings} />
+        <IntakeSettingsForm
+          tenantId={result.tenant.id}
+          initial={settings}
+          programs={programs}
+        />
       </div>
     </>
   );
