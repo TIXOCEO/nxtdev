@@ -100,9 +100,10 @@ begin
 
   return query
   with candidate_groups as (
-    -- Max 50 kandidaten. Wanneer submission.program_id gezet is →
-    -- alleen groepen die aan dat program hangen (g.program_id of via
-    -- program_groups). Anders alle tenant-groepen.
+    -- Alle in-scope tenant-groepen. Wanneer submission.program_id gezet
+    -- is → alleen groepen die aan dat program hangen (g.program_id of
+    -- via program_groups). Limit gebeurt NA scoring, zodat de top-N
+    -- echte top-scoring groepen zijn (geen willekeurige sample).
     select distinct g.id as g_id, g.name as g_name, g.program_id as g_program_id
     from public.groups g
     where g.tenant_id = v_tenant
@@ -116,7 +117,6 @@ begin
             and pg.program_id = v_program
         )
       )
-    limit 50
   ),
   group_capacity as (
     -- Minimaal aantal vrije plekken over alle toekomstige sessies
@@ -258,7 +258,8 @@ begin
       'level', 'niveau-data nog niet beschikbaar'
     ) as rationale_json
   from scored s
-  order by total_score desc nulls last, s.free_seats desc nulls last;
+  order by total_score desc nulls last, s.free_seats desc nulls last
+  limit 50;
 end $$;
 
 revoke all on function public.score_placement_candidates(uuid) from public;
