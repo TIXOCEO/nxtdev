@@ -62,3 +62,38 @@ export function buildAnswerRow(args: {
   }
   return row;
 }
+
+/**
+ * Lookup-helper voor een enkele veld-waarde uit `submission_answers`.
+ *
+ * Geeft de raw value terug uit de juiste typed-kolom (text/number/date/
+ * bool/json) of `null` als het veld niet bestaat. Gebruikt service-role
+ * client; caller MOET tenant-context al hebben afgedwongen.
+ */
+export async function getAnswer(
+  submissionId: string,
+  fieldKey: string,
+): Promise<string | number | boolean | unknown | null> {
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("submission_answers")
+    .select("value_text, value_number, value_date, value_bool, value_json")
+    .eq("submission_id", submissionId)
+    .eq("field_key", fieldKey)
+    .maybeSingle();
+  if (error || !data) return null;
+  const r = data as {
+    value_text: string | null;
+    value_number: number | null;
+    value_date: string | null;
+    value_bool: boolean | null;
+    value_json: unknown | null;
+  };
+  if (r.value_text !== null) return r.value_text;
+  if (r.value_number !== null) return r.value_number;
+  if (r.value_date !== null) return r.value_date;
+  if (r.value_bool !== null) return r.value_bool;
+  if (r.value_json !== null) return r.value_json;
+  return null;
+}

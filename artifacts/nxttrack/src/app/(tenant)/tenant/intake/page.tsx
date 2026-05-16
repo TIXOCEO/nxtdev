@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { PageHeading } from "@/components/ui/page-heading";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
-import { requireTenantAdmin } from "@/lib/auth/require-tenant-admin";
+import { requireAuth } from "@/lib/auth/require-auth";
+import { getMemberships } from "@/lib/auth/get-memberships";
+import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
+import { hasTenantAccess } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -44,7 +47,17 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function TenantIntakePage() {
   const tenantId = await readActiveTenantCookie();
   if (!tenantId) redirect("/login");
-  await requireTenantAdmin(tenantId);
+  // Sprint 65 — tenant-admin én tenant-staff mogen het intake-overzicht
+  // zien (read-only MVP). `hasTenantAccess` dekt platform-admin, legacy
+  // tenant_admin-enum, admin-role én reguliere tenant-membership.
+  const user = await requireAuth();
+  const [memberships, adminRoleTenants] = await Promise.all([
+    getMemberships(user.id),
+    getAdminRoleTenantIds(user.id),
+  ]);
+  if (!hasTenantAccess(memberships, tenantId, adminRoleTenants)) {
+    redirect("/");
+  }
 
   const admin = createAdminClient();
   const { data, error } = await admin

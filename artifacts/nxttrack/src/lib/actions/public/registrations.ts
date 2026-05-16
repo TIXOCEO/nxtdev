@@ -150,6 +150,48 @@ export async function submitTryoutRegistration(
   }
   // Fire-and-forget notificatie naar platform admins.
   void dispatchPlatformNotice(tenantId, created.id);
+
+  // Sprint 65 — Compat dual-write naar `intake_submissions` zodat het
+  // nieuwe intake-overzicht één canonieke bron heeft, ook voor tenants
+  // die nog op de legacy `TryoutForm` zitten (flag default OFF).
+  // Best-effort: een gefaalde mirror mag de tryout-submit NIET breken.
+  void (async () => {
+    try {
+      const { data: subRow } = await admin
+        .from("intake_submissions")
+        .insert({
+          tenant_id: tenantId,
+          form_id: null,
+          submission_type: "trial_lesson",
+          status: "submitted",
+          registration_target: v.registration_target,
+          contact_name: v.full_name,
+          contact_email: v.email,
+          contact_phone: v.phone,
+          contact_date_of_birth: v.date_of_birth ?? null,
+          agreed_terms: Boolean(v.agreed_terms),
+          preferences_json: {
+            source: "legacy_tryout_form",
+            child_name: v.child_name ?? null,
+            player_type: v.player_type ?? null,
+            extra_details: v.extra_details ?? null,
+          },
+        })
+        .select("id")
+        .single();
+      if (subRow) {
+        const submissionId = (subRow as { id: string }).id;
+        await admin
+          .from("registrations")
+          .update({ intake_submission_id: submissionId })
+          .eq("id", created.id);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[registrations] intake compat-shim failed:", err);
+    }
+  })();
+
   return { ok: true, data: { id: created.id } };
 }
 

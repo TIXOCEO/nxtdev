@@ -13,6 +13,8 @@ import type {
   IntakeSubmissionPayload,
 } from "@/lib/intake/types";
 import { sendEmail } from "@/lib/email/send-email";
+import { recordAudit } from "@/lib/audit/log";
+import { sendNotification } from "@/lib/notifications/send-notification";
 
 /**
  * Sprint 65 — Server action voor publieke dynamic-intake submissions.
@@ -199,6 +201,38 @@ export async function submitIntake(
       console.error("[intake] send email failed:", e);
     });
   }
+
+  // Audit-event (best-effort, blokkeert nooit).
+  void recordAudit({
+    tenant_id: tenant.id,
+    actor_user_id: "00000000-0000-0000-0000-000000000000",
+    action: "intake.submission.created",
+    meta: {
+      submission_id: submissionId,
+      submission_type: form.submission_type,
+      form_id: isDbForm ? form.id : null,
+      registration_target,
+      has_email: Boolean(contact_email),
+    },
+  });
+
+  // In-app notificatie naar tenant-admins. Idempotent via Sprint 65
+  // dedup-index met source-key `intake_submission_created` +
+  // sourceRef = submission_id. Best-effort.
+  void sendNotification({
+    tenantId: tenant.id,
+    title: "Nieuwe intake-aanvraag",
+    contentText: `${contact_name ?? "Een aanvrager"} heeft een ${form.name} ingediend.`,
+    targets: [{ target_type: "role", target_id: "tenant_admin" }],
+    sendEmail: false,
+    sendPush: false,
+    source: "intake_submission_created",
+    sourceRef: submissionId,
+    createdBy: null,
+  }).catch((e: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error("[intake] send notification failed:", e);
+  });
 
   return { ok: true, data: { submissionId } };
 }
