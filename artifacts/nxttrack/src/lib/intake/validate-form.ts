@@ -41,6 +41,7 @@ const ALLOWED_CANONICAL_TARGETS: ReadonlyArray<string> = [
   "contact_phone",
   "contact_date_of_birth",
   "registration_target",
+  "preferred_level",
 ];
 
 function tryRegex(pattern: string): boolean {

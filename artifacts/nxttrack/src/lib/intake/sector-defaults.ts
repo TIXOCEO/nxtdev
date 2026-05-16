@@ -110,6 +110,7 @@ const SWIMMING_TRYOUT: IntakeFormConfig = {
     ...COMMON_CONTACT_FIELDS,
     field("current_level", "Huidig niveau", "select", {
       help_text: "Optioneel — selecteer indien bekend.",
+      canonical_target: "preferred_level",
       options: [
         { value: "watervrij", label: "Watervrij / nog geen ervaring" },
         { value: "A", label: "Werkt aan zwemdiploma A" },

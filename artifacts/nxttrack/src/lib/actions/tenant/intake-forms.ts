@@ -93,6 +93,7 @@ const fieldSchema = z.object({
       "contact_phone",
       "contact_date_of_birth",
       "registration_target",
+      "preferred_level",
     ])
     .nullable()
     .optional(),

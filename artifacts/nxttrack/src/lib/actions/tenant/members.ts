@@ -563,6 +563,52 @@ export async function updateGroup(
   return { ok: true, data: data as Group };
 }
 
+// Sprint 71 — Inline editor voor groups.level_band (vrij-tekst niveau-label).
+const updateGroupLevelBandSchema = z.object({
+  tenant_id: z.string().uuid(),
+  group_id: z.string().uuid(),
+  level_band: z
+    .union([z.string().trim().max(64), z.null()])
+    .transform((v) => (v == null || v === "" ? null : v)),
+});
+
+export async function updateGroupLevelBand(
+  input: z.infer<typeof updateGroupLevelBandSchema>,
+): Promise<ActionResult<{ group_id: string; level_band: string | null }>> {
+  const parsed = updateGroupLevelBandSchema.safeParse(input);
+  if (!parsed.success)
+    return fail("Invalid input", parsed.error.flatten().fieldErrors);
+
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("groups")
+    .update({ level_band: parsed.data.level_band })
+    .eq("id", parsed.data.group_id)
+    .eq("tenant_id", parsed.data.tenant_id);
+  if (error) return fail(error.message);
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    action: "group.level_band.updated",
+    meta: {
+      group_id: parsed.data.group_id,
+      level_band: parsed.data.level_band,
+    },
+  });
+
+  revalidatePath(`/tenant/groups/${parsed.data.group_id}`);
+  return {
+    ok: true,
+    data: {
+      group_id: parsed.data.group_id,
+      level_band: parsed.data.level_band,
+    },
+  };
+}
+
 const groupMemberSchema = z.object({
   tenant_id: z.string().uuid(),
   group_id: z.string().uuid(),

@@ -120,6 +120,16 @@ export async function submitIntake(
       contact_dob = v;
     if (f.canonical_target === "registration_target" && typeof v === "string")
       registration_target = v === "child" ? "child" : "self";
+    // Sprint 71 — kopieer canonical-target preferred_level naar een
+    // stabiele key in preferences_json zodat score_placement_candidates
+    // niet hoeft te raden welk veld het niveau bevat.
+    if (
+      f.canonical_target === "preferred_level" &&
+      typeof v === "string" &&
+      v.trim() !== ""
+    ) {
+      cleaned["preferred_level"] = v;
+    }
   }
 
   const admin = createAdminClient();

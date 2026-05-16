@@ -16,6 +16,7 @@ import { AddMemberPopover } from "../_add-member-popover";
 import { GroupMemberRow } from "./_member-row";
 import { CsvImport } from "./_csv-import";
 import { MinInstructorsField } from "@/components/tenant/min-instructors-field";
+import { LevelBandField } from "@/components/tenant/level-band-field";
 import { getTenantTerminology } from "@/lib/terminology/resolver";
 
 interface PageProps {
@@ -57,8 +58,12 @@ export default async function GroupDetailPage({
   const detail = await getGroupDetail(id, result.tenant.id);
   if (!detail) notFound();
   const terminology = await getTenantTerminology(result.tenant.id);
-  const groupRow = detail.group as { default_min_instructors?: number | null } & typeof detail.group;
+  const groupRow = detail.group as {
+    default_min_instructors?: number | null;
+    level_band?: string | null;
+  } & typeof detail.group;
   const defaultMinInstructors = groupRow.default_min_instructors ?? null;
+  const levelBand = groupRow.level_band ?? null;
 
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(sp.tab ?? "")
     ? (sp.tab as TabKey)
@@ -217,6 +222,15 @@ export default async function GroupDetailPage({
           label={`Minimum aantal ${terminology.instructor_plural.toLowerCase()} per sessie`}
           helpText="leeg = 1 als fallback"
         />
+        <div className="mt-2">
+          <LevelBandField
+            tenantId={result.tenant.id}
+            groupId={id}
+            initialValue={levelBand}
+            label="Niveau-label"
+            helpText="gebruikt voor plaatsingssuggesties (leeg = geen match-score)"
+          />
+        </div>
       </div>
 
       {/* Add member bar + CSV import */}
