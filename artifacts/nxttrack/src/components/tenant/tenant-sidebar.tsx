@@ -81,6 +81,7 @@ function buildNavGroups(t: Terminology): NavGroup[] { return [
     id: "intake",
     label: "Inschrijvingen",
     items: [
+      { label: "Intake",          icon: ClipboardList, href: "/tenant/intake" },
       { label: "Aanmeldingen",    icon: ClipboardList, href: "/tenant/registrations" },
     ],
   },

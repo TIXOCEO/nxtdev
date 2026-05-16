@@ -24,6 +24,17 @@ ${body}`;
 
 export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
+    key: "intake_submitted",
+    name: "Intake — bevestiging ontvangst",
+    subject: "Bedankt voor je aanvraag bij {{tenant_name}}",
+    content_html: wrap(
+      "Bedankt, {{contact_name}}!",
+      "<p>We hebben je aanvraag (<strong>{{form_name}}</strong>) ontvangen. We nemen zo snel mogelijk contact met je op.</p>",
+    ),
+    content_text:
+      "Bedankt, {{contact_name}}!\n\nWe hebben je aanvraag ({{form_name}}) ontvangen. We nemen zo snel mogelijk contact met je op.\n\n— {{tenant_name}}",
+  },
+  {
     key: "welcome_member",
     name: "Welkom — nieuw lid",
     subject: "Welkom bij {{tenant_name}}, {{member_name}}!",
