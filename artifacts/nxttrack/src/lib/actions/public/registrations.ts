@@ -151,12 +151,21 @@ export async function submitTryoutRegistration(
   // Fire-and-forget notificatie naar platform admins.
   void dispatchPlatformNotice(tenantId, created.id);
 
-  // Sprint 65 — Compat dual-write naar `intake_submissions` zodat het
-  // nieuwe intake-overzicht één canonieke bron heeft, ook voor tenants
-  // die nog op de legacy `TryoutForm` zitten (flag default OFF).
-  // Best-effort: een gefaalde mirror mag de tryout-submit NIET breken.
+  // Sprint 65 — Compat dual-write naar `intake_submissions` ALLEEN
+  // wanneer `tenants.settings_json.dynamic_intake_enabled === true`.
+  // Houtrust-veiligheid: flag default OFF = geen extra DB-writes voor
+  // bestaande tenants. Best-effort: een gefaalde mirror mag de
+  // tryout-submit NIET breken.
   void (async () => {
     try {
+      const { data: tRow } = await admin
+        .from("tenants")
+        .select("settings_json")
+        .eq("id", tenantId)
+        .maybeSingle();
+      const settings = (tRow?.settings_json ?? {}) as Record<string, unknown>;
+      if (settings.dynamic_intake_enabled !== true) return;
+
       const { data: subRow } = await admin
         .from("intake_submissions")
         .insert({

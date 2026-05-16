@@ -17,6 +17,8 @@ export interface TenantShellProps {
   currentVersion?: string | null;
   /** True wanneer de huidige gebruiker de laatste release nog niet als gezien heeft gemarkeerd. */
   currentVersionUnseen?: boolean;
+  /** Sprint 65 — toon de "Intake"-link in de sidebar (alleen als dynamic intake aanstaat). */
+  showIntake?: boolean;
 }
 
 export function TenantShell({
@@ -30,6 +32,7 @@ export function TenantShell({
   tenantDomain,
   currentVersion,
   currentVersionUnseen,
+  showIntake,
 }: TenantShellProps) {
   return (
     <div
@@ -46,6 +49,7 @@ export function TenantShell({
           queryString={queryString}
           currentVersion={currentVersion}
           currentVersionUnseen={currentVersionUnseen}
+          showIntake={showIntake}
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">

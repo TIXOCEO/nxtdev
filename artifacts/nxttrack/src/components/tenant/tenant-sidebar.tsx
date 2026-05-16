@@ -61,7 +61,7 @@ interface NavGroup {
  * van de POC-items (Leden / Groepen / Trainingen / Lidmaatschappen) komen
  * uit het terminology-object; alle andere labels blijven hardcoded.
  */
-function buildNavGroups(t: Terminology): NavGroup[] { return [
+function buildNavGroups(t: Terminology, showIntake: boolean): NavGroup[] { return [
   {
     id: "main",
     items: [
@@ -81,7 +81,11 @@ function buildNavGroups(t: Terminology): NavGroup[] { return [
     id: "intake",
     label: "Inschrijvingen",
     items: [
-      { label: "Intake",          icon: ClipboardList, href: "/tenant/intake" },
+      // Sprint 65 — alleen tonen wanneer dynamic_intake_enabled aanstaat
+      // (Houtrust-veiligheid: flag-off = identieke UX als pre-Sprint 65).
+      ...(showIntake
+        ? [{ label: "Intake", icon: ClipboardList, href: "/tenant/intake" }]
+        : []),
       { label: "Aanmeldingen",    icon: ClipboardList, href: "/tenant/registrations" },
     ],
   },
@@ -148,6 +152,8 @@ export interface TenantSidebarProps {
   currentVersion?: string | null;
   /** True wanneer de huidige gebruiker de laatste release nog niet als gezien heeft gemarkeerd. */
   currentVersionUnseen?: boolean;
+  /** Sprint 65 — toon de "Intake"-link alleen wanneer dynamic intake aanstaat. */
+  showIntake?: boolean;
 }
 
 export function TenantSidebar({
@@ -156,11 +162,12 @@ export function TenantSidebar({
   queryString = "",
   currentVersion,
   currentVersionUnseen,
+  showIntake = false,
 }: TenantSidebarProps) {
   const pathname = usePathname();
   const swatch = primaryColor || "var(--accent)";
   const terminology = useTerminology();
-  const navGroups = buildNavGroups(terminology);
+  const navGroups = buildNavGroups(terminology, showIntake);
 
   // Default: open the group that contains the active path.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {

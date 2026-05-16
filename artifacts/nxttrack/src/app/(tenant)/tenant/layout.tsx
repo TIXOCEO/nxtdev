@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { getLatestPublishedRelease, hasUserSeenRelease } from "@/lib/db/releases";
 import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { TerminologyProvider } from "@/lib/terminology/provider";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,21 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
     return <TenantSelection tenants={result.tenants} />;
   }
 
-  const [latestRelease, terminology] = await Promise.all([
+  const [latestRelease, terminology, tenantSettings] = await Promise.all([
     getLatestPublishedRelease().catch(() => null),
     getTenantTerminology(result.tenant.id),
+    // Sprint 65 — lees settings_json voor dynamic_intake_enabled flag.
+    (async () => {
+      const admin = createAdminClient();
+      const { data } = await admin
+        .from("tenants")
+        .select("settings_json")
+        .eq("id", result.tenant.id)
+        .maybeSingle();
+      return (data?.settings_json ?? {}) as Record<string, unknown>;
+    })().catch(() => ({}) as Record<string, unknown>),
   ]);
+  const dynamicIntakeEnabled = tenantSettings.dynamic_intake_enabled === true;
   const latestVersionUnseen = latestRelease
     ? !(await hasUserSeenRelease(result.user.id, latestRelease.version).catch(() => true))
     : false;
@@ -42,6 +54,7 @@ export default async function TenantAdminLayout({ children }: { children: ReactN
         tenantDomain={result.tenant.domain}
         currentVersion={latestRelease?.version ?? null}
         currentVersionUnseen={latestVersionUnseen}
+        showIntake={dynamicIntakeEnabled}
       >
         {children}
         <Toaster />
