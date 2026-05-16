@@ -270,7 +270,14 @@ export default async function TenantIntakePage({
                   <td className="px-4 py-2">
                     {STATUS_LABEL[r.status] ?? r.status}
                   </td>
-                  <td className="px-4 py-2">{r.contact_name ?? "—"}</td>
+                  <td className="px-4 py-2">
+                    <Link
+                      href={`/tenant/intake/${r.id}`}
+                      className="underline"
+                    >
+                      {r.contact_name ?? "—"}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2">
                     {r.registration_target === "child"
                       ? "Kind"
