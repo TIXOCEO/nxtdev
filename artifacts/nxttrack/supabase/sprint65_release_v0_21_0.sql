@@ -26,8 +26,7 @@ values (
     'voor_admins', jsonb_build_array(
       'Feature-flag tenants.settings_json.dynamic_intake_enabled (boolean, default false) bepaalt of de dynamische renderer aan staat — Houtrust blijft op false.',
       'Nieuwe audit-namespace intake.* (intake.submission.created, intake.submission.status_changed, intake.submission.placed).',
-      'Nieuwe e-mailtemplate-key intake_submitted wordt lazy-geseed op eerste gebruik per tenant.',
-      'Nieuwe terminology-keys: intake_singular, intake_plural en submission_type_* per sector.'
+      'Nieuwe e-mailtemplate-key intake_submitted wordt lazy-geseed op eerste gebruik per tenant.'
     )
   ),
   'published',
