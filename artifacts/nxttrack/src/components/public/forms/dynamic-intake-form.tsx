@@ -27,6 +27,12 @@ export interface DynamicIntakeFormProps {
    * MVP gebruikt de waarde uit `form.submission_type`.
    */
   submissionType?: IntakeSubmissionType;
+  /**
+   * Sprint 66 — Wanneer true wordt de submit-knop disabled en de
+   * server-action niet aangeroepen. Gebruikt door de form-builder als
+   * live preview.
+   */
+  previewMode?: boolean;
 }
 
 type Values = Record<string, unknown>;
@@ -66,6 +72,7 @@ const baseInputStyle = {
 export function DynamicIntakeForm({
   tenantSlug,
   form,
+  previewMode = false,
 }: DynamicIntakeFormProps) {
   const [values, setValues] = useState<Values>(() => emptyDefaults(form));
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -89,6 +96,10 @@ export function DynamicIntakeForm({
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (previewMode) {
+      setServerError("Preview-modus: dit formulier verstuurt niet.");
+      return;
+    }
     setServerError(null);
     setErrors({});
     startTransition(async () => {
@@ -310,7 +321,7 @@ export function DynamicIntakeForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || previewMode}
         className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-60"
         style={{
           backgroundColor: "var(--tenant-accent)",

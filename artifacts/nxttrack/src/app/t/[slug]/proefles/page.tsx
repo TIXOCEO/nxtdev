@@ -10,6 +10,7 @@ import { isDynamicIntakeEnabled, resolveIntakeForm } from "@/lib/intake/forms";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ form?: string }>;
 }
 
 export const dynamic = "force-dynamic";
@@ -21,10 +22,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `${tenant.name} | Proefles` };
 }
 
-export default async function ProeflesPage({ params }: PageProps) {
+export default async function ProeflesPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const sp = await searchParams;
   const tenant = await getActiveTenantBySlug(slug);
   if (!tenant) notFound();
+
+  // Sprint 66 — Optionele ?form=<slug> deeplink. Resolved via DB-lookup
+  // op tenant_id + slug + status='published'; onbekende slugs negeren
+  // we stilletjes (geen 404, oude links blijven werken — pattern uit
+  // Sprint 63 program-deeplink).
+  let deeplinkFormId: string | null = null;
+  const formSlug = typeof sp.form === "string" ? sp.form.trim() : "";
+  if (formSlug) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { data: row } = await createAdminClient()
+      .from("intake_forms")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("slug", formSlug)
+      .eq("status", "published")
+      .maybeSingle();
+    if (row?.id) deeplinkFormId = row.id;
+  }
 
   // Sprint 65 — Wanneer `dynamic_intake_enabled=true` op de tenant
   // staat, valt deze page over op de IntakeForm-renderer (DB-form of
@@ -40,6 +60,7 @@ export default async function ProeflesPage({ params }: PageProps) {
           (tenant as { sector_template_key?: string | null })
             .sector_template_key ?? null,
         settingsJson: settings,
+        programIntakeFormId: deeplinkFormId,
       })
     : null;
 

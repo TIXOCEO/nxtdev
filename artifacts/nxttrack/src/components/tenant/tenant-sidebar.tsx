@@ -84,7 +84,10 @@ function buildNavGroups(t: Terminology, showIntake: boolean): NavGroup[] { retur
       // Sprint 65 — alleen tonen wanneer dynamic_intake_enabled aanstaat
       // (Houtrust-veiligheid: flag-off = identieke UX als pre-Sprint 65).
       ...(showIntake
-        ? [{ label: "Intake", icon: ClipboardList, href: "/tenant/intake" }]
+        ? [
+            { label: "Intake", icon: ClipboardList, href: "/tenant/intake" },
+            { label: "Intake-formulieren", icon: ClipboardList, href: "/tenant/intake/forms" },
+          ]
         : []),
       { label: "Aanmeldingen",    icon: ClipboardList, href: "/tenant/registrations" },
     ],
