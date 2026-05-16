@@ -7,6 +7,7 @@ import { getMemberships } from "@/lib/auth/get-memberships";
 import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess, hasMembership } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PlacementStatsCard } from "./_placement-stats-card";
 
 /**
  * Sprint 65 — Tenant-admin lijst van intake-submissions (read-only MVP).
@@ -124,6 +125,14 @@ export default async function TenantIntakePage({
         title="Intake-aanvragen"
         description="Overzicht van alle dynamic intake-submissions (Sprint 65 MVP — read-only)."
       />
+
+      {dynamicIntakeEnabled && isAdmin ? (
+        <PlacementStatsCard
+          tenantId={tenantId}
+          from={fromFilter || undefined}
+          to={toFilter || undefined}
+        />
+      ) : null}
 
       {!dynamicIntakeEnabled ? (
         <div

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertTenantAccess } from "./_assert-access";
 import { recordAudit } from "@/lib/audit/log";
+import { scorePlacementCandidates } from "@/lib/db/placement";
 
 /**
  * Sprint 70 — Plaats een intake-submission in een groep.
@@ -74,12 +75,32 @@ export async function placeSubmission(
     .eq("tenant_id", sub.tenant_id);
   if (updErr) return { ok: false, error: updErr.message };
 
+  // Sprint 71 — capture top-5 max score op het moment van plaatsing zodat
+  // rapportage "% submissions waarvoor top-5 totaal-score ≤ 20 was"
+  // betrouwbaar achteraf te aggregeren is zonder de RPC nog eens te
+  // draaien op stale state. Best-effort: faalt de RPC, dan loggen we
+  // alleen wat we hebben (achterwaarts compatibel).
+  let top5MaxScore: number | null = null;
+  try {
+    const candidates = await scorePlacementCandidates(submissionId);
+    if (candidates.length > 0) {
+      const top5 = candidates.slice(0, 5);
+      top5MaxScore = Math.max(...top5.map((c) => Number(c.total_score ?? 0)));
+    } else {
+      top5MaxScore = 0;
+    }
+  } catch {
+    top5MaxScore = null;
+  }
+
   const meta: Record<string, string | number | boolean | null> = {
+    submission_id: submissionId,
     group_id: groupId,
     group_name: grp.name ?? null,
   };
   if (typeof suggestionRank === "number") meta.suggestion_rank = suggestionRank;
   if (typeof suggestionScore === "number") meta.suggestion_score = suggestionScore;
+  if (top5MaxScore != null) meta.top5_max_score = top5MaxScore;
 
   await recordAudit({
     tenant_id: sub.tenant_id,

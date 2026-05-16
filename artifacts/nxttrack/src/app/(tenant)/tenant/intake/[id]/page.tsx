@@ -121,7 +121,15 @@ export default async function TenantIntakeDetailPage({
       : Promise.resolve({ data: null }),
   ]);
 
-  const candidates = await scorePlacementCandidates(id);
+  // Sprint 71 — scorePlacementCandidates gooit nu bij RPC-fout i.p.v.
+  // stilletjes lege array; vang dat hier op zodat de pagina nog rendert
+  // (lege-state in het panel).
+  let candidates: Awaited<ReturnType<typeof scorePlacementCandidates>> = [];
+  try {
+    candidates = await scorePlacementCandidates(id);
+  } catch {
+    candidates = [];
+  }
 
   // Verzamel groep-namen voor het panel (alleen kandidaten waarvan
   // we de naam moeten tonen).

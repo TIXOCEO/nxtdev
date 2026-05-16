@@ -38,7 +38,11 @@ export async function scorePlacementCandidates(
   if (error) {
     // eslint-disable-next-line no-console
     console.error("[placement] rpc failed:", error.message);
-    return [];
+    // Sprint 71 — gooi i.p.v. lege array terug zodat callers het verschil
+    // zien tussen "geen kandidaten" (lege array) en "scoring faalde"
+    // (exception). Belangrijk voor audit-meta `top5_max_score`: bij een
+    // exception moeten we 0 NIET als zwakke match loggen.
+    throw new Error(`score_placement_candidates failed: ${error.message}`);
   }
   if (!Array.isArray(data)) return [];
   return data.map((row: Record<string, unknown>) => ({
