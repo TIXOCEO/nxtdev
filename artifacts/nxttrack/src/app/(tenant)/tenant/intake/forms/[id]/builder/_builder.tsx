@@ -24,6 +24,7 @@ import {
   updateIntakeFormField,
   removeIntakeFormField,
   reorderIntakeFormFields,
+  publishIntakeForm,
 } from "@/lib/actions/tenant/intake-forms";
 import { DynamicIntakeForm } from "@/components/public/forms/dynamic-intake-form";
 
@@ -131,10 +132,12 @@ export function IntakeFormBuilder({
   tenantId,
   formId,
   initialFields,
+  formStatus = "draft",
 }: {
   tenantId: string;
   formId: string;
   initialFields: FieldWithId[];
+  formStatus?: "draft" | "published" | "archived";
 }) {
   const [fields, setFields] = useState<FieldWithId[]>(initialFields);
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -334,6 +337,42 @@ export function IntakeFormBuilder({
             </>
           )}
         </div>
+        {formStatus === "draft" ? (
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pending || !validation.is_valid}
+              onClick={() => {
+                setError(null);
+                startTransition(async () => {
+                  const res = await publishIntakeForm({
+                    tenant_id: tenantId,
+                    form_id: formId,
+                  });
+                  if (!res.ok) setError(res.error);
+                  else router.refresh();
+                });
+              }}
+              className="rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: "var(--accent)",
+                color: "var(--accent-foreground, white)",
+              }}
+              title={
+                validation.is_valid
+                  ? "Publiceer dit formulier"
+                  : "Los eerst alle validatie-problemen op"
+              }
+            >
+              Publiceer
+            </button>
+            {!validation.is_valid ? (
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                Publiceren staat uit tot validatie groen is.
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {error ? (
           <p className="mt-2 text-xs text-red-700">{error}</p>
         ) : null}

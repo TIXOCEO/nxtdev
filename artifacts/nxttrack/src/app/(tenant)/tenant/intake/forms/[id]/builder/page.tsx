@@ -100,7 +100,12 @@ export default async function IntakeFormBuilderPage({
           ← Terug naar detail
         </Link>
       </div>
-      <IntakeFormBuilder tenantId={tenantId} formId={form.id} initialFields={fields} />
+      <IntakeFormBuilder
+        tenantId={tenantId}
+        formId={form.id}
+        initialFields={fields}
+        formStatus={form.status as "draft" | "published" | "archived"}
+      />
     </div>
   );
 }

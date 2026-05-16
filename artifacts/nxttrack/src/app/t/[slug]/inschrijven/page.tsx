@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ClipboardList } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
@@ -12,7 +12,7 @@ import {
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ program?: string }>;
+  searchParams: Promise<{ program?: string; form?: string }>;
 }
 
 export const dynamic = "force-dynamic";
@@ -29,6 +29,35 @@ export default async function InschrijvenPage({ params, searchParams }: PageProp
   const sp = await searchParams;
   const tenant = await getActiveTenantBySlug(slug);
   if (!tenant) notFound();
+
+  // Sprint 66 — `/inschrijven?form=<slug>` is een alias voor de
+  // dynamische intake-renderer op /proefles. Wanneer een form-slug
+  // wordt meegegeven en de tenant dynamic-intake aan heeft staan,
+  // sturen we de bezoeker door naar /proefles?form=<slug> (de
+  // canonieke renderer-route, Sprint 65). Onbekende form-slugs of
+  // tenants zonder dynamic intake → val terug op de gewone
+  // RegistrationWizard.
+  const formSlug =
+    typeof sp.form === "string" ? sp.form.trim() : "";
+  if (formSlug) {
+    const { isDynamicIntakeEnabled } = await import("@/lib/intake/forms");
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const settings =
+      ((tenant as { settings_json?: Record<string, unknown> | null })
+        .settings_json as Record<string, unknown> | null) ?? {};
+    if (isDynamicIntakeEnabled(settings)) {
+      const { data: row } = await createAdminClient()
+        .from("intake_forms")
+        .select("id")
+        .eq("tenant_id", tenant.id)
+        .eq("slug", formSlug)
+        .eq("status", "published")
+        .maybeSingle();
+      if (row?.id) {
+        redirect(`/t/${tenant.slug}/proefles?form=${encodeURIComponent(formSlug)}`);
+      }
+    }
+  }
 
   // Sprint 63 — Optionele ?program=<public_slug> deeplink. Als de slug
   // niet (meer) bestaat of niet publiek is, negeren we 'm stilletjes en
