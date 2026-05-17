@@ -80,7 +80,7 @@ export function Redesign() {
       {/* Branding */}
       <div className="flex flex-col items-center px-4 pt-6 pb-4 lg:px-6 lg:pt-8 lg:pb-6">
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold shadow-sm lg:h-12 lg:w-12 lg:text-lg"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold shadow-sm lg:h-20 lg:w-20 lg:text-2xl"
           style={{ backgroundColor: COLORS.surface, color: COLORS.accent, border: `1px solid ${COLORS.border}` }}
         >
           ZH
