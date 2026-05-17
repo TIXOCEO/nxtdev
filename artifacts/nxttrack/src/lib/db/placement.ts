@@ -28,6 +28,8 @@ export interface PlacementCandidate {
     group_stage_names?: string[];
     /** Sprint 72 — de stage die als doel werd gebruikt voor level-match. */
     target_stage_name?: string | null;
+    /** Sprint 72 — hex-kleur van de target-stage, voor badge-rendering. */
+    target_stage_color?: string | null;
     [key: string]: string | string[] | null | undefined;
   };
 }

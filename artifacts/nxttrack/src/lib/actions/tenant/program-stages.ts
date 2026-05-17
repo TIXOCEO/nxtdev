@@ -11,12 +11,14 @@ import {
   setProgramUseStagesSchema,
   attachGroupStageSchema,
   detachGroupStageSchema,
+  reorderProgramStagesSchema,
   type CreateProgramStageInput,
   type UpdateProgramStageInput,
   type ArchiveProgramStageInput,
   type SetProgramUseStagesInput,
   type AttachGroupStageInput,
   type DetachGroupStageInput,
+  type ReorderProgramStagesInput,
 } from "@/lib/validation/program-stages";
 
 export type ActionResult<T = void> =
@@ -194,6 +196,58 @@ export async function archiveProgramStage(
   });
 
   revalidatePath(`/tenant/programmas/${check.program_id}`);
+  return { ok: true, data: undefined };
+}
+
+// ── Reorder (Sprint 72 — audit-key `program.stage.reordered`) ─
+
+export async function reorderProgramStages(
+  input: ReorderProgramStagesInput,
+): Promise<ActionResult> {
+  const parsed = reorderProgramStagesSchema.safeParse(input);
+  if (!parsed.success) return fail("Ongeldige invoer", parsed.error.flatten().fieldErrors);
+  const user = await assertTenantAccess(parsed.data.tenant_id);
+
+  const supabase = await createClient();
+  // Defense-in-depth: alle stages moeten in tenant + programma zitten.
+  const { data: existingRows, error: fetchErr } = await supabase
+    .from("program_stages")
+    .select("id")
+    .eq("tenant_id", parsed.data.tenant_id)
+    .eq("program_id", parsed.data.program_id)
+    .in("id", parsed.data.stage_ids);
+  if (fetchErr) return fail(fetchErr.message);
+  const existingIds = new Set((existingRows ?? []).map((r) => (r as { id: string }).id));
+  for (const id of parsed.data.stage_ids) {
+    if (!existingIds.has(id)) {
+      return fail("Eén of meer stages horen niet bij dit programma.");
+    }
+  }
+
+  // Best-effort per-rij update; supabase-js heeft geen multi-statement tx.
+  for (let i = 0; i < parsed.data.stage_ids.length; i++) {
+    const stageId = parsed.data.stage_ids[i];
+    const { error } = await supabase
+      .from("program_stages")
+      .update({ sort_order: i })
+      .eq("id", stageId)
+      .eq("tenant_id", parsed.data.tenant_id)
+      .eq("program_id", parsed.data.program_id);
+    if (error) return fail(error.message);
+  }
+
+  await recordAudit({
+    tenant_id: parsed.data.tenant_id,
+    actor_user_id: user.id,
+    action: "program.stage.reordered",
+    meta: {
+      program_id: parsed.data.program_id,
+      stage_count: parsed.data.stage_ids.length,
+      order: parsed.data.stage_ids.join(","),
+    },
+  });
+
+  revalidatePath(`/tenant/programmas/${parsed.data.program_id}`);
   return { ok: true, data: undefined };
 }
 

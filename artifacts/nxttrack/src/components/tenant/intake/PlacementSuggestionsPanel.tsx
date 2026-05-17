@@ -105,6 +105,32 @@ export function PlacementSuggestionsPanel({
         </div>
       )}
 
+      {(() => {
+        const first = top5[0];
+        const stageName = first?.rationale_json.target_stage_name;
+        const stageColor = first?.rationale_json.target_stage_color;
+        if (!stageName) return null;
+        return (
+          <div className="flex items-center gap-2 text-xs">
+            <span style={{ color: "var(--text-secondary)" }}>Doel-stage:</span>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
+              style={{
+                backgroundColor: stageColor ?? "var(--surface-muted, #eef0f3)",
+                color: stageColor ? "#fff" : "var(--text-primary)",
+              }}
+            >
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: stageColor ? "#ffffffaa" : "var(--text-secondary)" }}
+                aria-hidden
+              />
+              {stageName}
+            </span>
+          </div>
+        );
+      })()}
+
       {top5.length === 0 ? (
         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
           Geen kandidaat-groepen gevonden — open de groepenlijst handmatig.
@@ -127,7 +153,7 @@ export function PlacementSuggestionsPanel({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium truncate">{groupName}</span>
                       <span
                         className="rounded-full px-2 py-0.5 text-[10px] font-medium"
@@ -141,6 +167,32 @@ export function PlacementSuggestionsPanel({
                       >
                         {c.free_seats} vrij
                       </span>
+                      {(c.rationale_json.group_stage_names ?? []).length > 0 && (
+                        <span className="flex flex-wrap items-center gap-1">
+                          {(c.rationale_json.group_stage_names ?? []).map((sn) => {
+                            const isTarget = sn === c.rationale_json.target_stage_name;
+                            const bg = isTarget
+                              ? c.rationale_json.target_stage_color ?? "var(--accent)"
+                              : "var(--surface-muted, #eef0f3)";
+                            const fg = isTarget && c.rationale_json.target_stage_color ? "#fff" : "var(--text-secondary)";
+                            return (
+                              <span
+                                key={sn}
+                                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]"
+                                style={{
+                                  backgroundColor: bg,
+                                  color: fg,
+                                  fontWeight: isTarget ? 600 : 400,
+                                  border: isTarget ? "none" : "1px solid var(--border)",
+                                }}
+                                title={isTarget ? "Matcht doel-stage" : undefined}
+                              >
+                                {sn}
+                              </span>
+                            );
+                          })}
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-2 grid grid-cols-5 gap-2">

@@ -77,3 +77,10 @@ export type AttachGroupStageInput = z.infer<typeof attachGroupStageSchema>;
 
 export const detachGroupStageSchema = attachGroupStageSchema;
 export type DetachGroupStageInput = AttachGroupStageInput;
+
+export const reorderProgramStagesSchema = z.object({
+  tenant_id: Uuid,
+  program_id: Uuid,
+  stage_ids: z.array(Uuid).min(1, "Minimaal één stage vereist"),
+});
+export type ReorderProgramStagesInput = z.infer<typeof reorderProgramStagesSchema>;

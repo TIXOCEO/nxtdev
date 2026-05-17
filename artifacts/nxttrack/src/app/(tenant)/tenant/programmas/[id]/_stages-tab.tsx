@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, Pencil, Plus, X } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowUp, Pencil, Plus, X } from "lucide-react";
 import {
   createProgramStage,
   updateProgramStage,
   archiveProgramStage,
   setProgramUseStages,
+  reorderProgramStages,
 } from "@/lib/actions/tenant/program-stages";
 
 interface StageRow {
@@ -117,6 +118,30 @@ export function StagesTab({
         return;
       }
       setEditingId(null);
+      refresh();
+    });
+  }
+
+  function onMove(stageId: string, dir: -1 | 1) {
+    setErr(null);
+    const ordered = [...active].sort((a, b) => a.sort_order - b.sort_order);
+    const idx = ordered.findIndex((s) => s.id === stageId);
+    if (idx < 0) return;
+    const target = idx + dir;
+    if (target < 0 || target >= ordered.length) return;
+    const swapped = [...ordered];
+    [swapped[idx], swapped[target]] = [swapped[target], swapped[idx]];
+    const stageIds = swapped.map((s) => s.id);
+    startTransition(async () => {
+      const res = await reorderProgramStages({
+        tenant_id: tenantId,
+        program_id: programId,
+        stage_ids: stageIds,
+      });
+      if (!res.ok) {
+        setErr(res.error);
+        return;
+      }
       refresh();
     });
   }
@@ -272,6 +297,28 @@ export function StagesTab({
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onMove(s.id, -1)}
+                        disabled={pending}
+                        className="inline-flex items-center rounded-md border px-1.5 py-1 text-[11px] disabled:opacity-40"
+                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        aria-label="Omhoog"
+                        title="Omhoog"
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onMove(s.id, 1)}
+                        disabled={pending}
+                        className="inline-flex items-center rounded-md border px-1.5 py-1 text-[11px] disabled:opacity-40"
+                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        aria-label="Omlaag"
+                        title="Omlaag"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => beginEdit(s)}
