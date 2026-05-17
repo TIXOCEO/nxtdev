@@ -56,6 +56,16 @@ export function PlacementSuggestionsPanel({
   const allLow = top5.length > 0 && top5.every((c) => c.total_score <= 20);
 
   function handlePlace(candidate: PlacementCandidate, rank: number) {
+    // Sprint 73 review-fix: confirm-dialog vóór de daadwerkelijke
+    // plaatsing — plaatsen is een terminale lifecycle-stap (status →
+    // 'placed') en de admin moet expliciet bevestigen.
+    const groupName = groupNames[candidate.group_id] ?? candidate.group_id.slice(0, 8);
+    if (typeof window !== "undefined") {
+      const ok = window.confirm(
+        `Aanvraag plaatsen in groep "${groupName}"?\n\nDit zet de status op "geplaatst" en kan niet meer worden teruggedraaid via deze knop.`,
+      );
+      if (!ok) return;
+    }
     setBusyGroup(candidate.group_id);
     setFeedback(null);
     startTransition(async () => {

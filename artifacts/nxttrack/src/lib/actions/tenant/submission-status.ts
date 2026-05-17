@@ -47,13 +47,14 @@ interface SubmissionRow {
   id: string;
   tenant_id: string;
   status: string;
+  program_id: string | null;
 }
 
 async function loadSubmission(submissionId: string): Promise<SubmissionRow | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("intake_submissions")
-    .select("id, tenant_id, status")
+    .select("id, tenant_id, status, program_id")
     .eq("id", submissionId)
     .maybeSingle();
   if (error || !data) return null;
@@ -192,7 +193,7 @@ export async function updateSelectedStage(
   if (stageId) {
     const { data: stage, error } = await admin
       .from("program_stages")
-      .select("id, name, tenant_id, archived_at")
+      .select("id, name, tenant_id, program_id, archived_at")
       .eq("id", stageId)
       .maybeSingle();
     if (error || !stage) return { ok: false, error: "stage niet gevonden" };
@@ -201,6 +202,17 @@ export async function updateSelectedStage(
     }
     if (stage.archived_at) {
       return { ok: false, error: "stage is gearchiveerd" };
+    }
+    // Sprint 73 review-fix: stage moet bij hetzelfde programma horen
+    // als de submission. Voorkomt cross-program stage-assignment via
+    // een crafted payload (bv. wel tenant-match maar ander programma).
+    // Submissions zonder program_id mogen géén stage krijgen — stages
+    // bestaan alleen binnen een programma.
+    if (!sub.program_id) {
+      return { ok: false, error: "submission heeft geen programma" };
+    }
+    if (stage.program_id !== sub.program_id) {
+      return { ok: false, error: "stage hoort niet bij dit programma" };
     }
     stageName = (stage.name as string) ?? null;
   }

@@ -180,7 +180,9 @@ export default async function TenantIntakeDetailPage({
     : null;
 
   // Sprint 73 — audit-timeline voor deze submission. We filteren op
-  // de 5 intake-status-actions en client-side op meta.submission_id.
+  // DB-niveau via de jsonb-key `meta->>submission_id`, zodat ook in
+  // drukke tenants geen events buiten een tenant-wide window vallen.
+  // De 5 intake-acties slaan submission_id altijd top-level in meta.
   const { data: auditRowsRaw } = await admin
     .from("audit_logs")
     .select("id, action, meta, actor_user_id, created_at")
@@ -192,18 +194,16 @@ export default async function TenantIntakeDetailPage({
       "intake.submission.placed",
       "intake.submission.stage_selected",
     ])
+    .filter("meta->>submission_id", "eq", sub.id)
     .order("created_at", { ascending: false })
-    .limit(200);
-  const filtered = ((auditRowsRaw ?? []) as Array<{
+    .limit(500);
+  const filtered = (auditRowsRaw ?? []) as Array<{
     id: string;
     action: string;
     meta: Record<string, unknown> | null;
     actor_user_id: string | null;
     created_at: string;
-  }>).filter((r) => {
-    const m = (r.meta ?? {}) as Record<string, unknown>;
-    return m["submission_id"] === sub.id;
-  });
+  }>;
   const actorIds = Array.from(
     new Set(filtered.map((r) => r.actor_user_id).filter((v): v is string => !!v)),
   );
