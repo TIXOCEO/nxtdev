@@ -20,6 +20,7 @@ import {
 import { countPublicMarketplacePrograms } from "@/lib/db/programs-public";
 import { PublicSidebar, type PublicNavKey } from "./public-sidebar";
 import { SocialBar } from "./social-bar";
+import { PublicPageFooter } from "./public-page-footer";
 import { getMyMember, getMessagesUnreadCount } from "@/lib/db/messages";
 import { PublicHeader } from "./public-header";
 import { PublicBottomTabBar } from "./public-bottom-tab-bar";
@@ -112,8 +113,13 @@ export async function PublicTenantShell({
   );
   const customTree: CustomPageNode[] = buildPageTree(visibleCustomRows);
 
+  // Sprint 78b — Sidebar/page-bg afgeleid van de tenant-accent zodat
+  // élke tenant een zachte, on-brand cream-tint krijgt (mockup-stijl).
+  // Voor mint-accent → zachte mint-cream; voor blauw-accent → ijsblauw; etc.
   const wrapperStyle = {
     "--tenant-accent": accent,
+    "--sidebar-bg": `color-mix(in srgb, ${accent} 12%, var(--surface-main))`,
+    "--page-bg": `color-mix(in srgb, ${accent} 4%, var(--surface-main))`,
     background:
       "linear-gradient(180deg, var(--bg-viewport-start) 0%, var(--bg-viewport-end) 100%)",
   } as CSSProperties;
@@ -172,7 +178,10 @@ export async function PublicTenantShell({
             />
             <main
               className="flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6"
-              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
+              style={{
+                backgroundColor: "var(--page-bg)",
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)",
+              }}
             >
               <div className="mx-auto w-full max-w-5xl space-y-6">
                 {user && (
@@ -183,6 +192,7 @@ export async function PublicTenantShell({
                   />
                 )}
                 {children}
+                <PublicPageFooter tenantId={tenant.id} tenantName={tenant.name} />
               </div>
             </main>
             <PublicBottomTabBar

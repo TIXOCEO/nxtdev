@@ -260,13 +260,13 @@ export function PublicSidebar({
     <aside
       className="flex h-full w-full flex-col gap-2 border-r p-4"
       style={{
-        backgroundColor: "var(--bg-nav)",
+        backgroundColor: "var(--sidebar-bg)",
         borderColor: "var(--surface-border)",
       }}
     >
       <div className="flex flex-col items-center gap-2 px-2 pb-3 pt-2 text-center">
         <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+          className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border shadow-sm"
           style={{
             borderColor: "var(--surface-border)",
             backgroundColor: "var(--surface-main)",
@@ -282,7 +282,7 @@ export function PublicSidebar({
             />
           ) : (
             <span
-              className="text-base font-bold"
+              className="text-lg font-bold"
               style={{ color: "var(--tenant-accent)" }}
             >
               {initials}
@@ -290,10 +290,16 @@ export function PublicSidebar({
           )}
         </div>
         <p
-          className="line-clamp-2 text-sm font-semibold"
+          className="line-clamp-2 text-sm font-bold tracking-tight"
           style={{ color: "var(--text-primary)" }}
         >
           {tenant.name}
+        </p>
+        <p
+          className="-mt-1 text-[11px]"
+          style={{ color: "var(--text-secondary)", opacity: 0.75 }}
+        >
+          Publieke pagina
         </p>
       </div>
 
@@ -337,19 +343,18 @@ export function PublicSidebar({
           <Link
             href={`/t/${tenant.slug}/login`}
             onClick={onNavigate}
-            className="group inline-flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
+            className="group inline-flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
             style={{
-              backgroundColor: active === "login"
-                ? "color-mix(in srgb, var(--tenant-accent) 18%, transparent)"
-                : "transparent",
-              color: active === "login" ? "var(--text-primary)" : "var(--text-secondary)",
+              backgroundColor:
+                active === "login"
+                  ? "color-mix(in srgb, var(--tenant-accent) 18%, transparent)"
+                  : "transparent",
+              color: "var(--text-primary)",
             }}
           >
             <LogIn
-              className="h-4 w-4"
-              style={{
-                color: active === "login" ? "var(--tenant-accent)" : "currentColor",
-              }}
+              className="h-5 w-5"
+              style={{ color: "var(--tenant-accent)" }}
             />
             <span>Inloggen</span>
           </Link>
@@ -360,12 +365,16 @@ export function PublicSidebar({
           target="_blank"
           rel="noopener noreferrer"
           onClick={onNavigate}
-          className="mt-1 flex items-center justify-center gap-2 px-3 pb-1 pt-2 text-[11px] transition-opacity hover:opacity-80"
+          className="mt-1 flex items-center justify-center gap-1.5 px-3 pb-1 pt-2 text-[10px] uppercase tracking-wider transition-opacity hover:opacity-80"
           style={{ color: "var(--text-secondary)" }}
         >
           <span>Powered by</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={NXTTRACK_LOGO} alt="NXTTRACK" className="h-4 w-auto" />
+          <span
+            className="font-bold"
+            style={{ color: "var(--tenant-accent)" }}
+          >
+            NXTTRACK
+          </span>
         </a>
       </div>
     </aside>

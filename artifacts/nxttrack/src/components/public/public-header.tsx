@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { ChevronRight, Home, LogIn } from "lucide-react";
 import type { Tenant } from "@/types/database";
 import { PublicMobileNav } from "./public-mobile-nav";
 import type { PublicNavKey } from "./public-sidebar";
@@ -75,11 +75,8 @@ export async function PublicHeader({
 
   return (
     <header
-      className="flex h-14 shrink-0 items-center gap-3 border-b px-3 sm:px-5"
-      style={{
-        backgroundColor: "var(--bg-nav)",
-        borderColor: "var(--surface-border)",
-      }}
+      className="flex h-14 shrink-0 items-center gap-3 px-3 sm:px-5"
+      style={{ backgroundColor: "var(--page-bg)" }}
     >
       <PublicMobileNav
         tenant={tenant}
@@ -92,16 +89,35 @@ export async function PublicHeader({
         customPages={customPages}
         customActivePath={customActivePath}
       />
-      <p
-        className="min-w-0 flex-1 truncate text-sm font-semibold"
-        style={{ color: "var(--text-primary)" }}
+      <nav
+        aria-label="Breadcrumb"
+        className="min-w-0 flex-1"
+        style={{ color: "var(--text-secondary)" }}
       >
-        <span>{tenant.name}</span>
-        <span className="mx-2" style={{ color: "var(--text-secondary)" }}>
-          &mdash;
-        </span>
-        <span style={{ color: "var(--text-secondary)" }}>{pageTitle}</span>
-      </p>
+        <ol className="flex items-center gap-2 text-sm font-medium">
+          <li className="flex items-center gap-2">
+            <Link
+              href={`/t/${slug}`}
+              aria-label="Home"
+              className="inline-flex items-center transition-opacity hover:opacity-80"
+            >
+              <Home className="h-4 w-4 shrink-0" />
+            </Link>
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          </li>
+          <li className="min-w-0">
+            <span
+              className="truncate font-semibold"
+              style={{ color: "var(--text-primary)" }}
+              aria-current="page"
+            >
+              {pageTitle}
+            </span>
+          </li>
+        </ol>
+      </nav>
       <div className="flex items-center gap-1">
         {isAuthenticated && user ? (
           <>
@@ -122,10 +138,14 @@ export async function PublicHeader({
           <Link
             href={`/t/${slug}/login`}
             aria-label="Inloggen"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-black/5"
-            style={{ color: "var(--text-secondary)" }}
+            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/5"
+            style={{ color: "var(--text-primary)" }}
           >
-            <UserRound className="h-4 w-4" />
+            <LogIn
+              className="h-4 w-4"
+              style={{ color: "var(--tenant-accent)" }}
+            />
+            <span className="hidden sm:inline">Inloggen</span>
           </Link>
         )}
       </div>

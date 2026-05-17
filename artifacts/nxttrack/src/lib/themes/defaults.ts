@@ -28,6 +28,10 @@ export const NXTTRACK_LIGHT_TOKENS: ThemeTokens = {
   "--nav-active-icon": "#1e3a5f",
   "--nav-hover-bg": "#eef2f8",
   "--accent-tint": "#eef5d8",
+  // Sprint 78b — Sidebar/page-bg defaults; overschreven op shell-wrapper
+  // met color-mix() zodra --tenant-accent bekend is.
+  "--sidebar-bg": "#f4f8eb",
+  "--page-bg": "#fbfcf9",
 };
 
 export const NXTTRACK_DARK_TOKENS: ThemeTokens = {
@@ -50,6 +54,9 @@ export const NXTTRACK_DARK_TOKENS: ThemeTokens = {
   "--nav-active-icon": "#6e8fb8",
   "--nav-hover-bg": "#121c2e",
   "--accent-tint": "#2a3614",
+  // Sprint 78b — Dark-mode sidebar/page-bg (zachter dan bg-nav).
+  "--sidebar-bg": "#0a101c",
+  "--page-bg": "#08101c",
 };
 
 /** The exact list of CSS variable names the editor UI exposes for editing. */
