@@ -86,6 +86,7 @@ function buildNavGroups(t: Terminology, showIntake: boolean): NavGroup[] { retur
       ...(showIntake
         ? [
             { label: "Intake", icon: ClipboardList, href: "/tenant/intake" },
+            { label: "Vrijgekomen plekken", icon: ClipboardList, href: "/tenant/intake/vrijgekomen-plekken" },
             { label: "Intake-formulieren", icon: ClipboardList, href: "/tenant/intake/forms" },
           ]
         : []),

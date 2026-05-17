@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { getPlacementFollowupStats } from "@/lib/intake/placement-stats";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Sprint 71 — Plaatsings-opvolg-statistieken op /tenant/intake.
@@ -69,6 +71,21 @@ function Tile({
 export async function PlacementStatsCard({ tenantId, from, to }: Props) {
   const stats = await getPlacementFollowupStats(tenantId, { from, to });
 
+  // Sprint 76 — 7e tile: aantal openstaande capacity-available-events.
+  // Best-effort: bij DB-error fallback naar 0 zodat de card niet crasht.
+  let openCapacityEvents = 0;
+  try {
+    const admin = createAdminClient();
+    const { count } = await admin
+      .from("capacity_available_events")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("status", "open");
+    openCapacityEvents = count ?? 0;
+  } catch {
+    openCapacityEvents = 0;
+  }
+
   const fromLabel = new Date(stats.rangeFrom).toLocaleDateString("nl-NL");
   const toLabel = new Date(stats.rangeTo).toLocaleDateString("nl-NL");
 
@@ -90,7 +107,7 @@ export async function PlacementStatsCard({ tenantId, from, to }: Props) {
         submission-datum).
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-7">
         <Tile
           label="Plaatsingen totaal"
           value={stats.totalPlacements.toLocaleString("nl-NL")}
@@ -128,6 +145,13 @@ export async function PlacementStatsCard({ tenantId, from, to }: Props) {
               : "Vanaf Sprint 71 vastgelegd"
           }
         />
+        <Link href="/tenant/intake/vrijgekomen-plekken" className="block">
+          <Tile
+            label="Vrijgekomen plekken"
+            value={openCapacityEvents.toLocaleString("nl-NL")}
+            hint={openCapacityEvents > 0 ? "Open signalen — afhandelen" : "Geen open signalen"}
+          />
+        </Link>
       </div>
 
       {stats.totalPlacements === 0 ? (
