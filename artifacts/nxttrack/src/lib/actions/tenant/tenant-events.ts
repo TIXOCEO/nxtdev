@@ -29,6 +29,14 @@ export async function createTenantEvent(
   const user = await assertTenantAccess(parsed.data.tenant_id);
   const supabase = await createClient();
 
+  // Sprint 79 — single-featured guard: maximaal één is_featured=true per
+  // tenant. Bij conflict: bestaande featured-event eerst un-featuren binnen
+  // dezelfde transactie-batch (best-effort; geen DB-level constraint omdat
+  // dat onhandig is met soft-deletes/archivering).
+  if (parsed.data.is_featured) {
+    await unfeatureOtherEvents(parsed.data.tenant_id, null, user.id);
+  }
+
   const { data, error } = await supabase
     .from("tenant_events")
     .insert({ ...parsed.data, created_by: user.id })
@@ -48,10 +56,55 @@ export async function createTenantEvent(
       is_featured: parsed.data.is_featured,
     },
   });
+  if (parsed.data.is_featured) {
+    await recordAudit({
+      tenant_id: parsed.data.tenant_id,
+      actor_user_id: user.id,
+      action: "tenant.event.featured_set",
+      meta: { event_id: data.id },
+    });
+  }
 
   revalidatePath("/tenant/events");
   revalidatePath(`/t/.*`); // public pages — best-effort
   return { ok: true, data };
+}
+
+/**
+ * Un-feature alle andere events van deze tenant zodat maximaal één
+ * is_featured=true per tenant overblijft. `exceptId` = de event-id die
+ * juist wél featured mag blijven (bij update); null bij create.
+ */
+async function unfeatureOtherEvents(
+  tenantId: string,
+  exceptId: string | null,
+  actorUserId: string,
+): Promise<void> {
+  const supabase = await createClient();
+  const query = supabase
+    .from("tenant_events")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("is_featured", true);
+  const { data: others } = exceptId
+    ? await query.neq("id", exceptId)
+    : await query;
+  if (!others || others.length === 0) return;
+
+  await supabase
+    .from("tenant_events")
+    .update({ is_featured: false })
+    .eq("tenant_id", tenantId)
+    .in("id", others.map((o) => o.id));
+
+  for (const o of others) {
+    await recordAudit({
+      tenant_id: tenantId,
+      actor_user_id: actorUserId,
+      action: "tenant.event.featured_cleared",
+      meta: { event_id: o.id, reason: "single_featured_guard" },
+    });
+  }
 }
 
 export async function updateTenantEvent(
@@ -67,11 +120,16 @@ export async function updateTenantEvent(
 
   const { data: existing } = await supabase
     .from("tenant_events")
-    .select("id, tenant_id, status")
+    .select("id, tenant_id, status, is_featured")
     .eq("id", id)
     .maybeSingle();
   if (!existing) return fail("Event niet gevonden.");
   if (existing.tenant_id !== parsed.data.tenant_id) return fail("Tenant mismatch.");
+
+  // Sprint 79 — single-featured guard.
+  if (parsed.data.is_featured && !existing.is_featured) {
+    await unfeatureOtherEvents(parsed.data.tenant_id, id, user.id);
+  }
 
   const { id: _id, tenant_id: _t, ...patch } = parsed.data;
   const { error } = await supabase
@@ -80,6 +138,23 @@ export async function updateTenantEvent(
     .eq("id", id)
     .eq("tenant_id", parsed.data.tenant_id);
   if (error) return fail(error.message);
+
+  if (parsed.data.is_featured && !existing.is_featured) {
+    await recordAudit({
+      tenant_id: parsed.data.tenant_id,
+      actor_user_id: user.id,
+      action: "tenant.event.featured_set",
+      meta: { event_id: id },
+    });
+  }
+  if (!parsed.data.is_featured && existing.is_featured) {
+    await recordAudit({
+      tenant_id: parsed.data.tenant_id,
+      actor_user_id: user.id,
+      action: "tenant.event.featured_cleared",
+      meta: { event_id: id, reason: "admin_unfeatured" },
+    });
+  }
 
   if (patch.status === "published" && existing.status !== "published") {
     await recordAudit({

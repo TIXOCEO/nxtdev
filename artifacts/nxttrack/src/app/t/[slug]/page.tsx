@@ -81,7 +81,7 @@ export default async function PublicHomePage({ params }: PageProps) {
   ]);
   const showUpcomingSessions = settings.public_show_upcoming_sessions === true;
   const upcomingSessions = showUpcomingSessions
-    ? await listPublicUpcomingSessions(tenant.id, 6)
+    ? await listPublicUpcomingSessions(tenant.id, 5)
     : [];
 
   return (

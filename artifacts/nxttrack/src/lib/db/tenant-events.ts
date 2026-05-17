@@ -55,13 +55,16 @@ export async function getFeaturedTenantEvent(
 ): Promise<TenantEvent | null> {
   const admin = createAdminClient();
   const nowIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // Sprint 79 — strict: ALLEEN events met is_featured=true. Wanneer geen
+  // event uitgelicht is, retourneert deze functie null (i.p.v. willekeurig
+  // gepubliceerd event te tonen).
   const { data } = await admin
     .from("tenant_events")
     .select("*")
     .eq("tenant_id", tenantId)
     .eq("status", "published")
+    .eq("is_featured", true)
     .or(`starts_at.is.null,starts_at.gte.${nowIso}`)
-    .order("is_featured", { ascending: false })
     .order("starts_at", { ascending: true, nullsFirst: false })
     .limit(1)
     .maybeSingle();
@@ -86,7 +89,7 @@ export interface PublicUpcomingSession {
  */
 export async function listPublicUpcomingSessions(
   tenantId: string,
-  limit = 6,
+  limit = 5,
 ): Promise<PublicUpcomingSession[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
