@@ -172,17 +172,24 @@ export async function resolveActiveTheme(
   if (!chosen) chosen = ofMode.find((t) => t.is_default) ?? null;
   if (!chosen) chosen = ofMode[0] ?? null;
 
+  const fallback =
+    desiredMode === "dark" ? NXTTRACK_DARK_TOKENS : NXTTRACK_LIGHT_TOKENS;
+
   if (chosen) {
+    // Sprint 78: merge built-in defaults UNDER the DB row so newly added
+    // brand-constant tokens (`--brand-navy`, `--nav-*`, `--accent-tint`)
+    // are always present, even for theme-rows authored before Sprint 78.
+    // DB row wins for any token it actually defines.
     return {
       mode: desiredMode,
-      tokens: chosen.tokens,
+      tokens: { ...fallback, ...chosen.tokens },
       themeId: chosen.id,
       themeName: chosen.name,
     };
   }
   return {
     mode: desiredMode,
-    tokens: desiredMode === "dark" ? NXTTRACK_DARK_TOKENS : NXTTRACK_LIGHT_TOKENS,
+    tokens: fallback,
     themeId: null,
     themeName: desiredMode === "dark" ? "NXTTRACK Dark" : "NXTTRACK Light",
   };

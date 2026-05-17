@@ -21,6 +21,13 @@ export const NXTTRACK_LIGHT_TOKENS: ThemeTokens = {
   "--text-primary": "#0f172a",
   "--text-secondary": "#5b6476",
   "--shadow-color": "rgba(15, 23, 42, 0.08)",
+  // Sprint 78 — UserShell v2 nav-states (brand-constant, niet editable).
+  "--brand-navy": "#1e3a5f",
+  "--nav-active-bg": "#e5edf7",
+  "--nav-active-bar": "#1e3a5f",
+  "--nav-active-icon": "#1e3a5f",
+  "--nav-hover-bg": "#eef2f8",
+  "--accent-tint": "#eef5d8",
 };
 
 export const NXTTRACK_DARK_TOKENS: ThemeTokens = {
@@ -35,6 +42,14 @@ export const NXTTRACK_DARK_TOKENS: ThemeTokens = {
   "--text-primary": "#e6eaf2",
   "--text-secondary": "#9aa4bf",
   "--shadow-color": "rgba(0, 0, 0, 0.85)",
+  // Sprint 78 — UserShell v2 nav-states. Lichter-navy zodat het zichtbaar
+  // blijft op donkere achtergrond.
+  "--brand-navy": "#6e8fb8",
+  "--nav-active-bg": "#172338",
+  "--nav-active-bar": "#6e8fb8",
+  "--nav-active-icon": "#6e8fb8",
+  "--nav-hover-bg": "#121c2e",
+  "--accent-tint": "#2a3614",
 };
 
 /** The exact list of CSS variable names the editor UI exposes for editing. */

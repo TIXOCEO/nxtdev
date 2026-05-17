@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ClipboardList } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getPublicProgramBySlug } from "@/lib/db/programs-public";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
+import { PageHeader } from "@/components/public/page-header";
 import {
   RegistrationWizard,
   type RegistrationWizardProgramRef,
@@ -79,28 +79,10 @@ export default async function InschrijvenPage({ params, searchParams }: PageProp
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Inschrijven" active="inschrijven">
-      <PublicCard className="p-5 sm:p-6">
-        <div className="flex items-start gap-3">
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-            style={{
-              backgroundColor: "color-mix(in srgb, var(--tenant-accent) 22%, transparent)",
-              color: "var(--text-primary)",
-            }}
-          >
-            <ClipboardList className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-              Inschrijven
-            </h2>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-              Schrijf je in als aspirant-lid bij {tenant.name}. Na ontvangst van je
-              aanmelding nemen wij contact op om de inschrijving verder af te ronden.
-            </p>
-          </div>
-        </div>
-      </PublicCard>
+      <PageHeader
+        title="Inschrijven"
+        description={`Schrijf je in als aspirant-lid bij ${tenant.name}. Na ontvangst van je aanmelding nemen wij contact op om de inschrijving verder af te ronden.`}
+      />
 
       <RegistrationWizard
         tenantSlug={tenant.slug}

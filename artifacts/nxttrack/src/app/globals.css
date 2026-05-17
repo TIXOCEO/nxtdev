@@ -26,6 +26,17 @@
 
   --shadow-color: rgba(15, 23, 42, 0.08);
 
+  /* Sprint 78 — UserShell v2 brand-secondaire (navy) + nav-states.
+     --brand-navy is brand-constant en wordt NIET overschreven door
+     per-tenant `--tenant-accent`. Wordt gebruikt voor active-state in
+     sidebar/tabs en de page-title-bar in <PageHeader>. */
+  --brand-navy: #1e3a5f;
+  --nav-active-bg: #e5edf7;
+  --nav-active-bar: var(--brand-navy);
+  --nav-active-icon: var(--brand-navy);
+  --nav-hover-bg: #eef2f8;
+  --accent-tint: #eef5d8;
+
   --radius-xl: 28px;
   --radius-lg: 18px;
   --radius-md: 12px;

@@ -22,9 +22,13 @@ import { PublicSidebar, type PublicNavKey } from "./public-sidebar";
 import { SocialBar } from "./social-bar";
 import { getMyMember, getMessagesUnreadCount } from "@/lib/db/messages";
 import { PublicHeader } from "./public-header";
+import { PublicBottomTabBar } from "./public-bottom-tab-bar";
 import { ThemeStyleInjector } from "./theme-style-injector";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { MobileLoginPrompt } from "./mobile-login-prompt";
+import { WhatsNewBanner } from "./whats-new-banner";
+
+const WHATS_NEW_VERSION = "0.35.0";
 
 const FALLBACK_ACCENT = "#b6d83b";
 
@@ -168,10 +172,26 @@ export async function PublicTenantShell({
             />
             <main
               className="flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6"
-              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4rem)" }}
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
             >
-              <div className="mx-auto w-full max-w-5xl space-y-6">{children}</div>
+              <div className="mx-auto w-full max-w-5xl space-y-6">
+                {user && (
+                  <WhatsNewBanner
+                    slug={tenant.slug}
+                    version={WHATS_NEW_VERSION}
+                    userId={user.id}
+                  />
+                )}
+                {children}
+              </div>
             </main>
+            <PublicBottomTabBar
+              slug={tenant.slug}
+              active={active}
+              isAuthenticated={!!user}
+              unreadCount={unreadCount}
+              messagesUnread={messagesUnread}
+            />
           </div>
         </div>
       </div>
