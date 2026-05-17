@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Bell, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +17,7 @@ interface FeedItem {
   title: string;
   content_html: string | null;
   content_text: string | null;
+  push_url: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -61,6 +63,7 @@ export function NotificationCenter() {
   const [, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
   const initial = useRef(true);
+  const router = useRouter();
 
   const refresh = useCallback(async () => {
     const res = await getMyNotificationFeed();
@@ -111,6 +114,11 @@ export function NotificationCenter() {
         );
         setUnread((u) => Math.max(0, u - 1));
       });
+    }
+    // Sprint 76g: navigeer naar de deeplink wanneer de notificatie er één heeft.
+    if (item.push_url) {
+      setOpen(false);
+      router.push(item.push_url);
     }
   }
 
@@ -249,8 +257,13 @@ export function NotificationCenter() {
           contentHtml={popup.content_html}
           onClose={() => setPopup(null)}
           onOpen={() => {
+            const url = popup.push_url;
             setPopup(null);
-            setOpen(true);
+            if (url) {
+              router.push(url);
+            } else {
+              setOpen(true);
+            }
           }}
         />
       )}

@@ -87,6 +87,7 @@ export async function getMyNotificationFeed(): Promise<
       title: string;
       content_html: string | null;
       content_text: string | null;
+      push_url: string | null;
       is_read: boolean;
       created_at: string;
     }>;
@@ -98,7 +99,7 @@ export async function getMyNotificationFeed(): Promise<
   const { data, error } = await supabase
     .from("notification_recipients")
     .select(
-      "id, notification_id, is_read, read_at, created_at, notifications!inner(id, title, content_html, content_text)",
+      "id, notification_id, is_read, read_at, created_at, notifications!inner(id, title, content_html, content_text, push_url)",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
@@ -110,6 +111,7 @@ export async function getMyNotificationFeed(): Promise<
     title: string;
     content_html: string | null;
     content_text: string | null;
+    push_url: string | null;
   };
   type Row = {
     id: string;
@@ -127,6 +129,7 @@ export async function getMyNotificationFeed(): Promise<
       title: n?.title ?? "",
       content_html: n?.content_html ?? null,
       content_text: n?.content_text ?? null,
+      push_url: n?.push_url ?? null,
       is_read: row.is_read,
       created_at: row.created_at,
     };

@@ -36,6 +36,30 @@ export async function notifyCapacityEventIfAny(
       .maybeSingle();
     if (!ev) return;
 
+    // Sprint 76g (task #130): tenant-drempel via settings_json. Wanneer
+    // er minder plekken zijn vrijgekomen dan de drempel slaan we de
+    // notify over (het event-rij blijft staan zodat de UI-tile telt).
+    const { data: tenantRow } = await admin
+      .from("tenants")
+      .select("settings_json")
+      .eq("id", tenantId)
+      .maybeSingle();
+    const settings =
+      ((tenantRow?.settings_json ?? {}) as Record<string, unknown>) ?? {};
+    const rawThreshold = settings["capacity_event_min_freed_seats"];
+    const parsedThreshold =
+      typeof rawThreshold === "number"
+        ? rawThreshold
+        : typeof rawThreshold === "string"
+          ? Number.parseInt(rawThreshold, 10)
+          : NaN;
+    const threshold =
+      Number.isFinite(parsedThreshold) && parsedThreshold > 0
+        ? parsedThreshold
+        : 1;
+    const freed = (ev.freed_seats as number) ?? 1;
+    if (freed < threshold) return;
+
     const { data: g } = await admin
       .from("groups")
       .select("name")

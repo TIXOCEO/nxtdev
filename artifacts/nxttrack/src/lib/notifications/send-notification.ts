@@ -79,6 +79,7 @@ export async function sendNotification(
       p_created_by: params.createdBy ?? null,
       p_targets: targetsJson,
       p_recipients: recipientsJson,
+      p_push_url: params.pushUrl ?? null,
     },
   );
 
