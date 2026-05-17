@@ -112,6 +112,7 @@ function buildNavGroups(t: Terminology, showIntake: boolean): NavGroup[] { retur
     items: [
       { label: "Communicatie hub", icon: Mail,         href: "/tenant/communication" },
       { label: "Nieuws",           icon: Newspaper,    href: "/tenant/news" },
+      { label: "Events",           icon: Star,         href: "/tenant/events" },
       { label: "Nieuwsbrieven",    icon: Send,         href: "/tenant/newsletters" },
       { label: "Alerts",           icon: AlertTriangle, href: "/tenant/communication/alerts" },
       { label: "Meldingen",        icon: Bell,         href: "/tenant/notifications" },

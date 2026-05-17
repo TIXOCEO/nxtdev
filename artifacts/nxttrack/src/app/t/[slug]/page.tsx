@@ -7,6 +7,13 @@ import {
   getMediaWallItems,
   getRandomPublicTrainers,
 } from "@/lib/db/homepage";
+import {
+  getFeaturedTenantEvent,
+  listPublicUpcomingSessions,
+} from "@/lib/db/tenant-events";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { UpcomingSessionsCard } from "@/components/public/upcoming-sessions-card";
+import { FeaturedEventCard } from "@/components/public/featured-event-card";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
 import { PublicHeroSlider } from "@/components/public/public-hero-slider";
@@ -56,10 +63,26 @@ export default async function PublicHomePage({ params }: PageProps) {
   if (!data) notFound();
   const { tenant, latestNews } = data;
 
-  const [photos, randomTrainers] = await Promise.all([
+  // Sprint 79 — lees `public_show_upcoming_sessions`-toggle + featured event +
+  // (optioneel) eerstvolgende sessies parallel met de bestaande fetches.
+  const admin = createAdminClient();
+  const tenantSettingsPromise = admin
+    .from("tenants")
+    .select("settings_json")
+    .eq("id", tenant.id)
+    .maybeSingle()
+    .then((r) => (r.data?.settings_json ?? {}) as Record<string, unknown>);
+
+  const [photos, randomTrainers, settings, featuredEvent] = await Promise.all([
     getMediaWallItems(tenant.id, 12),
     getRandomPublicTrainers(tenant.id, 3),
+    tenantSettingsPromise,
+    getFeaturedTenantEvent(tenant.id),
   ]);
+  const showUpcomingSessions = settings.public_show_upcoming_sessions === true;
+  const upcomingSessions = showUpcomingSessions
+    ? await listPublicUpcomingSessions(tenant.id, 6)
+    : [];
 
   return (
     <PublicTenantShell
@@ -107,6 +130,10 @@ export default async function PublicHomePage({ params }: PageProps) {
           href={`/t/${tenant.slug}/inschrijven`}
         />
         <NewsListCard tenantSlug={tenant.slug} posts={latestNews} limit={4} />
+        {featuredEvent && <FeaturedEventCard event={featuredEvent} />}
+        {showUpcomingSessions && (
+          <UpcomingSessionsCard sessions={upcomingSessions} />
+        )}
         <TrainersCard trainers={randomTrainers} tenantSlug={tenant.slug} />
         <LocationCard tenant={tenant} />
         {photos.length > 0 && (
