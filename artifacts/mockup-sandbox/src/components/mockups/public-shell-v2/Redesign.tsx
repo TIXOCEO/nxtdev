@@ -78,15 +78,16 @@ export function Redesign() {
   const renderSidebarContent = () => (
     <div className="flex h-full flex-col">
       {/* Branding */}
-      <div className="flex items-center gap-3 p-4 lg:p-6 lg:pb-4">
-        <div 
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold shadow-sm"
+      <div className="flex flex-col items-center px-4 pt-6 pb-4 lg:px-6 lg:pt-8 lg:pb-6">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold shadow-sm lg:h-12 lg:w-12 lg:text-lg"
           style={{ backgroundColor: COLORS.surface, color: COLORS.accent, border: `1px solid ${COLORS.border}` }}
         >
           ZH
         </div>
-        <div className="hidden flex-1 truncate lg:block">
+        <div className="mt-3 hidden w-full flex-col items-center text-center lg:flex">
           <h1 className="truncate font-bold tracking-tight" style={{ color: COLORS.ink }}>Zwemschool Houtrust</h1>
+          <span className="mt-0.5 text-xs" style={{ color: COLORS.inkLight, opacity: 0.7 }}>Publieke pagina</span>
         </div>
       </div>
 
@@ -241,6 +242,7 @@ export function Redesign() {
           
           {/* Hero Strip */}
           <div className="relative overflow-hidden rounded-2xl shadow-sm" style={{ height: "240px" }}>
+            <div className="absolute inset-y-0 left-0 z-10 w-1" style={{ backgroundColor: COLORS.accent }} />
             <img 
               src="https://picsum.photos/seed/houtrust-1/1200/400" 
               alt="Zwemschool hero" 
@@ -267,7 +269,7 @@ export function Redesign() {
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:[grid-auto-rows:340px]"
           >
             {/* Welcome Block */}
-            <Card className="flex h-full flex-col lg:overflow-hidden border-none shadow-sm" style={{ backgroundColor: COLORS.surface }}>
+            <Card className="flex h-full flex-col lg:overflow-hidden border shadow-sm" style={{ backgroundColor: COLORS.surface, borderColor: "rgba(15,30,58,0.08)" }}>
               <CardContent className="flex h-full flex-col p-6">
                 <div className="mb-4 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: COLORS.sidebarBg, color: COLORS.accent }}>
                   <Home className="h-6 w-6" />
@@ -284,7 +286,7 @@ export function Redesign() {
             </Card>
 
             {/* Agenda (Fixed Alignment) */}
-            <Card className="flex h-full flex-col lg:overflow-hidden border-none shadow-sm" style={{ backgroundColor: COLORS.surface }}>
+            <Card className="flex h-full flex-col lg:overflow-hidden border shadow-sm" style={{ backgroundColor: COLORS.surface, borderColor: "rgba(15,30,58,0.08)" }}>
               <div className="flex shrink-0 items-center justify-between p-6 pb-4">
                 <h3 className="font-bold" style={{ color: COLORS.ink }}>Aankomende sessies</h3>
                 <CalendarDays className="h-4 w-4" style={{ color: COLORS.accent }} />
@@ -308,7 +310,7 @@ export function Redesign() {
             </Card>
 
             {/* Nieuws */}
-            <Card className="flex h-full flex-col lg:overflow-hidden border-none shadow-sm" style={{ backgroundColor: COLORS.surface }}>
+            <Card className="flex h-full flex-col lg:overflow-hidden border shadow-sm" style={{ backgroundColor: COLORS.surface, borderColor: "rgba(15,30,58,0.08)" }}>
               <div className="flex shrink-0 items-center justify-between p-6 pb-4">
                 <h3 className="font-bold" style={{ color: COLORS.ink }}>Laatste nieuws</h3>
                 <Newspaper className="h-4 w-4" style={{ color: COLORS.accent }} />
@@ -350,7 +352,7 @@ export function Redesign() {
             </Card>
 
             {/* Locatie */}
-            <Card className="flex h-full flex-col lg:overflow-hidden border-none shadow-sm" style={{ backgroundColor: COLORS.surface }}>
+            <Card className="flex h-full flex-col lg:overflow-hidden border shadow-sm" style={{ backgroundColor: COLORS.surface, borderColor: "rgba(15,30,58,0.08)" }}>
               <div className="relative h-40 w-full shrink-0 bg-slate-100">
                 <img src="https://picsum.photos/seed/map/400/200" alt="Map" className="h-full w-full object-cover opacity-80" />
                 <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg">
@@ -368,7 +370,7 @@ export function Redesign() {
             </Card>
 
             {/* Foto's */}
-            <Card className="flex h-full flex-col lg:overflow-hidden border-none shadow-sm" style={{ backgroundColor: COLORS.surface }}>
+            <Card className="flex h-full flex-col lg:overflow-hidden border shadow-sm" style={{ backgroundColor: COLORS.surface, borderColor: "rgba(15,30,58,0.08)" }}>
                <div className="flex shrink-0 items-center justify-between p-6 pb-4">
                 <h3 className="font-bold" style={{ color: COLORS.ink }}>Uitgelicht</h3>
               </div>
@@ -383,7 +385,7 @@ export function Redesign() {
             </Card>
 
             {/* Trainers */}
-            <Card className="flex h-full flex-col lg:overflow-hidden border-none shadow-sm sm:col-span-2 lg:col-span-2" style={{ backgroundColor: COLORS.surface }}>
+            <Card className="flex h-full flex-col lg:overflow-hidden border shadow-sm sm:col-span-2 lg:col-span-2" style={{ backgroundColor: COLORS.surface, borderColor: "rgba(15,30,58,0.08)" }}>
               <div className="flex shrink-0 items-center justify-between p-6 pb-4">
                 <h3 className="font-bold" style={{ color: COLORS.ink }}>Onze Instructeurs</h3>
                 <a href="#" className="text-sm font-semibold hover:underline" style={{ color: COLORS.inkLight }}>Bekijk allen</a>
