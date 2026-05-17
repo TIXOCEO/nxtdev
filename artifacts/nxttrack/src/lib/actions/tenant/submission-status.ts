@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertTenantAccess } from "./_assert-access";
 import { recordAudit } from "@/lib/audit/log";
+import { sendNotification } from "@/lib/notifications/send-notification";
 
 /**
  * Sprint 73 — Status-transities op `intake_submissions`.
@@ -135,13 +136,47 @@ export async function markSubmissionNeedsReview(
 ): Promise<TransitionResult> {
   const parsed = transitionInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "ongeldige invoer" };
-  return applyTransition({
+  const result = await applyTransition({
     submissionId: parsed.data.submissionId,
     toStatus: "needs_review",
     allowedFrom: ["submitted", "in_review", "waitlisted"],
     auditAction: "intake.submission.status_changed",
     reason: parsed.data.reason,
   });
+  if (!result.ok) return result;
+
+  // Sprint 73 review-fix: óók bij handmatige transitie naar
+  // needs_review wordt een tenant-admin-notificatie verzonden,
+  // idempotent via de dedup-key `intake_submission_needs_review`
+  // + sourceRef = submission_id (zelfde key als submitIntake).
+  const sub = await loadSubmission(parsed.data.submissionId);
+  if (sub) {
+    const admin = createAdminClient();
+    const { data: row } = await admin
+      .from("intake_submissions")
+      .select("contact_name")
+      .eq("id", parsed.data.submissionId)
+      .maybeSingle();
+    const contactName =
+      (row as { contact_name: string | null } | null)?.contact_name ??
+      "Een aanvrager";
+    const reasonSuffix = parsed.data.reason ? ` — ${parsed.data.reason}` : "";
+    void sendNotification({
+      tenantId: sub.tenant_id,
+      title: "Intake vereist beoordeling",
+      contentText: `${contactName}${reasonSuffix}`,
+      targets: [{ target_type: "role", target_id: "tenant_admin" }],
+      sendEmail: false,
+      sendPush: false,
+      source: "intake_submission_needs_review",
+      sourceRef: parsed.data.submissionId,
+      createdBy: null,
+    }).catch((e: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("[intake] needs_review tenant-notification failed:", e);
+    });
+  }
+  return result;
 }
 
 export async function markSubmissionWaitlisted(
