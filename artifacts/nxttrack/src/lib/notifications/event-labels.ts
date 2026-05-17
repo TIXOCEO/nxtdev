@@ -66,6 +66,31 @@ export const EVENT_LABELS: Record<string, EventLabel> = {
     label: "Groep toegewezen",
     description: "Wanneer je aan een nieuwe groep wordt toegevoegd.",
   },
+  // ── Sprint 77: parent-portal fundament (fase 6) ──
+  child_attendance_recorded: {
+    label: "Aanwezigheid van je kind",
+    description: "Wanneer de trainer aanwezigheid noteert voor je kind.",
+  },
+  child_attendance_missed: {
+    label: "Je kind gemist bij les",
+    description: "Wanneer je kind als afwezig wordt genoteerd.",
+  },
+  child_session_cancelled: {
+    label: "Les van je kind afgelast",
+    description: "Wanneer een les van je kind wordt geannuleerd.",
+  },
+  child_membership_expiring: {
+    label: "Lidmaatschap kind verloopt",
+    description: "Herinnering wanneer het lidmaatschap van je kind binnenkort afloopt.",
+  },
+  child_placement_offered: {
+    label: "Plek aangeboden aan je kind",
+    description: "Wanneer er een plek wordt aangeboden voor je kind.",
+  },
+  child_note_published: {
+    label: "Nieuwe notitie over je kind",
+    description: "Wanneer de trainer een notitie deelt over de voortgang van je kind.",
+  },
   // ── Sprint 19: Social feed ──
   social_new_comment: {
     label: "Reactie op je bericht",
