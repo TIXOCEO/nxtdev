@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { PlacementCandidate } from "@/lib/db/placement";
 import { placeSubmission } from "@/lib/actions/tenant/placements";
+import { offerIntakeSlot } from "@/lib/actions/tenant/slot-offers";
 
 /**
  * Sprint 70 — Advisory placement-suggestions paneel.
@@ -54,6 +55,39 @@ export function PlacementSuggestionsPanel({
 
   const top5 = candidates.slice(0, 5);
   const allLow = top5.length > 0 && top5.every((c) => c.total_score <= 20);
+
+  function handleOffer(candidate: PlacementCandidate, rank: number) {
+    const groupName = groupNames[candidate.group_id] ?? candidate.group_id.slice(0, 8);
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Plek aanbieden in "${groupName}"? De aanvrager krijgt een e-mail met accept/weiger-link.`,
+      )
+    ) {
+      return;
+    }
+    setBusyGroup(candidate.group_id);
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        const res = await offerIntakeSlot({
+          submissionId,
+          groupId: candidate.group_id,
+          suggestionRank: rank,
+          suggestionScore: candidate.total_score,
+        });
+        setFeedback(
+          res.ok ? "Aanbod verstuurd." : `Aanbieden mislukt: ${res.error ?? "onbekende fout"}`,
+        );
+      } catch (err) {
+        setFeedback(
+          `Aanbieden mislukt: ${err instanceof Error ? err.message : "onbekende fout"}`,
+        );
+      } finally {
+        setBusyGroup(null);
+      }
+    });
+  }
 
   function handlePlace(candidate: PlacementCandidate, rank: number) {
     // Sprint 73 review-fix: confirm-dialog vóór de daadwerkelijke
@@ -245,18 +279,29 @@ export function PlacementSuggestionsPanel({
                       {Math.round(c.total_score)}
                     </span>
                     {canPlace ? (
-                      <button
-                        type="button"
-                        onClick={() => handlePlace(c, rank)}
-                        disabled={pending && busyGroup === c.group_id}
-                        className="rounded-md px-3 py-1 text-xs font-medium disabled:opacity-50"
-                        style={{
-                          backgroundColor: "var(--accent)",
-                          color: "var(--accent-foreground, white)",
-                        }}
-                      >
-                        {pending && busyGroup === c.group_id ? "Bezig…" : "Plaats hier"}
-                      </button>
+                      <div className="flex flex-col items-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handlePlace(c, rank)}
+                          disabled={pending && busyGroup === c.group_id}
+                          className="rounded-md px-3 py-1 text-xs font-medium disabled:opacity-50"
+                          style={{
+                            backgroundColor: "var(--accent)",
+                            color: "var(--accent-foreground, white)",
+                          }}
+                        >
+                          {pending && busyGroup === c.group_id ? "Bezig…" : "Plaats hier"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOffer(c, rank)}
+                          disabled={pending && busyGroup === c.group_id}
+                          className="rounded-md px-3 py-1 text-[11px] disabled:opacity-50"
+                          style={{ border: "1px solid var(--border)" }}
+                        >
+                          Plek aanbieden
+                        </button>
+                      </div>
                     ) : (
                       <span
                         className="text-[11px]"

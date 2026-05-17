@@ -17,6 +17,7 @@ import { recordAudit } from "@/lib/audit/log";
 import { sendNotification } from "@/lib/notifications/send-notification";
 import { recommendStage } from "@/lib/intake/recommend-stage";
 import { needsReview } from "@/lib/intake/needs-review";
+import { scorePlacementCandidates } from "@/lib/db/placement";
 
 /**
  * Sprint 65 — Server action voor publieke dynamic-intake submissions.
@@ -354,6 +355,78 @@ export async function submitIntake(
       // eslint-disable-next-line no-console
       console.error("[intake] needs_review notification failed:", e);
     });
+  }
+
+  // Sprint 74 — auto-waitlist. Wanneer de submission op 'submitted'
+  // staat (dus geen needs_review-blokkade) checken we direct of er
+  // capaciteit is in de top-kandidaat. Top-1 capacity_match=0 →
+  // status='waitlisted' + wachtbericht-mail. Best-effort: RPC-fouten
+  // mogen de submission niet ongedaan maken.
+  if (initialStatus === "submitted") {
+    let topCapacity: number | null = null;
+    let topScore: number | null = null;
+    try {
+      const candidates = await scorePlacementCandidates(submissionId);
+      if (candidates.length > 0) {
+        topCapacity = Number(candidates[0]?.capacity_match ?? 0);
+        topScore = Number(candidates[0]?.total_score ?? 0);
+      } else {
+        topCapacity = 0;
+      }
+    } catch {
+      topCapacity = null;
+    }
+
+    if (topCapacity === 0) {
+      const { error: wlErr } = await admin
+        .from("intake_submissions")
+        .update({ status: "waitlisted" })
+        .eq("id", submissionId)
+        .eq("tenant_id", tenant.id);
+      if (!wlErr) {
+        await recordAudit({
+          tenant_id: tenant.id,
+          actor_user_id: "00000000-0000-0000-0000-000000000000",
+          action: "intake.submission.auto_waitlisted",
+          meta: {
+            submission_id: submissionId,
+            reason: "no_capacity",
+            top1_score: topScore ?? null,
+          },
+        });
+
+        if (contact_email) {
+          void sendEmail({
+            tenantId: tenant.id,
+            templateKey: "intake_waitlisted",
+            to: contact_email,
+            triggerSource: "intake.auto_waitlist",
+            variables: {
+              contact_name: contact_name ?? "",
+              form_name: form.name,
+            },
+          }).catch((e: unknown) => {
+            // eslint-disable-next-line no-console
+            console.error("[intake] waitlist email failed:", e);
+          });
+        }
+
+        void sendNotification({
+          tenantId: tenant.id,
+          title: "Aanvraag op wachtlijst",
+          contentText: `${contact_name ?? "Een aanvrager"} — geen vrije plek, automatisch op wachtlijst gezet.`,
+          targets: [{ target_type: "role", target_id: "tenant_admin" }],
+          sendEmail: false,
+          sendPush: false,
+          source: "intake_submission_auto_waitlisted",
+          sourceRef: submissionId,
+          createdBy: null,
+        }).catch((e: unknown) => {
+          // eslint-disable-next-line no-console
+          console.error("[intake] auto-waitlist notification failed:", e);
+        });
+      }
+    }
   }
 
   return { ok: true, data: { submissionId } };

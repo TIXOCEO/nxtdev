@@ -189,9 +189,19 @@ export async function middleware(req: NextRequest) {
 
   const slug = await resolveSlug(host);
 
+  // Sprint 74 — Publieke slot-offer-route is bewust tenant-agnostisch
+  // (token = enige autoriteit). NIET rewriten naar /t/<slug>/intake-slot/...,
+  // anders breken e-mail-links die via een tenant-subdomein binnenkomen.
+  const isPublicSlotOffer = url.pathname.startsWith("/intake-slot/");
+
   // Bouw de basis-response: rewrite indien nodig, anders next().
   let response: NextResponse;
-  if (slug && url.pathname !== `/t/${slug}` && !url.pathname.startsWith(`/t/${slug}/`)) {
+  if (
+    slug &&
+    !isPublicSlotOffer &&
+    url.pathname !== `/t/${slug}` &&
+    !url.pathname.startsWith(`/t/${slug}/`)
+  ) {
     const newPath = `/t/${slug}${url.pathname === "/" ? "" : url.pathname}`;
     const proto =
       req.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||

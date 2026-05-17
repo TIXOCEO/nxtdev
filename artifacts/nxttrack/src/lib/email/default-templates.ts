@@ -240,6 +240,55 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
       "De code vervalt op {{expiry_date}}.\n\n— {{tenant_name}}",
   },
   {
+    key: "intake_waitlisted",
+    name: "Intake — op de wachtlijst geplaatst",
+    subject: "Je staat op de wachtlijst bij {{tenant_name}}",
+    content_html: wrap(
+      "Op de wachtlijst",
+      "<p>Beste {{contact_name}},</p>" +
+        "<p>Op dit moment is er geen vrije plek voor je aanvraag (<strong>{{form_name}}</strong>). We hebben je op de wachtlijst gezet en nemen contact op zodra er een passende plek vrijkomt.</p>" +
+        "<p>Je hoeft zelf niets te doen.</p>",
+    ),
+    content_text:
+      "Beste {{contact_name}},\n\n" +
+      "Op dit moment is er geen vrije plek voor je aanvraag ({{form_name}}). We hebben je op de wachtlijst gezet en nemen contact op zodra er een passende plek vrijkomt.\n\n" +
+      "Je hoeft zelf niets te doen.\n\n— {{tenant_name}}",
+  },
+  {
+    key: "intake_slot_offered",
+    name: "Intake — plek aangeboden",
+    subject: "Er is een plek voor je bij {{tenant_name}}",
+    content_html: wrap(
+      "We hebben een plek voor je",
+      "<p>Beste {{contact_name}},</p>" +
+        "<p>We hebben een plek voor je in <strong>{{group_name}}</strong>. Laat ons uiterlijk <strong>{{expires_label}}</strong> weten of je deze plek wilt.</p>" +
+        "<p>" +
+        '<a href="{{accept_url}}" style="display:inline-block;padding:10px 16px;background:#1f9d55;color:#fff;border-radius:8px;text-decoration:none;margin-right:8px;">Plek accepteren</a>' +
+        '<a href="{{decline_url}}" style="display:inline-block;padding:10px 16px;background:#eee;color:#111;border-radius:8px;text-decoration:none;">Plek weigeren</a>' +
+        "</p>" +
+        "<p style=\"font-size:12px;color:#666;\">De links zijn geldig tot {{expires_label}}. Reageer je niet, dan vervalt het aanbod automatisch.</p>",
+    ),
+    content_text:
+      "Beste {{contact_name}},\n\n" +
+      "We hebben een plek voor je in {{group_name}}. Laat ons uiterlijk {{expires_label}} weten of je deze plek wilt.\n\n" +
+      "Accepteren: {{accept_url}}\n" +
+      "Weigeren:   {{decline_url}}\n\n" +
+      "De links zijn geldig tot {{expires_label}}. Reageer je niet, dan vervalt het aanbod automatisch.\n\n— {{tenant_name}}",
+  },
+  {
+    key: "intake_slot_confirmation",
+    name: "Intake — plek bevestigd",
+    subject: "Welkom in {{group_name}} bij {{tenant_name}}",
+    content_html: wrap(
+      "Plek bevestigd",
+      "<p>Beste {{contact_name}},</p>" +
+        "<p>Je plek in <strong>{{group_name}}</strong> is bevestigd. We nemen op korte termijn contact op met de praktische details.</p>",
+    ),
+    content_text:
+      "Beste {{contact_name}},\n\n" +
+      "Je plek in {{group_name}} is bevestigd. We nemen op korte termijn contact op met de praktische details.\n\n— {{tenant_name}}",
+  },
+  {
     key: "group_announcement",
     name: "Groep — mededeling",
     subject: "Mededeling voor {{group_name}}",

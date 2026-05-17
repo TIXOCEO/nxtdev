@@ -15,6 +15,10 @@ import {
   SubmissionHistory,
   type SubmissionAuditRow,
 } from "@/components/tenant/intake/SubmissionHistory";
+import {
+  SubmissionSlotOffers,
+  type SlotOfferRow,
+} from "@/components/tenant/intake/SubmissionSlotOffers";
 
 /**
  * Sprint 70 — Intake-submission detailpagina.
@@ -232,6 +236,44 @@ export default async function TenantIntakeDetailPage({
       created_at: r.created_at,
     }));
 
+  // Sprint 74 — laad slot-offers voor de tijdlijn op de detailpagina.
+  const { data: slotOfferRows } = await admin
+    .from("intake_slot_offers")
+    .select("id, status, expires_at, used_at, created_at, group_id")
+    .eq("tenant_id", tenantId)
+    .eq("submission_id", id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  const offerGroupIds = Array.from(
+    new Set(((slotOfferRows ?? []) as Array<{ group_id: string }>).map((o) => o.group_id)),
+  );
+  let offerGroupNames: Record<string, string> = {};
+  if (offerGroupIds.length > 0) {
+    const { data: gNames } = await admin
+      .from("groups")
+      .select("id, name")
+      .eq("tenant_id", tenantId)
+      .in("id", offerGroupIds);
+    offerGroupNames = Object.fromEntries(
+      (gNames ?? []).map((g) => [g.id as string, (g.name as string) ?? ""]),
+    );
+  }
+  const slotOffers: SlotOfferRow[] = ((slotOfferRows ?? []) as Array<{
+    id: string;
+    status: SlotOfferRow["status"];
+    expires_at: string;
+    used_at: string | null;
+    created_at: string;
+    group_id: string;
+  }>).map((o) => ({
+    id: o.id,
+    status: o.status,
+    expires_at: o.expires_at,
+    used_at: o.used_at,
+    created_at: o.created_at,
+    group_name: offerGroupNames[o.group_id] ?? null,
+  }));
+
   // Sprint 71 — scorePlacementCandidates gooit nu bij RPC-fout i.p.v.
   // stilletjes lege array; vang dat hier op zodat de pagina nog rendert
   // (lege-state in het panel).
@@ -300,6 +342,10 @@ export default async function TenantIntakeDetailPage({
       ) : null}
 
       {isAdmin ? <SubmissionHistory rows={historyRows} /> : null}
+
+      {isAdmin && slotOffers.length > 0 ? (
+        <SubmissionSlotOffers offers={slotOffers} canCancel={isAdmin} />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
