@@ -1,9 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  bucketWaitlistPressure,
-  type WaitlistBucket,
-} from "@/lib/programs/bucket-waitlist";
+import type { WaitlistBucket } from "@/lib/programs/bucket-waitlist";
 
 /**
  * Sprint 63 — Publieke marketplace-helpers voor programma's.
@@ -218,7 +215,10 @@ export async function getPublicProgramBySlug(
 
 /**
  * Sprint 75 — Geaggregeerde wachtrij-indicator voor 1 programma
- * (gebruikt op de detailpagina). Retourneert null bij read-error.
+ * (gebruikt op de detailpagina). Throw't bij DB-fout — een null
+ * zou bovenstroom als "geen badge" worden geïnterpreteerd en zo
+ * een echt incident verbergen. Retourneert null alleen wanneer de
+ * view daadwerkelijk geen rij heeft voor dit programma.
  */
 export async function getProgramWaitlistIndicator(
   tenantId: string,
@@ -256,7 +256,9 @@ export async function getProgramWaitlistIndicator(
 
 /**
  * Sprint 75 — Per-stage indicator-rijen voor de detail-pagina.
- * Gesorteerd op `stage_sort_order, stage_name`. Lege array bij fout.
+ * Gesorteerd op `stage_sort_order, stage_name`. Throw't bij
+ * DB-fout (geen silent fallback). Lege array betekent: programma
+ * heeft geen actieve stages.
  */
 export async function listProgramStageIndicators(
   tenantId: string,
