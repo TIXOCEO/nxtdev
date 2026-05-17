@@ -16,7 +16,8 @@ import { AddMemberPopover } from "../_add-member-popover";
 import { GroupMemberRow } from "./_member-row";
 import { CsvImport } from "./_csv-import";
 import { MinInstructorsField } from "@/components/tenant/min-instructors-field";
-import { LevelBandField } from "@/components/tenant/level-band-field";
+import { GroupStagesField } from "@/components/tenant/group-stages-field";
+import { getStagesContextForGroup } from "@/lib/db/program-stages";
 import { getTenantTerminology } from "@/lib/terminology/resolver";
 
 interface PageProps {
@@ -60,10 +61,9 @@ export default async function GroupDetailPage({
   const terminology = await getTenantTerminology(result.tenant.id);
   const groupRow = detail.group as {
     default_min_instructors?: number | null;
-    level_band?: string | null;
   } & typeof detail.group;
   const defaultMinInstructors = groupRow.default_min_instructors ?? null;
-  const levelBand = groupRow.level_band ?? null;
+  const stagesContext = await getStagesContextForGroup(result.tenant.id, id);
 
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(sp.tab ?? "")
     ? (sp.tab as TabKey)
@@ -223,11 +223,19 @@ export default async function GroupDetailPage({
           helpText="leeg = 1 als fallback"
         />
         <div className="mt-2">
-          <LevelBandField
+          <GroupStagesField
             tenantId={result.tenant.id}
             groupId={id}
-            initialValue={levelBand}
-            label="Niveau-label"
+            programId={stagesContext.programId}
+            programName={stagesContext.programName}
+            useStages={stagesContext.useStages}
+            available={stagesContext.available.map((s) => ({
+              id: s.id,
+              name: s.name,
+              color: s.color,
+            }))}
+            attachedStageIds={Array.from(stagesContext.attachedStageIds)}
+            label="Stages"
             helpText="gebruikt voor plaatsingssuggesties (leeg = geen match-score)"
           />
         </div>

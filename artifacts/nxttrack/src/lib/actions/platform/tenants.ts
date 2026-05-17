@@ -19,6 +19,7 @@ import {
 } from "@/lib/validation/platform";
 import { findUniqueSlug } from "@/lib/utils/slug";
 import { seedTenantHomepageFromSector } from "@/lib/db/sector-template-seed";
+import { seedTenantProgramStagesFromSector } from "@/lib/db/sector-stages-seed";
 import type { Tenant } from "@/types/database";
 
 /**
@@ -171,6 +172,23 @@ export async function createTenant(
     // Wel loggen zodat operationeel zichtbaar is wat misging.
     console.error(
       `[createTenant] sector-homepage seed threw for tenant=${tenant.id}: ` +
+        (err instanceof Error ? err.message : String(err)),
+    );
+  }
+
+  // Sprint 72 — sector-specifieke default `program_stages` seed
+  // (best-effort, gelijk patroon als de homepage-seed).
+  try {
+    const stagesRes = await seedTenantProgramStagesFromSector(tenant.id);
+    if (stagesRes.reason === "tenant_read_error" || stagesRes.reason === "insert_error") {
+      console.error(
+        `[createTenant] sector-stages seed reason=${stagesRes.reason} ` +
+          `tenant=${tenant.id} error=${stagesRes.error ?? "unknown"}`,
+      );
+    }
+  } catch (err) {
+    console.error(
+      `[createTenant] sector-stages seed threw for tenant=${tenant.id}: ` +
         (err instanceof Error ? err.message : String(err)),
     );
   }

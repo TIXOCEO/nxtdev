@@ -24,7 +24,11 @@ export interface PlacementCandidate {
     location?: string;
     age?: string;
     level?: string;
-    [key: string]: string | undefined;
+    /** Sprint 72 — namen van stages waaraan deze groep gekoppeld is. */
+    group_stage_names?: string[];
+    /** Sprint 72 — de stage die als doel werd gebruikt voor level-match. */
+    target_stage_name?: string | null;
+    [key: string]: string | string[] | null | undefined;
   };
 }
 
@@ -55,6 +59,7 @@ export async function scorePlacementCandidates(
     age_match: Number(row.age_match ?? 0),
     level_match: Number(row.level_match ?? 0),
     free_seats: Number(row.free_seats ?? 0),
-    rationale_json: (row.rationale_json as PlacementCandidate["rationale_json"]) ?? {},
+    rationale_json:
+      (row.rationale_json as PlacementCandidate["rationale_json"]) ?? {},
   }));
 }

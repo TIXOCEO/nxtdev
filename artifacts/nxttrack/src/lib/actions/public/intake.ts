@@ -135,6 +135,29 @@ export async function submitIntake(
   const admin = createAdminClient();
   const isDbForm = form.source === "db";
 
+  // Sprint 72 — lookup recommended_stage_id wanneer een programma + een
+  // niveau-voorkeur aanwezig is. Case-insensitive naam-match binnen
+  // het programma. Geen exception bij geen match — gewoon null laten.
+  let recommendedStageId: string | null = null;
+  const preferredLevel =
+    typeof cleaned["preferred_level"] === "string"
+      ? (cleaned["preferred_level"] as string).trim().toLowerCase()
+      : null;
+  const programIdFromAnswers =
+    typeof cleaned["program_id"] === "string" ? (cleaned["program_id"] as string) : null;
+  if (preferredLevel && programIdFromAnswers) {
+    const { data: stageRow } = await admin
+      .from("program_stages")
+      .select("id, name")
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", programIdFromAnswers)
+      .is("archived_at", null);
+    const match = ((stageRow ?? []) as Array<{ id: string; name: string }>).find(
+      (s) => s.name.trim().toLowerCase() === preferredLevel,
+    );
+    if (match) recommendedStageId = match.id;
+  }
+
   const { data: subRow, error: subErr } = await admin
     .from("intake_submissions")
     .insert({
@@ -149,6 +172,7 @@ export async function submitIntake(
       contact_date_of_birth: contact_dob,
       agreed_terms: Boolean(cleaned["agreed_terms"]),
       preferences_json: cleaned,
+      recommended_stage_id: recommendedStageId,
     })
     .select("id")
     .single();

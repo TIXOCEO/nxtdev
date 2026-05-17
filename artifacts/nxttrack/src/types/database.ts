@@ -342,8 +342,6 @@ export interface Group {
   max_athletes: number | null;
   /** Sprint 57 — fallback minimum aantal instructeurs per sessie. */
   default_min_instructors?: number | null;
-  /** Sprint 71 — vrije-tekst niveau-label voor placement-scoring. */
-  level_band?: string | null;
   created_at: string;
   /** Sprint 42 — bijgehouden via `groups_updated_at` trigger. */
   updated_at: string;

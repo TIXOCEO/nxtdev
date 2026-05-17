@@ -26,6 +26,8 @@ import { GroupsTab } from "./_groups-tab";
 import { InstructorsTab } from "./_instructors-tab";
 import { ResourcesTab } from "./_resources-tab";
 import { MembershipPlansTab } from "./_membership-plans-tab";
+import { StagesTab } from "./_stages-tab";
+import { listProgramStages } from "@/lib/db/program-stages";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -95,7 +97,42 @@ export default async function ProgramDetailPage({ params, searchParams }: PagePr
       {activeTab === "lidmaatschap" && (
         <MembershipPlansTabSection tenantId={tenantId} programId={program.id} />
       )}
+
+      {activeTab === "stages" && (
+        <StagesTabSection
+          tenantId={tenantId}
+          programId={program.id}
+          useStages={Boolean((program as { use_stages?: boolean }).use_stages)}
+        />
+      )}
     </>
+  );
+}
+
+async function StagesTabSection({
+  tenantId,
+  programId,
+  useStages,
+}: {
+  tenantId: string;
+  programId: string;
+  useStages: boolean;
+}) {
+  const stages = await listProgramStages(tenantId, programId, { includeArchived: true });
+  return (
+    <StagesTab
+      tenantId={tenantId}
+      programId={programId}
+      useStages={useStages}
+      stages={stages.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        color: s.color,
+        sort_order: s.sort_order,
+        archived_at: s.archived_at,
+      }))}
+    />
   );
 }
 
