@@ -27,16 +27,16 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const COLORS = {
-  accent: "#3b82f6",
-  accentDark: "#1e40af",
+  accent: "#b6d83b",
+  accentDark: "#7fa823",
   ink: "#0f1e3a",
   inkLight: "#64748b",
-  sidebarBg: "#ffffff",
-  mainBg: "#f8fafc",
+  sidebarBg: "#f4f8eb",
+  mainBg: "#fbfcf9",
   surface: "#ffffff",
   border: "rgba(15,30,58,0.08)",
-  activeBg: "#eff6ff",
-  hoverBg: "#f1f5f9",
+  activeBg: "#e8f0d0",
+  hoverBg: "#f0f4e0",
   cardShadow: "0 1px 2px rgba(15,30,58,0.04)",
 };
 
