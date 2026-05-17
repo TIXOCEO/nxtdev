@@ -92,7 +92,8 @@ export function CapacityEventCard({
 
   return (
     <div
-      className="rounded-2xl p-5"
+      id={`evt-${eventId}`}
+      className="rounded-2xl p-5 scroll-mt-20"
       style={{
         backgroundColor: "var(--surface)",
         border: "1px solid var(--border)",

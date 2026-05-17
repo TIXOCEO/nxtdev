@@ -47,11 +47,19 @@ export async function notifyCapacityEventIfAny(
     const seats = (ev.freed_seats as number) ?? 1;
     const cand = (ev.candidate_count as number) ?? 0;
 
-    const title = `Plek vrij in ${groupName}`;
+    // Sprint 76d — vast notificatie-format conform spec:
+    // "Plek vrijgekomen in groep <X> — <N> kandidaten".
+    const title = `Plek vrijgekomen in groep ${groupName} — ${cand} ${
+      cand === 1 ? "kandidaat" : "kandidaten"
+    }`;
     const contentText =
-      `Er is ${seats} ${seats === 1 ? "plek" : "plekken"} vrijgekomen in ${groupName}. ` +
+      `Er ${seats === 1 ? "is 1 plek" : `zijn ${seats} plekken`} vrijgekomen in ${groupName}. ` +
       `${cand} wachtende ${cand === 1 ? "kandidaat" : "kandidaten"} gevonden. ` +
-      `Open /tenant/intake/vrijgekomen-plekken om af te handelen.`;
+      `Open de placement-assistent om af te handelen.`;
+
+    // Deeplink direct naar de capacity-flow gefilterd op deze groep,
+    // anchored op het event-blok zodat admins meteen de juiste card zien.
+    const pushUrl = `/tenant/intake/vrijgekomen-plekken#evt-${ev.id as string}`;
 
     await sendNotification({
       tenantId,
@@ -60,7 +68,7 @@ export async function notifyCapacityEventIfAny(
       targets: [{ target_type: "role", target_id: "tenant_admin" }],
       source: "capacity_available_candidates",
       sourceRef: ev.id as string,
-      pushUrl: "/tenant/intake/vrijgekomen-plekken",
+      pushUrl,
     });
   } catch (err) {
     // eslint-disable-next-line no-console
