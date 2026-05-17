@@ -66,7 +66,9 @@ export async function createTenantEvent(
   }
 
   revalidatePath("/tenant/events");
-  revalidatePath(`/t/.*`); // public pages — best-effort
+  // Sprint 79 — Next.js ondersteunt geen wildcard-paths in revalidatePath;
+  // de publieke /t/[slug]-route draait op force-dynamic zodat er sowieso
+  // geen cache zit die ge-invalideerd moet worden.
   return { ok: true, data };
 }
 
@@ -234,6 +236,6 @@ export async function setPublicShowUpcomingSessions(
   if (error) return fail(error.message);
 
   revalidatePath("/tenant/events");
-  revalidatePath(`/t/.*`);
+  // Publieke route is force-dynamic — geen cache-invalidatie nodig.
   return { ok: true, data: { enabled } };
 }

@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Idempotent insert in public.platform_releases (do-nothing on conflict).
 -- Sprint 79 — UserShell-redesign rest: publieke shell (aankomende sessies +
--- uitgelichte events + module-grid polish), trainer-shell fundament, parent-
+-- uitgelichte events + aankomende sessies-tegel), trainer-shell DB-fundament, parent-
 -- shell fundament.
 -- ============================================================================
 
@@ -25,7 +25,7 @@ insert into public.platform_releases (
       'Notificatie-key trainer_task_assigned voorbereid: zodra de UI live gaat, krijgen trainers een melding wanneer een taak aan hen wordt toegewezen.'
     ),
     'improved', jsonb_build_array(
-      'Module-grid op de publieke homepage gebruikt nu een vaste rij-hoogte op desktop met interne scroll per tegel — voorkomt dat één lange tegel de hele grid uit balans trekt.',
+      'Publieke homepage toont voortaan een lijst met de eerstvolgende trainings-sessies (titel · datum · groep · locatie) wanneer de tenant-admin de toggle aanzet. Standaard uit — Houtrust-veilig.',
       'Read-only view `public_upcoming_sessions` is gedefinieerd met `security_invoker=true` en expliciete grants aan anon+authenticated; toont géén PII (geen aanwezigheid, geen notities).'
     ),
     'fixed', jsonb_build_array(),
