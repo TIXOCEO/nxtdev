@@ -68,30 +68,62 @@ function pickBool(
  * Zwemschool — 5 default stages: Watergewenning, Drijven,
  * Schoolslag basis, Rugslag basis, Afzwem-ready.
  *
- * Regels (volgorde matters; eerste match wint):
- *   - Geen ervaring / kan niet drijven → "Watergewenning"
- *   - Kan drijven maar niet onder water → "Drijven"
- *   - Werkt aan A → "Schoolslag basis"
- *   - Werkt aan B → "Rugslag basis"
- *   - Werkt aan C → "Afzwem-ready"
- *   - Anders → null (geen aanname; admin kiest zelf)
+ * Regels combineren **leeftijd + ervaring + drijven + onder water**
+ * (volgorde matters; eerste match wint):
+ *
+ *   Leeftijds-gate:
+ *     - age < 4 → null (te jong voor reguliere zwemles)
+ *     - age < 5 → forceer Watergewenning, ook bij A/B/C-claim
+ *       (peuters/kleuters starten altijd op het instap-niveau)
+ *
+ *   Ervaring (≥ 5 jaar):
+ *     - Werkt aan C → "Afzwem-ready"
+ *     - Werkt aan B → "Rugslag basis"
+ *     - Werkt aan A → "Schoolslag basis"
+ *     - Watervrij / geen ervaring → "Watergewenning"
+ *
+ *   Fallback op drijven + onder water (geen niveau-label):
+ *     - Kan niet drijven → "Watergewenning"
+ *     - Drijft wel, niet onder water → "Drijven"
+ *
+ *   Anders → null (admin kiest zelf, needs_review triggert).
  */
 function recommendSwimming(
   input: RecommendStageInput,
 ): RecommendStageResult {
+  const now = input.now ?? new Date();
+  const age = ageYears(input.dateOfBirth, now);
   const level = pickString(input.preferences, "preferred_level") ??
     pickString(input.preferences, "current_level");
   const floats = pickBool(input.preferences, "can_float");
   const underwater = pickBool(input.preferences, "underwater_comfort");
 
+  // Leeftijds-gates komen vóór ervaring: ook al claimt iemand B/C,
+  // een 3-jarige hoort niet in een afzwem-groep.
+  if (age != null && age < 4) {
+    return {
+      stageName: null,
+      rationale: `Leeftijd ${age} te jong voor reguliere zwemles`,
+    };
+  }
+  if (age != null && age < 5) {
+    return {
+      stageName: "Watergewenning",
+      rationale: `Leeftijd ${age} — start op instap-niveau`,
+    };
+  }
+
   if (level === "c") {
-    return { stageName: "Afzwem-ready", rationale: "Werkt aan zwemdiploma C" };
+    const reason = age != null ? `Werkt aan C (leeftijd ${age})` : "Werkt aan zwemdiploma C";
+    return { stageName: "Afzwem-ready", rationale: reason };
   }
   if (level === "b") {
-    return { stageName: "Rugslag basis", rationale: "Werkt aan zwemdiploma B" };
+    const reason = age != null ? `Werkt aan B (leeftijd ${age})` : "Werkt aan zwemdiploma B";
+    return { stageName: "Rugslag basis", rationale: reason };
   }
   if (level === "a") {
-    return { stageName: "Schoolslag basis", rationale: "Werkt aan zwemdiploma A" };
+    const reason = age != null ? `Werkt aan A (leeftijd ${age})` : "Werkt aan zwemdiploma A";
+    return { stageName: "Schoolslag basis", rationale: reason };
   }
   if (level === "watervrij") {
     return { stageName: "Watergewenning", rationale: "Watervrij / geen ervaring" };
