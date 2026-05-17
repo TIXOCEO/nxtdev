@@ -106,6 +106,7 @@ export default function Wizard() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" style={{ color: COLORS.accent }} />
               <h1 className="text-lg font-bold" style={{ color: COLORS.ink }}>
+                <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
                 Slimme intake
               </h1>
             </div>

@@ -76,7 +76,7 @@ const MESSAGES = [
 const QUICK_ACTIONS = [
   { emoji: "📅", label: "Les afzeggen", bg: "bg-red-50", color: "text-red-600" },
   { emoji: "🔄", label: "Inhaalmoment plannen", bg: "bg-blue-50", color: "text-blue-600" },
-  { emoji: "🌴", label: "Vakantieplanning bekijken", bg: "bg-green-50", color: "text-green-600" },
+  { emoji: "🌴", label: "Vakantieplanning bekijken", bg: "bg-[#e5edf7]", color: "text-[#1e3a5f]" },
   { emoji: "💬", label: "Bericht sturen", bg: "bg-purple-50", color: "text-purple-600" },
 ];
 
@@ -297,6 +297,7 @@ export default function Dashboard() {
           {/* Greeting */}
           <div>
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}>
+              <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
               Welkom, Papa of Mama 👋
             </h1>
             <p className="mt-1 text-sm" style={{ color: COLORS.inkLight }}>

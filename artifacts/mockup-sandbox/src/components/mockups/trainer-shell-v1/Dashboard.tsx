@@ -292,6 +292,7 @@ export default function Dashboard() {
           {/* Greeting */}
           <div>
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}>
+              <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
               Goedemorgen, Sophie!
             </h1>
             <p className="mt-1 text-sm" style={{ color: COLORS.inkLight }}>
@@ -456,7 +457,7 @@ export default function Dashboard() {
                     >
                       <div
                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${a.bg} ${a.color}`}
-                        style={isMint ? { backgroundColor: COLORS.mint, color: COLORS.accent } : undefined}
+                        style={isMint ? { backgroundColor: "#e5edf7", color: "#1e3a5f" } : undefined}
                       >
                         <Icon className="h-5 w-5" />
                       </div>

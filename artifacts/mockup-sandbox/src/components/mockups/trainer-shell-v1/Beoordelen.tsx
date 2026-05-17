@@ -147,6 +147,7 @@ export default function Beoordelen() {
         {/* Header */}
         <div className="px-4 pt-3">
           <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}>
+            <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
             Beoordelen
           </h1>
           <p className="mt-1 text-xs" style={{ color: COLORS.inkLight }}>

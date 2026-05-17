@@ -310,6 +310,7 @@ export default function Betalingen() {
           {/* Header */}
           <div>
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}>
+              <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
               Betalingen 💳
             </h1>
             <p className="mt-1 text-sm" style={{ color: COLORS.inkLight }}>
@@ -398,7 +399,7 @@ export default function Betalingen() {
                         </span>
                       )}
                       {active && (
-                        <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full" style={{ backgroundColor: COLORS.accent }} />
+                        <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full" style={{ backgroundColor: "#1e3a5f" }} />
                       )}
                     </button>
                   );

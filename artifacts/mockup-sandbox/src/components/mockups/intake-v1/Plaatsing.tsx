@@ -252,6 +252,7 @@ export default function Plaatsing() {
             ZH
           </div>
           <h1 className="text-lg font-bold" style={{ color: COLORS.ink }}>
+            <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
             Plaatsing
           </h1>
         </header>

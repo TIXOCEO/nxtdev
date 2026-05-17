@@ -338,7 +338,7 @@ export default function Groepen() {
         <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}>Groepen</h1>
+              <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}><span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />Groepen</h1>
               <p className="mt-1 text-sm" style={{ color: COLORS.inkLight }}>
                 Overzicht van al jouw groepen
               </p>

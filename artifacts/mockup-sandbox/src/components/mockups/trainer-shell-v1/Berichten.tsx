@@ -529,6 +529,7 @@ export default function Berichten() {
           {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: COLORS.ink }}>
+              <span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />
               Berichten
             </h1>
             <button
@@ -558,7 +559,7 @@ export default function Berichten() {
                   </span>
                 )}
                 {t.active && (
-                  <span className="absolute inset-x-2 -bottom-px h-[2px] rounded-full" style={{ backgroundColor: COLORS.accent }} />
+                  <span className="absolute inset-x-2 -bottom-px h-[2px] rounded-full" style={{ backgroundColor: "#1e3a5f" }} />
                 )}
               </button>
             ))}

@@ -409,7 +409,7 @@ export default function Leerling() {
                 {/* Naam + info */}
                 <div className="lg:col-span-6">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-bold lg:text-3xl" style={{ color: COLORS.ink }}>Emma de Jong</h1>
+                    <h1 className="text-2xl font-bold lg:text-3xl" style={{ color: COLORS.ink }}><span className="inline-block h-7 w-1 rounded-full mr-3 align-middle" style={{ backgroundColor: "#1e3a5f" }} />Emma de Jong</h1>
                     <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ backgroundColor: COLORS.mint, color: "#4a6b14" }}>
                       <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                       Actief
@@ -459,7 +459,7 @@ export default function Leerling() {
           </Card>
 
           {/* Key fact tiles */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             {KEY_FACTS.map((f) => {
               const Icon = f.icon;
               return (
