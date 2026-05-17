@@ -218,7 +218,7 @@ export async function submitIntake(
     preferences: cleaned,
     programAgeMin,
     programAgeMax,
-    recommendedStageName,
+    recommendedStageId,
   });
   const initialStatus: "submitted" | "needs_review" = review.needs
     ? "needs_review"

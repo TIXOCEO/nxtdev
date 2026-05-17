@@ -18,7 +18,13 @@ export interface NeedsReviewInput {
   preferences: Record<string, unknown> | null | undefined;
   programAgeMin?: number | null;
   programAgeMax?: number | null;
-  recommendedStageName?: string | null;
+  /**
+   * Sprint 73 — Resolved DB-stage-id (na lookup tegen `program_stages`).
+   * `null` betekent: er is geen DB-stage-rij gematcht, ook al heeft de
+   * rule-engine misschien een naam voorgesteld. Voor zwemschool is
+   * dat een review-trigger.
+   */
+  recommendedStageId?: string | null;
   now?: Date;
 }
 
@@ -93,13 +99,14 @@ export function needsReview(input: NeedsReviewInput): NeedsReviewResult {
     }
   }
 
-  // 4. Zwemschool zonder herkenbaar niveau.
+  // 4. Zwemschool zonder gekoppelde DB-stage. We checken op de
+  // resolved stage-id (niet de rule-engine-name): pas wanneer de
+  // submission daadwerkelijk aan een `program_stages`-rij gekoppeld
+  // is, is automatische plaatsing zinvol — anders moet een admin
+  // hem handmatig beoordelen.
   const sector = (input.sectorTemplateKey ?? "").toLowerCase().trim();
-  if (
-    sector === "swimming_school" &&
-    (input.recommendedStageName == null || input.recommendedStageName === "")
-  ) {
-    reasons.push("Geen automatisch herkenbaar zwem-niveau");
+  if (sector === "swimming_school" && !input.recommendedStageId) {
+    reasons.push("Geen gekoppelde zwem-stage");
   }
 
   return { needs: reasons.length > 0, reasons };

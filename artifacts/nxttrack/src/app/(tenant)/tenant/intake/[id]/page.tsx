@@ -11,6 +11,10 @@ import { scorePlacementCandidates } from "@/lib/db/placement";
 import { PlacementSuggestionsPanel } from "@/components/tenant/intake/PlacementSuggestionsPanel";
 import { SubmissionStatusStrip } from "@/components/tenant/intake/SubmissionStatusStrip";
 import { RecommendedStageBadge } from "@/components/tenant/intake/RecommendedStageBadge";
+import {
+  SubmissionHistory,
+  type SubmissionAuditRow,
+} from "@/components/tenant/intake/SubmissionHistory";
 
 /**
  * Sprint 70 — Intake-submission detailpagina.
@@ -175,6 +179,59 @@ export default async function TenantIntakeDetailPage({
     ? stageNameById.get(sub.selected_stage_id) ?? null
     : null;
 
+  // Sprint 73 — audit-timeline voor deze submission. We filteren op
+  // de 5 intake-status-actions en client-side op meta.submission_id.
+  const { data: auditRowsRaw } = await admin
+    .from("audit_logs")
+    .select("id, action, meta, actor_user_id, created_at")
+    .eq("tenant_id", tenantId)
+    .in("action", [
+      "intake.submission.reviewed",
+      "intake.submission.status_changed",
+      "intake.submission.rejected",
+      "intake.submission.placed",
+      "intake.submission.stage_selected",
+    ])
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const filtered = ((auditRowsRaw ?? []) as Array<{
+    id: string;
+    action: string;
+    meta: Record<string, unknown> | null;
+    actor_user_id: string | null;
+    created_at: string;
+  }>).filter((r) => {
+    const m = (r.meta ?? {}) as Record<string, unknown>;
+    return m["submission_id"] === sub.id;
+  });
+  const actorIds = Array.from(
+    new Set(filtered.map((r) => r.actor_user_id).filter((v): v is string => !!v)),
+  );
+  const actorEmailById = new Map<string, string>();
+  if (actorIds.length > 0) {
+    await Promise.all(
+      actorIds.map(async (uid) => {
+        try {
+          const { data: u } = await admin.auth.admin.getUserById(uid);
+          if (u?.user?.email) actorEmailById.set(uid, u.user.email);
+        } catch {
+          /* swallow */
+        }
+      }),
+    );
+  }
+  const historyRows: SubmissionAuditRow[] = filtered
+    .reverse()
+    .map((r) => ({
+      id: r.id,
+      action: r.action,
+      meta: (r.meta ?? {}) as Record<string, unknown>,
+      actor_email: r.actor_user_id
+        ? actorEmailById.get(r.actor_user_id) ?? null
+        : null,
+      created_at: r.created_at,
+    }));
+
   // Sprint 71 — scorePlacementCandidates gooit nu bij RPC-fout i.p.v.
   // stilletjes lege array; vang dat hier op zodat de pagina nog rendert
   // (lege-state in het panel).
@@ -241,6 +298,8 @@ export default async function TenantIntakeDetailPage({
           programStages={programStages}
         />
       ) : null}
+
+      {isAdmin ? <SubmissionHistory rows={historyRows} /> : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
