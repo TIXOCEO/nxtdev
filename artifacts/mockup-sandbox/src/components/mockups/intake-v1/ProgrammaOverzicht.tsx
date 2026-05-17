@@ -23,8 +23,8 @@ const COLORS = {
   mainBg: "#fbfcf9",
   surface: "#ffffff",
   border: "#e5eada",
-  activeBg: "#e8f0d0",
-  hoverBg: "#f0f4e0",
+  activeBg: "#e5edf7",
+  hoverBg: "#eef2f8",
   mint: "#eef5d8",
 };
 
@@ -150,7 +150,7 @@ function Sidebar() {
                 )}
                 <Icon
                   className="h-4 w-4 shrink-0"
-                  style={{ color: item.active ? COLORS.accent : "currentColor" }}
+                  style={{ color: item.active ? "#1e3a5f" : "currentColor" }}
                 />
                 <span className="flex-1 truncate text-left">{item.label}</span>
               </button>

@@ -24,7 +24,7 @@ const COLORS = {
   surface: "#ffffff",
   border: "#e5eada",
   mint: "#eef5d8",
-  activeBg: "#e8f0d0",
+  activeBg: "#e5edf7",
 };
 
 type Level = "none" | "practice" | "almost" | "good" | "mastered";
@@ -97,7 +97,7 @@ function MobileTabBar() {
             <span className="text-[10px] font-medium" style={{ color: t.active ? COLORS.ink : COLORS.inkLight }}>
               {t.label}
             </span>
-            {t.active && <span className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS.accent }} />}
+            {t.active && <span className="h-1 w-1 rounded-full" style={{ backgroundColor: "#1e3a5f" }} />}
           </button>
         );
       })}

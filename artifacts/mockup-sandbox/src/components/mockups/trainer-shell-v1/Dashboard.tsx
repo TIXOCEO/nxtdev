@@ -35,8 +35,8 @@ const COLORS = {
   mainBg: "#fbfcf9",
   surface: "#ffffff",
   border: "#e5eada",
-  activeBg: "#e8f0d0",
-  hoverBg: "#f0f4e0",
+  activeBg: "#e5edf7",
+  hoverBg: "#eef2f8",
   mint: "#eef5d8",
 };
 
@@ -149,9 +149,9 @@ function Sidebar({ mobile = false, onClose }: { mobile?: boolean; onClose?: () =
                 onMouseLeave={(e) => { if (!item.active) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
                 {item.active && (
-                  <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full" style={{ backgroundColor: COLORS.accent }} />
+                  <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full" style={{ backgroundColor: "#1e3a5f" }} />
                 )}
-                <Icon className="h-4 w-4 shrink-0" style={{ color: item.active ? COLORS.accent : "currentColor" }} />
+                <Icon className="h-4 w-4 shrink-0" style={{ color: item.active ? "#1e3a5f" : "currentColor" }} />
                 <span className="flex-1 truncate text-left">{item.label}</span>
                 {item.badge && (
                   <span
@@ -263,7 +263,7 @@ function MobileTabBar() {
             <span className="text-[10px] font-medium" style={{ color: t.active ? COLORS.ink : COLORS.inkLight }}>
               {t.label}
             </span>
-            {t.active && <span className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS.accent }} />}
+            {t.active && <span className="h-1 w-1 rounded-full" style={{ backgroundColor: "#1e3a5f" }} />}
           </button>
         );
       })}
@@ -341,7 +341,7 @@ export default function Dashboard() {
                         style={{ backgroundColor: s.active ? COLORS.activeBg : "transparent" }}
                       >
                         {s.active && (
-                          <div className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full" style={{ backgroundColor: COLORS.accent }} />
+                          <div className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-full" style={{ backgroundColor: "#1e3a5f" }} />
                         )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">

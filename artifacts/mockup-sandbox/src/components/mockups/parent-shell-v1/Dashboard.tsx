@@ -31,8 +31,8 @@ const COLORS = {
   mainBg: "#fbfcf9",
   surface: "#ffffff",
   border: "rgba(15,30,58,0.08)",
-  activeBg: "#e8f0d0",
-  hoverBg: "#f0f4e0",
+  activeBg: "#e5edf7",
+  hoverBg: "#eef2f8",
   cardShadow: "0 1px 2px rgba(15,30,58,0.04)",
 };
 
@@ -132,9 +132,9 @@ function Sidebar({ mobile = false, onClose }: { mobile?: boolean; onClose?: () =
                 onMouseLeave={(e) => { if (!item.active) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
                 {item.active && (
-                  <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full" style={{ backgroundColor: COLORS.accent }} />
+                  <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full" style={{ backgroundColor: "#1e3a5f" }} />
                 )}
-                <Icon className="h-4 w-4 shrink-0" style={{ color: item.active ? COLORS.accent : "currentColor" }} />
+                <Icon className="h-4 w-4 shrink-0" style={{ color: item.active ? "#1e3a5f" : "currentColor" }} />
                 <span className="flex-1 truncate text-left">{item.label}</span>
                 {item.badge && (
                   <span
@@ -236,11 +236,11 @@ function MobileTabBar() {
         const Icon = t.icon;
         return (
           <button key={t.label} className="flex flex-1 flex-col items-center gap-1 py-2">
-            <Icon className="h-5 w-5" style={{ color: t.active ? COLORS.accent : COLORS.inkLight }} />
+            <Icon className="h-5 w-5" style={{ color: t.active ? "#1e3a5f" : COLORS.inkLight }} />
             <span className="text-[10px] font-medium" style={{ color: t.active ? COLORS.ink : COLORS.inkLight }}>
               {t.label}
             </span>
-            {t.active && <span className="h-1 w-1 rounded-full" style={{ backgroundColor: COLORS.accent }} />}
+            {t.active && <span className="h-1 w-1 rounded-full" style={{ backgroundColor: "#1e3a5f" }} />}
           </button>
         );
       })}

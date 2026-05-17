@@ -32,7 +32,7 @@ const COLORS = {
   mainBg: "#fbfcf9",
   surface: "#ffffff",
   border: "#e5eada",
-  activeBg: "#e5eed2",
+  activeBg: "#e5edf7",
 };
 
 interface NavItem {
@@ -113,7 +113,7 @@ export function Redesign() {
                     {item.active && (
                       <div className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full" style={{ backgroundColor: COLORS.accent }} />
                     )}
-                    <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 lg:h-4 lg:w-4" style={{ color: item.active ? COLORS.accent : "currentColor" }} />
+                    <Icon className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 lg:h-4 lg:w-4" style={{ color: item.active ? "#1e3a5f" : "currentColor" }} />
                     <span className="hidden truncate lg:block">{item.label}</span>
                     
                     {/* Hover state overlay */}
@@ -194,7 +194,7 @@ export function Redesign() {
                 <nav className="flex flex-col gap-1">
                   {ALGEMEEN_NAV.map((item) => (
                     <button key={item.label} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium" style={{ color: item.active ? COLORS.ink : COLORS.inkLight, backgroundColor: item.active ? COLORS.activeBg : "transparent" }}>
-                      <item.icon className="h-5 w-5 shrink-0" style={{ color: item.active ? COLORS.accent : "currentColor" }} />
+                      <item.icon className="h-5 w-5 shrink-0" style={{ color: item.active ? "#1e3a5f" : "currentColor" }} />
                       <span>{item.label}</span>
                     </button>
                   ))}
