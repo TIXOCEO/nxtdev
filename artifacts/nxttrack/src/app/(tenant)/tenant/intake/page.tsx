@@ -39,11 +39,22 @@ const TYPE_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   submitted: "Ingediend",
-  reviewing: "In review",
-  eligible: "Goedgekeurd",
+  in_review: "In beoordeling",
+  needs_review: "Vereist beoordeling",
+  waitlisted: "Wachtlijst",
   placed: "Geplaatst",
   rejected: "Afgewezen",
-  cancelled: "Geannuleerd",
+  converted: "Omgezet",
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  submitted: "#3b82f6",
+  in_review: "#0ea5e9",
+  needs_review: "#f59e0b",
+  waitlisted: "#a855f7",
+  placed: "#10b981",
+  rejected: "#ef4444",
+  converted: "#6b7280",
 };
 
 interface SearchParams {
@@ -119,12 +130,48 @@ export default async function TenantIntakePage({
   const { data, error } = await query;
   const rows = (data ?? []) as SubmissionRow[];
 
+  // Sprint 73 — kop-tile "Vereist beoordeling" count (separate query
+  // zodat de count onafhankelijk is van het actieve filter).
+  let needsReviewCount = 0;
+  if (dynamicIntakeEnabled) {
+    const { count } = await admin
+      .from("intake_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("status", "needs_review");
+    needsReviewCount = count ?? 0;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeading
         title="Intake-aanvragen"
         description="Overzicht van alle dynamic intake-submissions (Sprint 65 MVP — read-only)."
       />
+
+      {dynamicIntakeEnabled && needsReviewCount > 0 ? (
+        <div
+          className="flex items-center justify-between rounded-2xl p-4"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderLeft: "4px solid #f59e0b",
+          }}
+        >
+          <div>
+            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              Vereist beoordeling
+            </div>
+            <div className="mt-1 text-2xl font-semibold">{needsReviewCount}</div>
+          </div>
+          <Link
+            href="/tenant/intake?status=needs_review"
+            className="text-sm underline"
+          >
+            Bekijk →
+          </Link>
+        </div>
+      ) : null}
 
       {dynamicIntakeEnabled && isAdmin ? (
         <PlacementStatsCard
@@ -277,7 +324,13 @@ export default async function TenantIntakePage({
                     {TYPE_LABEL[r.submission_type] ?? r.submission_type}
                   </td>
                   <td className="px-4 py-2">
-                    {STATUS_LABEL[r.status] ?? r.status}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-2 w-2 rounded-full"
+                        style={{ backgroundColor: STATUS_COLOR[r.status] ?? "#9ca3af" }}
+                      />
+                      {STATUS_LABEL[r.status] ?? r.status}
+                    </span>
                   </td>
                   <td className="px-4 py-2">
                     <Link

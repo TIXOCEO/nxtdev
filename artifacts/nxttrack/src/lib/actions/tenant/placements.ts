@@ -55,6 +55,17 @@ export async function placeSubmission(
 
   const user = await assertTenantAccess(sub.tenant_id);
 
+  // Sprint 73 — lifecycle-validatie: alleen niet-terminale statussen
+  // mogen naar 'placed'. Voorkomt rejected/converted/placed → placed.
+  const allowedFrom = ["submitted", "in_review", "needs_review", "waitlisted"];
+  if (!allowedFrom.includes(sub.status)) {
+    return {
+      ok: false,
+      error: `overgang ${sub.status} → placed is niet toegestaan`,
+    };
+  }
+  const fromStatus = sub.status;
+
   const { data: grp, error: grpErr } = await admin
     .from("groups")
     .select("id, tenant_id, name")
@@ -97,6 +108,8 @@ export async function placeSubmission(
     submission_id: submissionId,
     group_id: groupId,
     group_name: grp.name ?? null,
+    from_status: fromStatus,
+    to_status: "placed",
   };
   if (typeof suggestionRank === "number") meta.suggestion_rank = suggestionRank;
   if (typeof suggestionScore === "number") meta.suggestion_score = suggestionScore;

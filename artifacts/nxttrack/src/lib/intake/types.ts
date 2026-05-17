@@ -26,13 +26,24 @@ export type IntakeSubmissionType =
   | "waitlist_request"
   | "information_request";
 
+/**
+ * Sprint 73 — Uitgebreide lifecycle:
+ *   submitted   = nieuw, nog niet aangeraakt
+ *   in_review   = admin heeft actie genomen, beoordeling loopt
+ *   needs_review= automatisch geflagged (medisch / leeftijd / onbekend)
+ *   waitlisted  = op de wachtlijst gezet
+ *   placed      = toegewezen aan een groep (zie placements.ts)
+ *   rejected    = afgewezen
+ *   converted   = omgezet naar registration/member (Sprint 74+)
+ */
 export type IntakeSubmissionStatus =
   | "submitted"
-  | "reviewing"
-  | "eligible"
+  | "in_review"
+  | "needs_review"
+  | "waitlisted"
   | "placed"
   | "rejected"
-  | "cancelled";
+  | "converted";
 
 export type IntakeRegistrationTarget = "self" | "child";
 

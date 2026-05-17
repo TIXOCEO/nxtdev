@@ -15,6 +15,8 @@ import type {
 import { sendEmail } from "@/lib/email/send-email";
 import { recordAudit } from "@/lib/audit/log";
 import { sendNotification } from "@/lib/notifications/send-notification";
+import { recommendStage } from "@/lib/intake/recommend-stage";
+import { needsReview } from "@/lib/intake/needs-review";
 
 /**
  * Sprint 65 — Server action voor publieke dynamic-intake submissions.
@@ -138,25 +140,89 @@ export async function submitIntake(
   // Sprint 72 — lookup recommended_stage_id wanneer een programma + een
   // niveau-voorkeur aanwezig is. Case-insensitive naam-match binnen
   // het programma. Geen exception bij geen match — gewoon null laten.
+  //
+  // Sprint 73 — fallback: als de directe `preferred_level`-match niets
+  // oplevert, vraag de pure rule-engine om een aanbeveling per sector
+  // (zwemschool: ervaring/drijven/onder-water; voetbal: leeftijd).
   let recommendedStageId: string | null = null;
+  let recommendedStageName: string | null = null;
   const preferredLevel =
     typeof cleaned["preferred_level"] === "string"
       ? (cleaned["preferred_level"] as string).trim().toLowerCase()
       : null;
   const programIdFromAnswers =
     typeof cleaned["program_id"] === "string" ? (cleaned["program_id"] as string) : null;
-  if (preferredLevel && programIdFromAnswers) {
+
+  let programStages: Array<{ id: string; name: string }> = [];
+  if (programIdFromAnswers) {
     const { data: stageRow } = await admin
       .from("program_stages")
       .select("id, name")
       .eq("tenant_id", tenant.id)
       .eq("program_id", programIdFromAnswers)
       .is("archived_at", null);
-    const match = ((stageRow ?? []) as Array<{ id: string; name: string }>).find(
+    programStages = (stageRow ?? []) as Array<{ id: string; name: string }>;
+  }
+
+  if (preferredLevel && programStages.length > 0) {
+    const match = programStages.find(
       (s) => s.name.trim().toLowerCase() === preferredLevel,
     );
-    if (match) recommendedStageId = match.id;
+    if (match) {
+      recommendedStageId = match.id;
+      recommendedStageName = match.name;
+    }
   }
+
+  // Sprint 73 — sector-rule fallback.
+  const ruleResult = recommendStage({
+    sectorTemplateKey: tenant.sector_template_key,
+    dateOfBirth: contact_dob,
+    preferences: cleaned,
+  });
+  if (!recommendedStageId && ruleResult.stageName && programStages.length > 0) {
+    const target = ruleResult.stageName.trim().toLowerCase();
+    const match = programStages.find(
+      (s) => s.name.trim().toLowerCase() === target,
+    );
+    if (match) {
+      recommendedStageId = match.id;
+      recommendedStageName = match.name;
+    }
+  }
+  if (!recommendedStageName) recommendedStageName = ruleResult.stageName;
+
+  // Sprint 73 — needs_review-heuristiek + program-validatie. We
+  // valideren tegelijk dat het opgegeven program_id tot deze tenant
+  // behoort; pas dan persisteren we het op de submission-rij zodat
+  // downstream stage/placement-logica geen aannames hoeft te doen.
+  let programAgeMin: number | null = null;
+  let programAgeMax: number | null = null;
+  let validatedProgramId: string | null = null;
+  if (programIdFromAnswers) {
+    const { data: prog } = await admin
+      .from("programs")
+      .select("id, age_min, age_max")
+      .eq("tenant_id", tenant.id)
+      .eq("id", programIdFromAnswers)
+      .maybeSingle();
+    if (prog) {
+      validatedProgramId = (prog as { id: string }).id;
+      programAgeMin = (prog as { age_min: number | null }).age_min ?? null;
+      programAgeMax = (prog as { age_max: number | null }).age_max ?? null;
+    }
+  }
+  const review = needsReview({
+    sectorTemplateKey: tenant.sector_template_key,
+    dateOfBirth: contact_dob,
+    preferences: cleaned,
+    programAgeMin,
+    programAgeMax,
+    recommendedStageName,
+  });
+  const initialStatus: "submitted" | "needs_review" = review.needs
+    ? "needs_review"
+    : "submitted";
 
   const { data: subRow, error: subErr } = await admin
     .from("intake_submissions")
@@ -164,7 +230,7 @@ export async function submitIntake(
       tenant_id: tenant.id,
       form_id: isDbForm ? form.id : null,
       submission_type: form.submission_type,
-      status: "submitted",
+      status: initialStatus,
       registration_target,
       contact_name,
       contact_email,
@@ -172,6 +238,7 @@ export async function submitIntake(
       contact_date_of_birth: contact_dob,
       agreed_terms: Boolean(cleaned["agreed_terms"]),
       preferences_json: cleaned,
+      program_id: validatedProgramId,
       recommended_stage_id: recommendedStageId,
     })
     .select("id")
@@ -267,6 +334,27 @@ export async function submitIntake(
     // eslint-disable-next-line no-console
     console.error("[intake] send notification failed:", e);
   });
+
+  // Sprint 73 — extra notificatie wanneer de submission automatisch op
+  // `needs_review` is gezet, idempotent via dedup-key
+  // `intake_submission_needs_review` + sourceRef = submission_id.
+  if (initialStatus === "needs_review") {
+    void sendNotification({
+      tenantId: tenant.id,
+      title: "Intake vereist beoordeling",
+      contentText:
+        `${contact_name ?? "Een aanvrager"} — ${review.reasons.join("; ")}`,
+      targets: [{ target_type: "role", target_id: "tenant_admin" }],
+      sendEmail: false,
+      sendPush: false,
+      source: "intake_submission_needs_review",
+      sourceRef: submissionId,
+      createdBy: null,
+    }).catch((e: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("[intake] needs_review notification failed:", e);
+    });
+  }
 
   return { ok: true, data: { submissionId } };
 }

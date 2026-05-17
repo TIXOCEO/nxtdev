@@ -9,6 +9,8 @@ import { hasTenantAccess, hasMembership } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { scorePlacementCandidates } from "@/lib/db/placement";
 import { PlacementSuggestionsPanel } from "@/components/tenant/intake/PlacementSuggestionsPanel";
+import { SubmissionStatusStrip } from "@/components/tenant/intake/SubmissionStatusStrip";
+import { RecommendedStageBadge } from "@/components/tenant/intake/RecommendedStageBadge";
 
 /**
  * Sprint 70 — Intake-submission detailpagina.
@@ -29,11 +31,12 @@ const TYPE_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   submitted: "Ingediend",
-  reviewing: "In review",
-  eligible: "Goedgekeurd",
+  in_review: "In beoordeling",
+  needs_review: "Vereist beoordeling",
+  waitlisted: "Wachtlijst",
   placed: "Geplaatst",
   rejected: "Afgewezen",
-  cancelled: "Geannuleerd",
+  converted: "Omgezet",
 };
 
 interface AnswerRow {
@@ -81,7 +84,7 @@ export default async function TenantIntakeDetailPage({
   const { data: sub } = await admin
     .from("intake_submissions")
     .select(
-      "id, tenant_id, form_id, submission_type, status, registration_target, contact_name, contact_email, contact_phone, contact_date_of_birth, preferences_json, program_id, assigned_group_id, created_at, priority_date",
+      "id, tenant_id, form_id, submission_type, status, registration_target, contact_name, contact_email, contact_phone, contact_date_of_birth, preferences_json, program_id, assigned_group_id, recommended_stage_id, selected_stage_id, created_at, priority_date",
     )
     .eq("id", id)
     .eq("tenant_id", tenantId)
@@ -89,7 +92,38 @@ export default async function TenantIntakeDetailPage({
 
   if (!sub) notFound();
 
-  const [{ data: answers }, { data: fields }, { data: program }, { data: assignedGroup }] = await Promise.all([
+  // Sprint 73 — laad program_stages voor de "Aanbevolen stage"-badge
+  // en de "Pas aan"-popover. Ook de namen van de huidige
+  // recommended/selected stage voor read-only weergave.
+  const programStagesPromise = sub.program_id
+    ? admin
+        .from("program_stages")
+        .select("id, name, color")
+        .eq("tenant_id", tenantId)
+        .eq("program_id", sub.program_id)
+        .is("archived_at", null)
+        .order("sort_order", { ascending: true })
+    : Promise.resolve({ data: [] as Array<{ id: string; name: string; color: string | null }> });
+  const stageIdsToFetch = [sub.recommended_stage_id, sub.selected_stage_id].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  const stageNamesPromise =
+    stageIdsToFetch.length > 0
+      ? admin
+          .from("program_stages")
+          .select("id, name")
+          .eq("tenant_id", tenantId)
+          .in("id", stageIdsToFetch)
+      : Promise.resolve({ data: [] as Array<{ id: string; name: string }> });
+
+  const [
+    { data: answers },
+    { data: fields },
+    { data: program },
+    { data: assignedGroup },
+    { data: programStagesData },
+    { data: stageNamesData },
+  ] = await Promise.all([
     admin
       .from("submission_answers")
       .select("field_id, field_key, value_text, value_number, value_date, value_bool, value_json")
@@ -119,7 +153,27 @@ export default async function TenantIntakeDetailPage({
           .eq("tenant_id", tenantId)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    programStagesPromise,
+    stageNamesPromise,
   ]);
+
+  const programStages = (programStagesData ?? []) as Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
+  const stageNameById = new Map<string, string>(
+    ((stageNamesData ?? []) as Array<{ id: string; name: string }>).map((s) => [
+      s.id,
+      s.name,
+    ]),
+  );
+  const recommendedStageName = sub.recommended_stage_id
+    ? stageNameById.get(sub.recommended_stage_id) ?? null
+    : null;
+  const selectedStageName = sub.selected_stage_id
+    ? stageNameById.get(sub.selected_stage_id) ?? null
+    : null;
 
   // Sprint 71 — scorePlacementCandidates gooit nu bij RPC-fout i.p.v.
   // stilletjes lege array; vang dat hier op zodat de pagina nog rendert
@@ -169,6 +223,24 @@ export default async function TenantIntakeDetailPage({
           ← Terug naar overzicht
         </Link>
       </p>
+
+      {isAdmin ? (
+        <SubmissionStatusStrip
+          submissionId={sub.id}
+          currentStatus={sub.status}
+        />
+      ) : null}
+
+      {isAdmin && (sub.recommended_stage_id || sub.selected_stage_id || programStages.length > 0) ? (
+        <RecommendedStageBadge
+          submissionId={sub.id}
+          recommendedStageId={sub.recommended_stage_id ?? null}
+          recommendedStageName={recommendedStageName}
+          selectedStageId={sub.selected_stage_id ?? null}
+          selectedStageName={selectedStageName}
+          programStages={programStages}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
