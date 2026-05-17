@@ -40,7 +40,13 @@ export interface PublicProgramRow {
 }
 
 export interface PublicProgramWithIndicator extends PublicProgramRow {
-  bucket: WaitlistBucket;
+  /**
+   * Bucket = null wanneer er voor dit programma geen indicator-rij
+   * gevonden is (zou bij correcte LEFT JOIN niet mogen voorkomen,
+   * maar we falen liever stil-zichtbaar dan stil-rood). DB-fouten
+   * worden geworpen — niet gecoerceerd naar een rood badge.
+   */
+  bucket: WaitlistBucket | null;
 }
 
 export interface StageIndicatorRow {
@@ -85,6 +91,16 @@ interface IndicatorRow {
   program_id: string;
   waiting_count: number;
   available_seats: number;
+  pressure: WaitlistBucket;
+}
+
+function normalizePressure(raw: unknown): WaitlistBucket {
+  if (raw === "long" || raw === "medium" || raw === "short") return raw;
+  // Onbekende waarde uit de DB → val terug op 'short' is gevaarlijk
+  // (kan een "vol" programma als groen tonen); val terug op 'long'
+  // is óók gevaarlijk (toont rood waar geen rood hoort). Beste:
+  // gooi, zodat de caller dit als read-error behandelt.
+  throw new Error(`Unexpected pressure value from DB: ${String(raw)}`);
 }
 
 async function fetchIndicators(
@@ -95,20 +111,27 @@ async function fetchIndicators(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("program_waitlist_indicator")
-    .select("program_id, waiting_count, available_seats")
+    .select("program_id, waiting_count, available_seats, pressure")
     .eq("tenant_id", tenantId)
     .in("program_id", programIds);
+  if (error) {
+    // Loud-fail: silently swallowing DB errors zou alle programma's
+    // op "long" (available=0) zetten en zo een echt incident
+    // verbergen achter een rood badge.
+    throw new Error(`fetchIndicators: ${error.message}`);
+  }
   const map = new Map<string, IndicatorRow>();
-  if (error || !data) return map;
-  for (const r of data as Array<{
+  for (const r of (data ?? []) as Array<{
     program_id: string;
     waiting_count: number | null;
     available_seats: number | null;
+    pressure: string | null;
   }>) {
     map.set(r.program_id, {
       program_id: r.program_id,
       waiting_count: r.waiting_count ?? 0,
       available_seats: r.available_seats ?? 0,
+      pressure: normalizePressure(r.pressure),
     });
   }
   return map;
@@ -136,13 +159,11 @@ export async function listPublicMarketplaceProgramsWithIndicator(
   );
   return programs.map((p) => {
     const ind = indicators.get(p.id);
-    const bucket = bucketWaitlistPressure({
-      waitingCount: ind?.waiting_count ?? 0,
-      availableSeats: ind?.available_seats ?? 0,
-      thresholdLow: p.waitlist_threshold_low,
-      thresholdHigh: p.waitlist_threshold_high,
-    });
-    return { ...p, bucket };
+    // Bucket komt rechtstreeks uit de view (SQL-pressure). Indien
+    // de view geen rij teruggaf voor dit programma (anomaal —
+    // de view is een LEFT JOIN vanuit programs), tonen we geen
+    // badge i.p.v. een gefabriceerd resultaat.
+    return { ...p, bucket: ind?.pressure ?? null };
   });
 }
 
@@ -202,19 +223,34 @@ export async function getPublicProgramBySlug(
 export async function getProgramWaitlistIndicator(
   tenantId: string,
   programId: string,
-): Promise<{ waiting_count: number; available_seats: number } | null> {
+): Promise<{
+  waiting_count: number;
+  available_seats: number;
+  bucket: WaitlistBucket;
+} | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("program_waitlist_indicator")
-    .select("waiting_count, available_seats")
+    .select("waiting_count, available_seats, pressure")
     .eq("tenant_id", tenantId)
     .eq("program_id", programId)
     .maybeSingle();
-  if (error || !data) return null;
-  const row = data as { waiting_count: number | null; available_seats: number | null };
+  if (error) {
+    // Loud-fail i.p.v. null-coercion. Een null zou bovenstroom
+    // tot een rood "available=0"-badge leiden — dat verbergt het
+    // incident.
+    throw new Error(`getProgramWaitlistIndicator: ${error.message}`);
+  }
+  if (!data) return null;
+  const row = data as {
+    waiting_count: number | null;
+    available_seats: number | null;
+    pressure: string | null;
+  };
   return {
     waiting_count: row.waiting_count ?? 0,
     available_seats: row.available_seats ?? 0,
+    bucket: normalizePressure(row.pressure),
   };
 }
 
@@ -225,43 +261,35 @@ export async function getProgramWaitlistIndicator(
 export async function listProgramStageIndicators(
   tenantId: string,
   programId: string,
-  thresholdLow: number | null,
-  thresholdHigh: number | null,
 ): Promise<StageIndicatorRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("program_waitlist_indicator_by_stage")
     .select(
-      "stage_id, stage_name, stage_color, stage_sort_order, waiting_count, available_seats",
+      "stage_id, stage_name, stage_color, stage_sort_order, waiting_count, available_seats, pressure",
     )
     .eq("tenant_id", tenantId)
     .eq("program_id", programId)
     .order("stage_sort_order", { ascending: true })
     .order("stage_name", { ascending: true });
-  if (error || !data) return [];
-  return (data as Array<{
+  if (error) {
+    throw new Error(`listProgramStageIndicators: ${error.message}`);
+  }
+  return ((data ?? []) as Array<{
     stage_id: string;
     stage_name: string;
     stage_color: string | null;
     stage_sort_order: number;
     waiting_count: number | null;
     available_seats: number | null;
-  }>).map((r) => {
-    const waiting = r.waiting_count ?? 0;
-    const available = r.available_seats ?? 0;
-    return {
-      stage_id: r.stage_id,
-      stage_name: r.stage_name,
-      stage_color: r.stage_color,
-      stage_sort_order: r.stage_sort_order,
-      waiting_count: waiting,
-      available_seats: available,
-      bucket: bucketWaitlistPressure({
-        waitingCount: waiting,
-        availableSeats: available,
-        thresholdLow,
-        thresholdHigh,
-      }),
-    };
-  });
+    pressure: string | null;
+  }>).map((r) => ({
+    stage_id: r.stage_id,
+    stage_name: r.stage_name,
+    stage_color: r.stage_color,
+    stage_sort_order: r.stage_sort_order,
+    waiting_count: r.waiting_count ?? 0,
+    available_seats: r.available_seats ?? 0,
+    bucket: normalizePressure(r.pressure),
+  }));
 }

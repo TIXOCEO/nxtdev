@@ -123,12 +123,14 @@ export default async function PublicProgramsPage({ params }: PageProps) {
                       className="h-40 w-full object-cover"
                     />
                   )}
-                  <div className="absolute right-2 top-2">
-                    <WaitlistBadge
-                      bucket={p.bucket}
-                      expectedWaitLabel={p.expected_wait_label}
-                    />
-                  </div>
+                  {p.bucket && (
+                    <div className="absolute right-2 top-2">
+                      <WaitlistBadge
+                        bucket={p.bucket}
+                        expectedWaitLabel={p.expected_wait_label}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
                   <h3

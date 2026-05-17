@@ -13,10 +13,7 @@ import {
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
 import { WaitlistBadge } from "@/components/public/waitlist-badge";
-import {
-  bucketWaitlistPressure,
-  waitlistBadgeMeta,
-} from "@/lib/programs/bucket-waitlist";
+import { waitlistBadgeMeta } from "@/lib/programs/bucket-waitlist";
 
 interface PageProps {
   params: Promise<{ slug: string; publicSlug: string }>;
@@ -61,21 +58,14 @@ export default async function PublicProgramDetailPage({ params }: PageProps) {
   const [indicator, stageIndicators] = await Promise.all([
     getProgramWaitlistIndicator(tenant.id, program.id),
     program.use_stages
-      ? listProgramStageIndicators(
-          tenant.id,
-          program.id,
-          program.waitlist_threshold_low,
-          program.waitlist_threshold_high,
-        )
+      ? listProgramStageIndicators(tenant.id, program.id)
       : Promise.resolve([]),
   ]);
 
-  const programBucket = bucketWaitlistPressure({
-    waitingCount: indicator?.waiting_count ?? 0,
-    availableSeats: indicator?.available_seats ?? 0,
-    thresholdLow: program.waitlist_threshold_low,
-    thresholdHigh: program.waitlist_threshold_high,
-  });
+  // Bucket komt uit de SQL-view (kolom `pressure`). Indien er
+  // geen indicator-rij is, tonen we het Beschikbaarheidsblok niet
+  // i.p.v. een verzonnen waarde te kiezen.
+  const programBucket = indicator?.bucket ?? null;
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle={title} active="programmas">
@@ -116,6 +106,7 @@ export default async function PublicProgramDetailPage({ params }: PageProps) {
             )}
           </div>
 
+          {programBucket && (
           <div
             className="rounded-[var(--radius-nxt-md)] border p-4"
             style={{
@@ -188,6 +179,7 @@ export default async function PublicProgramDetailPage({ params }: PageProps) {
               </div>
             )}
           </div>
+          )}
 
           {program.marketing_description && (
             <p
