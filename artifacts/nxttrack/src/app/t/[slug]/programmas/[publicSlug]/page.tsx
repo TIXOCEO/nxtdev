@@ -5,9 +5,18 @@ import { ArrowLeft, ClipboardList } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getTenantSeoSettings, getPageSeo } from "@/lib/db/tenant-seo";
 import { composeMetadata } from "@/lib/seo/build-metadata";
-import { getPublicProgramBySlug } from "@/lib/db/programs-public";
+import {
+  getPublicProgramBySlug,
+  getProgramWaitlistIndicator,
+  listProgramStageIndicators,
+} from "@/lib/db/programs-public";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
+import { WaitlistBadge } from "@/components/public/waitlist-badge";
+import {
+  bucketWaitlistPressure,
+  waitlistBadgeMeta,
+} from "@/lib/programs/bucket-waitlist";
 
 interface PageProps {
   params: Promise<{ slug: string; publicSlug: string }>;
@@ -49,6 +58,25 @@ export default async function PublicProgramDetailPage({ params }: PageProps) {
   const age = ageRangeLabel(program.age_min, program.age_max);
   const ctaLabel = program.cta_label || "Inschrijven";
 
+  const [indicator, stageIndicators] = await Promise.all([
+    getProgramWaitlistIndicator(tenant.id, program.id),
+    program.use_stages
+      ? listProgramStageIndicators(
+          tenant.id,
+          program.id,
+          program.waitlist_threshold_low,
+          program.waitlist_threshold_high,
+        )
+      : Promise.resolve([]),
+  ]);
+
+  const programBucket = bucketWaitlistPressure({
+    waitingCount: indicator?.waiting_count ?? 0,
+    availableSeats: indicator?.available_seats ?? 0,
+    thresholdLow: program.waitlist_threshold_low,
+    thresholdHigh: program.waitlist_threshold_high,
+  });
+
   return (
     <PublicTenantShell tenant={tenant} pageTitle={title} active="programmas">
       <div>
@@ -85,6 +113,79 @@ export default async function PublicProgramDetailPage({ params }: PageProps) {
               >
                 {age}
               </p>
+            )}
+          </div>
+
+          <div
+            className="rounded-[var(--radius-nxt-md)] border p-4"
+            style={{
+              borderColor: "var(--surface-border)",
+              backgroundColor: "color-mix(in srgb, var(--tenant-accent) 6%, transparent)",
+            }}
+          >
+            <p
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Beschikbaarheid
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <WaitlistBadge
+                bucket={programBucket}
+                expectedWaitLabel={program.expected_wait_label}
+                size="md"
+              />
+            </div>
+            {stageIndicators.length > 0 && (
+              <div className="mt-4 overflow-hidden rounded-[var(--radius-nxt-md)] border" style={{ borderColor: "var(--surface-border)" }}>
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr style={{ color: "var(--text-secondary)" }}>
+                      <th className="px-3 py-2 font-medium">Niveau</th>
+                      <th className="px-3 py-2 text-right font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stageIndicators.map((s) => {
+                      const meta = waitlistBadgeMeta(s.bucket);
+                      return (
+                        <tr
+                          key={s.stage_id}
+                          className="border-t"
+                          style={{ borderColor: "var(--surface-border)" }}
+                        >
+                          <td
+                            className="px-3 py-2"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            <span className="inline-flex items-center gap-2">
+                              {s.stage_color && (
+                                <span
+                                  className="inline-block h-2 w-2 rounded-full"
+                                  style={{ backgroundColor: s.stage_color }}
+                                />
+                              )}
+                              {s.stage_name}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <span
+                              className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                              style={{ backgroundColor: meta.bg, color: meta.color }}
+                            >
+                              <span
+                                className="inline-block h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: meta.color }}
+                              />
+                              {meta.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 

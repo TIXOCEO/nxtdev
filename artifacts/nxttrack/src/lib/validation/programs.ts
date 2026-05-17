@@ -83,7 +83,16 @@ export const updateProgramSchema = z.object({
   age_min: NonNegIntNullable,
   age_max: NonNegIntNullable,
   sort_order: NonNegIntDefault(0),
+  waitlist_threshold_low: NonNegIntNullable,
+  waitlist_threshold_high: NonNegIntNullable,
+  expected_wait_label: NullableTrimmed(60),
 }).refine(
+  (v) =>
+    v.waitlist_threshold_low == null ||
+    v.waitlist_threshold_high == null ||
+    v.waitlist_threshold_high >= v.waitlist_threshold_low,
+  { path: ["waitlist_threshold_high"], message: "Hoge drempel moet ≥ lage drempel zijn" },
+).refine(
   (v) => v.age_max == null || v.age_min == null || v.age_max >= v.age_min,
   { path: ["age_max"], message: "Maximum leeftijd moet ≥ minimum zijn" },
 );

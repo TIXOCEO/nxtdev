@@ -41,6 +41,15 @@ export function OverviewForm({
   const [ageMin, setAgeMin] = useState(program.age_min != null ? String(program.age_min) : "");
   const [ageMax, setAgeMax] = useState(program.age_max != null ? String(program.age_max) : "");
   const [sortOrder, setSortOrder] = useState(String(program.sort_order ?? 0));
+  const [waitlistLow, setWaitlistLow] = useState(
+    program.waitlist_threshold_low != null ? String(program.waitlist_threshold_low) : "",
+  );
+  const [waitlistHigh, setWaitlistHigh] = useState(
+    program.waitlist_threshold_high != null ? String(program.waitlist_threshold_high) : "",
+  );
+  const [expectedWaitLabel, setExpectedWaitLabel] = useState(
+    program.expected_wait_label ?? "",
+  );
 
   const inputCls =
     "h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
@@ -73,6 +82,9 @@ export function OverviewForm({
         age_min: ageMin || null,
         age_max: ageMax || null,
         sort_order: sortOrder,
+        waitlist_threshold_low: waitlistLow || null,
+        waitlist_threshold_high: waitlistHigh || null,
+        expected_wait_label: expectedWaitLabel || null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       if (!res.ok) { setErr(res.error); return; }
@@ -264,6 +276,43 @@ export function OverviewForm({
             <label className={labelCls} style={labelStyle}>CTA-label</label>
             <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)}
               className={inputCls} style={inputStyle} placeholder="bv. 'Direct aanmelden'" />
+          </div>
+        </div>
+      </section>
+
+      {/* Wachtrij-indicator (Sprint 75) */}
+      <section
+        className="rounded-2xl border p-4"
+        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      >
+        <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          Wachtrij-indicator
+        </h2>
+        <p className="mb-3 text-xs" style={{ color: "var(--text-secondary)" }}>
+          Bepaalt wanneer een bezoeker een groene, oranje of rode badge ziet op de
+          publieke programma-kaart. Laat leeg voor de standaard (5 / 15). Heuristiek:
+          geen vrije plek of waiting ≥ hoge drempel = lang; waiting ≥ lage drempel =
+          gemiddeld; anders kort.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className={labelCls} style={labelStyle}>Lage drempel</label>
+            <input inputMode="numeric" value={waitlistLow}
+              onChange={(e) => setWaitlistLow(e.target.value.replace(/[^0-9]/g, ""))}
+              className={inputCls} style={inputStyle} placeholder="bv. 5" />
+          </div>
+          <div>
+            <label className={labelCls} style={labelStyle}>Hoge drempel</label>
+            <input inputMode="numeric" value={waitlistHigh}
+              onChange={(e) => setWaitlistHigh(e.target.value.replace(/[^0-9]/g, ""))}
+              className={inputCls} style={inputStyle} placeholder="bv. 15" />
+          </div>
+          <div>
+            <label className={labelCls} style={labelStyle}>Verwachte wachttijd (label)</label>
+            <input value={expectedWaitLabel}
+              onChange={(e) => setExpectedWaitLabel(e.target.value)}
+              maxLength={60}
+              className={inputCls} style={inputStyle} placeholder="bv. ± 6 weken" />
           </div>
         </div>
       </section>

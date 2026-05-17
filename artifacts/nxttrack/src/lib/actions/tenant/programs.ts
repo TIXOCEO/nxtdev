@@ -119,6 +119,9 @@ export async function updateProgram(
       age_min: parsed.data.age_min ?? null,
       age_max: parsed.data.age_max ?? null,
       sort_order: parsed.data.sort_order,
+      waitlist_threshold_low: parsed.data.waitlist_threshold_low ?? null,
+      waitlist_threshold_high: parsed.data.waitlist_threshold_high ?? null,
+      expected_wait_label: parsed.data.expected_wait_label ?? null,
     })
     .eq("id", parsed.data.id)
     .eq("tenant_id", parsed.data.tenant_id);

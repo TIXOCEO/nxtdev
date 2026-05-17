@@ -21,6 +21,10 @@ export interface ProgramRow {
   age_max: number | null;
   highlights_json: unknown[];
   sort_order: number;
+  waitlist_threshold_low: number | null;
+  waitlist_threshold_high: number | null;
+  expected_wait_label: string | null;
+  use_stages: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -30,7 +34,7 @@ export interface ProgramListRow extends ProgramRow {
 }
 
 const PROGRAM_COLUMNS =
-  "id, tenant_id, slug, public_slug, name, marketing_title, marketing_description, hero_image_url, cta_label, visibility, default_capacity, default_flex_capacity, default_min_instructors, capacity_purpose_defaults_json, age_min, age_max, highlights_json, sort_order, created_at, updated_at";
+  "id, tenant_id, slug, public_slug, name, marketing_title, marketing_description, hero_image_url, cta_label, visibility, default_capacity, default_flex_capacity, default_min_instructors, capacity_purpose_defaults_json, age_min, age_max, highlights_json, sort_order, waitlist_threshold_low, waitlist_threshold_high, expected_wait_label, use_stages, created_at, updated_at";
 
 /**
  * Lijst van programma's voor een tenant, inclusief # gekoppelde groepen.

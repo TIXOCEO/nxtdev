@@ -5,9 +5,10 @@ import { Layers, ArrowRight } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getTenantSeoSettings, getPageSeo } from "@/lib/db/tenant-seo";
 import { composeMetadata } from "@/lib/seo/build-metadata";
-import { listPublicMarketplacePrograms } from "@/lib/db/programs-public";
+import { listPublicMarketplaceProgramsWithIndicator } from "@/lib/db/programs-public";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
+import { WaitlistBadge } from "@/components/public/waitlist-badge";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -38,7 +39,7 @@ export default async function PublicProgramsPage({ params }: PageProps) {
   const tenant = await getActiveTenantBySlug(slug);
   if (!tenant) notFound();
 
-  const programs = await listPublicMarketplacePrograms(tenant.id);
+  const programs = await listPublicMarketplaceProgramsWithIndicator(tenant.id);
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Programma's" active="programmas">
@@ -113,14 +114,22 @@ export default async function PublicProgramsPage({ params }: PageProps) {
                   backgroundColor: "var(--surface-main)",
                 }}
               >
-                {p.hero_image_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.hero_image_url}
-                    alt=""
-                    className="h-40 w-full object-cover"
-                  />
-                )}
+                <div className="relative">
+                  {p.hero_image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.hero_image_url}
+                      alt=""
+                      className="h-40 w-full object-cover"
+                    />
+                  )}
+                  <div className="absolute right-2 top-2">
+                    <WaitlistBadge
+                      bucket={p.bucket}
+                      expectedWaitLabel={p.expected_wait_label}
+                    />
+                  </div>
+                </div>
                 <div className="p-4">
                   <h3
                     className="text-base font-semibold"
