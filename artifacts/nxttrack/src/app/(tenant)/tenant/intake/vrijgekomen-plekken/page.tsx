@@ -26,16 +26,20 @@ interface CapacityEventRow {
   trigger_source: string;
   freed_seats: number;
   candidate_count: number;
+  status: string;
+  handled_at: string | null;
   created_at: string;
   meta: Record<string, unknown> | null;
 }
 
 interface WaitlistCandidate {
-  submission_id: string;
+  source_type: string;
+  candidate_id: string;
   contact_name: string | null;
   contact_email: string | null;
   program_id: string | null;
   program_name: string | null;
+  score: number;
   created_at: string;
   status: string;
 }
@@ -62,17 +66,26 @@ export default async function CapacityAvailablePage() {
   const settings = (tRow?.settings_json ?? {}) as Record<string, unknown>;
   const dynamicIntakeEnabled = settings.dynamic_intake_enabled === true;
 
+  // Sprint 76b — toon alle recente events met status (open/handled/
+  // dismissed/expired) zodat admins ook zien wat ze recent hebben
+  // afgehandeld; open events bovenaan via aparte sortering.
   const { data: eventRows } = await admin
     .from("capacity_available_events")
-    .select("id, group_id, trigger_source, freed_seats, candidate_count, created_at, meta")
+    .select(
+      "id, group_id, trigger_source, freed_seats, candidate_count, status, handled_at, created_at, meta",
+    )
     .eq("tenant_id", tenantId)
-    .eq("status", "open")
     .order("created_at", { ascending: false })
-    .limit(100);
-  const events = (eventRows ?? []) as CapacityEventRow[];
+    .limit(50);
+  const allEvents = (eventRows ?? []) as CapacityEventRow[];
+  const openEvents = allEvents.filter((e) => e.status === "open");
+  const recentClosed = allEvents.filter((e) => e.status !== "open").slice(0, 20);
+  const events = [...openEvents, ...recentClosed];
 
-  // Groep-namen ophalen voor alle events
+  // Groep-namen ophalen voor alle events. Kandidaten alleen voor open events
+  // (closed events tonen geen lijst — alleen status + timestamp).
   const groupIds = Array.from(new Set(events.map((e) => e.group_id)));
+  const openGroupIds = Array.from(new Set(openEvents.map((e) => e.group_id)));
   const groupNames: Record<string, string> = {};
   if (groupIds.length > 0) {
     const { data: groups } = await admin
@@ -85,10 +98,11 @@ export default async function CapacityAvailablePage() {
     }
   }
 
-  // Top-5 wachtlijst-kandidaten per groep (RPC). Best-effort.
+  // Top-5 wachtlijst-kandidaten per groep (RPC, alleen voor open
+  // events). Best-effort.
   const candidatesByGroup: Record<string, WaitlistCandidate[]> = {};
   await Promise.all(
-    groupIds.map(async (gid) => {
+    openGroupIds.map(async (gid) => {
       try {
         const { data, error } = await admin.rpc("find_waitlist_candidates_for", {
           p_group_id: gid,
@@ -152,6 +166,8 @@ export default async function CapacityAvailablePage() {
               triggerSource={ev.trigger_source}
               freedSeats={ev.freed_seats}
               candidateCount={ev.candidate_count}
+              status={ev.status}
+              handledAt={ev.handled_at}
               createdAt={ev.created_at}
               candidates={candidatesByGroup[ev.group_id] ?? []}
             />

@@ -533,6 +533,15 @@ export async function updateGroup(
     }
   }
 
+  // Sprint 76b — onthoud oude capaciteit zodat we kunnen detecteren
+  // of er via deze update een plek is vrijgekomen.
+  const { data: prevRow } = await supabase
+    .from("groups")
+    .select("max_members, max_athletes")
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", parsed.data.tenant_id)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from("groups")
     .update({
@@ -557,6 +566,19 @@ export async function updateGroup(
       max_athletes: parsed.data.max_athletes ?? null,
     },
   });
+
+  // Sprint 76b — als capaciteit omhoog ging, heeft de DB-trigger een
+  // event aangemaakt; notificeer tenant-admins.
+  const prevA = (prevRow?.max_athletes as number | null) ?? 0;
+  const prevM = (prevRow?.max_members as number | null) ?? 0;
+  const newA = parsed.data.max_athletes ?? 0;
+  const newM = parsed.data.max_members ?? 0;
+  if (newA > prevA || newM > prevM) {
+    const { notifyCapacityEventIfAny } = await import(
+      "@/lib/intake/notify-capacity-event"
+    );
+    await notifyCapacityEventIfAny(parsed.data.tenant_id, parsed.data.id);
+  }
 
   revalidatePath("/tenant/groups");
   revalidatePath(`/tenant/groups/${parsed.data.id}`);
@@ -794,6 +816,12 @@ export async function removeMemberFromGroup(
       action: "group.member_removed",
       meta: { group_id: parsed.data.group_id },
     });
+    // Sprint 76b — DB-trigger heeft (mogelijk) een
+    // capacity_available_event aangemaakt; notificeer tenant-admins.
+    const { notifyCapacityEventIfAny } = await import(
+      "@/lib/intake/notify-capacity-event"
+    );
+    await notifyCapacityEventIfAny(parsed.data.tenant_id, parsed.data.group_id);
   }
 
   revalidatePath("/tenant/groups");
