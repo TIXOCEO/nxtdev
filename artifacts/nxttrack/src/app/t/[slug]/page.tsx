@@ -2,7 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CalendarPlus, ClipboardList } from "lucide-react";
 import { getPublicTenantHomeData } from "@/lib/db/public-tenant";
-import { getPublicHomepageData, getMediaWallItems } from "@/lib/db/homepage";
+import {
+  getPublicHomepageData,
+  getMediaWallItems,
+  getRandomPublicTrainers,
+} from "@/lib/db/homepage";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { PublicCard } from "@/components/public/public-card";
 import { PublicHeroSlider } from "@/components/public/public-hero-slider";
@@ -10,6 +14,9 @@ import { TodayBlock } from "@/components/public/today-block";
 import { ModuleGrid } from "@/components/homepage/module-grid";
 import { NewsListCard } from "@/components/public/news-list-card";
 import { FeaturedPhotosCard } from "@/components/public/featured-photos-card";
+import { WelcomeCard } from "@/components/public/welcome-card";
+import { LocationCard } from "@/components/public/location-card";
+import { TrainersCard } from "@/components/public/trainers-card";
 import { getUser } from "@/lib/auth/get-user";
 
 interface PageProps {
@@ -49,7 +56,10 @@ export default async function PublicHomePage({ params }: PageProps) {
   if (!data) notFound();
   const { tenant, latestNews } = data;
 
-  const photos = await getMediaWallItems(tenant.id, 12);
+  const [photos, randomTrainers] = await Promise.all([
+    getMediaWallItems(tenant.id, 12),
+    getRandomPublicTrainers(tenant.id, 3),
+  ]);
 
   return (
     <PublicTenantShell
@@ -77,9 +87,11 @@ export default async function PublicHomePage({ params }: PageProps) {
         />
       )}
 
-      {/* Module-grid: 3-koloms op desktop, met spans op grotere tegels.
-          Welkom-CTA's links, Nieuws-lijst midden, Uitgelichte foto's rechts. */}
+      {/* Module-grid: 3-koloms op desktop. Sprint 78b voegt Welkom, Locatie
+          en Trainers toe naast de bestaande CTA's, Nieuws en Foto's. Lege
+          modules (zonder data) renderen `null` en houden de grid schoon. */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <WelcomeCard tenant={tenant} />
         <CtaCard
           icon={CalendarPlus}
           title="Schrijf je in voor een proefles"
@@ -95,6 +107,8 @@ export default async function PublicHomePage({ params }: PageProps) {
           href={`/t/${tenant.slug}/inschrijven`}
         />
         <NewsListCard tenantSlug={tenant.slug} posts={latestNews} limit={4} />
+        <TrainersCard trainers={randomTrainers} tenantSlug={tenant.slug} />
+        <LocationCard tenant={tenant} />
         {photos.length > 0 && (
           <div className="sm:col-span-2 lg:col-span-1">
             <FeaturedPhotosCard

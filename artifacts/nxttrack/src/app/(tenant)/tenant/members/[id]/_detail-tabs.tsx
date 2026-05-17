@@ -181,6 +181,9 @@ export function SportTab({
             memberId={member.id}
             initialShowInPublic={member.show_in_public ?? false}
             initialBio={member.public_bio ?? ""}
+            initialRoleLabel={member.public_role_label ?? ""}
+            initialPhotoUrl={member.public_photo_url ?? ""}
+            initialPosition={member.public_position ?? 0}
           />
         </Card>
       )}

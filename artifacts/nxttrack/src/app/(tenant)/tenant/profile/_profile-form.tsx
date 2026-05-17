@@ -21,6 +21,16 @@ interface FormValues {
   primary_color: string;
   contact_email: string;
   domain: string;
+  // Sprint 78b — Welkom + Locatie
+  welcome_text: string;
+  welcome_more_url: string;
+  location_name: string;
+  address_line1: string;
+  postal_code: string;
+  city: string;
+  country: string;
+  latitude: string;
+  longitude: string;
 }
 
 export function ProfileForm({ tenant }: ProfileFormProps) {
@@ -41,6 +51,17 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
       primary_color: tenant.primary_color ?? "#b6d83b",
       contact_email: tenant.contact_email ?? "",
       domain: tenant.domain ?? "",
+      welcome_text: tenant.welcome_text ?? "",
+      welcome_more_url: tenant.welcome_more_url ?? "",
+      location_name: tenant.location_name ?? "",
+      address_line1: tenant.address_line1 ?? "",
+      postal_code: tenant.postal_code ?? "",
+      city: tenant.city ?? "",
+      country: tenant.country ?? "",
+      latitude:
+        typeof tenant.latitude === "number" ? String(tenant.latitude) : "",
+      longitude:
+        typeof tenant.longitude === "number" ? String(tenant.longitude) : "",
     },
   });
 
@@ -48,6 +69,8 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
     setServerError(null);
     setSuccess(null);
     startTransition(async () => {
+      const lat = values.latitude.trim() === "" ? null : Number(values.latitude);
+      const lon = values.longitude.trim() === "" ? null : Number(values.longitude);
       const payload: TenantProfileInput = {
         id: tenant.id,
         name: values.name,
@@ -55,6 +78,15 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
         primary_color: values.primary_color || "#b6d83b",
         contact_email: values.contact_email || null,
         domain: values.domain || null,
+        welcome_text: values.welcome_text || null,
+        welcome_more_url: values.welcome_more_url || null,
+        location_name: values.location_name || null,
+        address_line1: values.address_line1 || null,
+        postal_code: values.postal_code || null,
+        city: values.city || null,
+        country: values.country || null,
+        latitude: lat,
+        longitude: lon,
       };
       const res = await updateTenantProfile(payload);
       if (!res.ok) {
@@ -85,6 +117,69 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
           <Input {...register("domain")} placeholder="example.com" />
         </Field>
       </div>
+
+      {/* ── Sprint 78b — Welkom-kaart ──────────────────────────────────── */}
+      <fieldset className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--surface-border)" }}>
+        <legend className="px-1 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
+          Welkom-kaart (publieke homepage)
+        </legend>
+        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          Vrije welkomsttekst getoond op je publieke homepage. Laat leeg om de kaart te verbergen.
+        </p>
+        <Field label="Welkom-tekst (max 2000)" error={errors.welcome_text?.message}>
+          <textarea
+            {...register("welcome_text")}
+            rows={5}
+            maxLength={2000}
+            className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
+            style={{
+              borderColor: "var(--surface-border)",
+              color: "var(--text-primary)",
+              backgroundColor: "var(--surface-main)",
+            }}
+          />
+        </Field>
+        <Field
+          label='"Lees meer"-link (intern bv. /t/slug/over of https://...)'
+          error={errors.welcome_more_url?.message}
+        >
+          <Input {...register("welcome_more_url")} placeholder="/t/jouw-slug/over-ons" />
+        </Field>
+      </fieldset>
+
+      {/* ── Sprint 78b — Locatie-kaart ─────────────────────────────────── */}
+      <fieldset className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--surface-border)" }}>
+        <legend className="px-1 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
+          Locatie-kaart (publieke homepage)
+        </legend>
+        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          Adres + (optionele) coördinaten voor de Google Maps-deeplink.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Naam locatie" error={errors.location_name?.message}>
+            <Input {...register("location_name")} placeholder="Bv. Sporthal Houtrust" />
+          </Field>
+          <Field label="Adres" error={errors.address_line1?.message}>
+            <Input {...register("address_line1")} placeholder="Straatnaam 1" />
+          </Field>
+          <Field label="Postcode" error={errors.postal_code?.message}>
+            <Input {...register("postal_code")} placeholder="1234 AB" />
+          </Field>
+          <Field label="Plaats" error={errors.city?.message}>
+            <Input {...register("city")} />
+          </Field>
+          <Field label="Land" error={errors.country?.message}>
+            <Input {...register("country")} placeholder="Nederland" />
+          </Field>
+          <div />
+          <Field label="Breedtegraad (lat)" error={errors.latitude?.message}>
+            <Input {...register("latitude")} placeholder="52.0907" />
+          </Field>
+          <Field label="Lengtegraad (lon)" error={errors.longitude?.message}>
+            <Input {...register("longitude")} placeholder="5.1214" />
+          </Field>
+        </div>
+      </fieldset>
 
       {serverError && (
         <div

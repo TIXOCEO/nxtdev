@@ -28,6 +28,19 @@ export interface Tenant {
   audit_retention_months: number | null;
   /** FK naar `sector_templates.key`. NULL betekent: geen template gekozen → resolver valt terug op generic + defaults. */
   sector_template_key: string | null;
+  // ── Sprint 78b — Publieke shell content-velden ──────────────────────────
+  /** Vrije welkom-tekst (max 2000 chars), getoond op publieke homepage-welkom-kaart. */
+  welcome_text?: string | null;
+  /** Optionele URL voor "Lees meer over ons" knop (interne `/...` of `https://...`). */
+  welcome_more_url?: string | null;
+  /** Naam van de locatie (bv. "Zwembad de Houtrust") — getoond als titel op locatie-kaart. */
+  location_name?: string | null;
+  address_line1?: string | null;
+  postal_code?: string | null;
+  city?: string | null;
+  country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -267,6 +280,13 @@ export interface Member {
   public_bio: string | null;
   /** Sprint 18: opt-in for the public Trainers homepage module. */
   show_in_public: boolean;
+  // ── Sprint 78b — Publieke trainers-kaart velden ─────────────────────────
+  /** Korte functie-omschrijving (bv. "Hoofdinstructeur", max 80 chars). */
+  public_role_label?: string | null;
+  /** Avatar/foto-URL voor de publieke trainers-grid. */
+  public_photo_url?: string | null;
+  /** Sortering bij weergave op publieke pagina. */
+  public_position?: number;
   // Sprint 23 — gestructureerde persoons-/adresvelden + accounttype.
   first_name: string | null;
   last_name: string | null;
@@ -808,6 +828,12 @@ export interface PublicTrainer {
   tenant_id: string;
   full_name: string;
   public_bio: string | null;
+  /** Sprint 78b — alias van members.public_role_label. */
+  role_label?: string | null;
+  /** Sprint 78b — alias van members.public_photo_url. */
+  photo_url?: string | null;
+  /** Sprint 78b — alias van members.public_position. */
+  position?: number;
 }
 
 // ── Sprint 19 — Social Feed ──────────────────────────────────

@@ -154,12 +154,39 @@ export async function getPublicTrainers(
   tenantId: string,
   limit?: number,
 ): Promise<PublicTrainer[]> {
-  const supabase = await createClient();
-  let q = supabase
+  // View `public_trainers` heeft `security_invoker=true` en de
+  // onderliggende RLS-policies blokkeren anonieme reads. We gebruiken de
+  // admin-client zodat de publieke homepage (anon) de trainers kan
+  // ophalen — de view exposeert alleen publieke velden + filtert op
+  // show_in_public=true en active tenants, dus geen PII-lek.
+  const admin = createAdminClient();
+  let q = admin
     .from("public_trainers")
     .select("*")
-    .eq("tenant_id", tenantId);
+    .eq("tenant_id", tenantId)
+    .order("position", { ascending: true })
+    .order("full_name", { ascending: true });
   if (limit) q = q.limit(limit);
   const { data } = await q;
   return (data ?? []) as PublicTrainer[];
+}
+
+/**
+ * Sprint 78b — Random sampling van publieke trainers voor de homepage-kaart.
+ * Haalt alle publieke trainers op en kiest er N willekeurig (Fisher-Yates).
+ * Niet via `order('random')` (Supabase ondersteunt dat niet via PostgREST);
+ * gewone in-memory shuffle is goed genoeg voor tenant-volumes (10-100).
+ */
+export async function getRandomPublicTrainers(
+  tenantId: string,
+  count: number,
+): Promise<PublicTrainer[]> {
+  const all = await getPublicTrainers(tenantId);
+  if (all.length <= count) return all;
+  const arr = [...all];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
 }

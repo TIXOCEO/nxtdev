@@ -34,6 +34,52 @@ const optionalText = z
   .or(z.literal(""))
   .transform((v) => (v ? v : null));
 
+// Sprint 78b — Welcome-CTA mag een interne (/foo) of externe (https://...) URL zijn.
+const optionalRelOrAbsUrl = z
+  .string()
+  .trim()
+  .nullish()
+  .or(z.literal(""))
+  .transform((v) => (v ? v : null))
+  .refine(
+    (v) => v === null || /^(https?:\/\/|\/)/.test(v),
+    "Moet beginnen met http(s):// of /",
+  );
+
+const optionalLatitude = z
+  .union([
+    z.coerce.number().refine((n) => n >= -90 && n <= 90, "Tussen -90 en 90"),
+    z.literal(""),
+    z.null(),
+  ])
+  .nullish()
+  .transform((v) => (typeof v === "number" ? v : null));
+
+const optionalLongitude = z
+  .union([
+    z.coerce.number().refine((n) => n >= -180 && n <= 180, "Tussen -180 en 180"),
+    z.literal(""),
+    z.null(),
+  ])
+  .nullish()
+  .transform((v) => (typeof v === "number" ? v : null));
+
+const optionalShortText = z
+  .string()
+  .trim()
+  .max(120)
+  .nullish()
+  .or(z.literal(""))
+  .transform((v) => (v ? v : null));
+
+const optionalWelcomeText = z
+  .string()
+  .trim()
+  .max(2000, "Max 2000 tekens")
+  .nullish()
+  .or(z.literal(""))
+  .transform((v) => (v ? v : null));
+
 export const tenantProfileSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(2).max(120),
@@ -44,6 +90,17 @@ export const tenantProfileSchema = z.object({
     .default("#b6d83b"),
   contact_email: optionalEmail,
   domain: optionalText,
+  // Sprint 78b — Welkom-kaart
+  welcome_text: optionalWelcomeText,
+  welcome_more_url: optionalRelOrAbsUrl,
+  // Sprint 78b — Locatie-kaart
+  location_name: optionalShortText,
+  address_line1: optionalShortText,
+  postal_code: optionalShortText,
+  city: optionalShortText,
+  country: optionalShortText,
+  latitude: optionalLatitude,
+  longitude: optionalLongitude,
 });
 
 export type TenantProfileInput = z.infer<typeof tenantProfileSchema>;
@@ -69,7 +126,9 @@ export async function updateTenantProfile(
   // Snapshot prior values for change-diff in the audit-log.
   const { data: priorRow } = await supabase
     .from("tenants")
-    .select("name, logo_url, primary_color, contact_email, domain")
+    .select(
+      "name, logo_url, primary_color, contact_email, domain, welcome_text, welcome_more_url, location_name, address_line1, postal_code, city, country, latitude, longitude",
+    )
     .eq("id", id)
     .maybeSingle();
 

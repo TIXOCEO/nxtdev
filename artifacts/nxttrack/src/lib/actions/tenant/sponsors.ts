@@ -117,11 +117,45 @@ export async function setMemberPublicTrainerSettings(input: {
   member_id: string;
   show_in_public: boolean;
   public_bio?: string | null;
+  // Sprint 78b — extra publieke trainerskaart-velden.
+  public_role_label?: string | null;
+  public_photo_url?: string | null;
+  public_position?: number | null;
 }): Promise<ActionResult<void>> {
   await assertTenantAccess(input.tenant_id);
+
+  // Lichte server-side validatie.
+  if (
+    input.public_role_label != null &&
+    typeof input.public_role_label === "string" &&
+    input.public_role_label.length > 80
+  ) {
+    return { ok: false, error: "Functietitel mag maximaal 80 tekens zijn." };
+  }
+  if (
+    input.public_photo_url != null &&
+    typeof input.public_photo_url === "string" &&
+    input.public_photo_url.length > 0 &&
+    !/^https?:\/\//.test(input.public_photo_url)
+  ) {
+    return { ok: false, error: "Foto-URL moet beginnen met http(s)://" };
+  }
+
   const supabase = await createClient();
   const patch: Record<string, unknown> = { show_in_public: input.show_in_public };
   if (input.public_bio !== undefined) patch.public_bio = input.public_bio;
+  if (input.public_role_label !== undefined) {
+    patch.public_role_label = input.public_role_label || null;
+  }
+  if (input.public_photo_url !== undefined) {
+    patch.public_photo_url = input.public_photo_url || null;
+  }
+  if (input.public_position !== undefined) {
+    patch.public_position =
+      typeof input.public_position === "number" && Number.isFinite(input.public_position)
+        ? Math.trunc(input.public_position)
+        : 0;
+  }
   const { error } = await supabase
     .from("members")
     .update(patch)
