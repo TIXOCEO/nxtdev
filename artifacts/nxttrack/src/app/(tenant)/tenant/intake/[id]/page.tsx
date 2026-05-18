@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { scorePlacementCandidates } from "@/lib/db/placement";
 import { getWaitEstimate } from "@/lib/intake/wait-time";
 import { PlacementSuggestionsPanel } from "@/components/tenant/intake/PlacementSuggestionsPanel";
+import { SendReviewLinkButton } from "@/components/tenant/intake/SendReviewLinkButton";
 import { SubmissionStatusStrip } from "@/components/tenant/intake/SubmissionStatusStrip";
 import { RecommendedStageBadge } from "@/components/tenant/intake/RecommendedStageBadge";
 import {
@@ -455,7 +456,18 @@ export default async function TenantIntakeDetailPage({
           )}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="space-y-6 lg:col-span-1">
+          {isAdmin ? (
+            <SendReviewLinkButton
+              submissionId={sub.id}
+              contactEmail={sub.contact_email ?? null}
+              disabledReason={
+                ["placed", "rejected", "converted"].includes(sub.status)
+                  ? `Aanvraag is al ${STATUS_LABEL[sub.status] ?? sub.status} — voorstellen versturen is niet meer mogelijk.`
+                  : null
+              }
+            />
+          ) : null}
           <PlacementSuggestionsPanel
             submissionId={id}
             candidates={candidates}

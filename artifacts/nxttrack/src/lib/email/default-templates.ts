@@ -289,6 +289,23 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
       "Je plek in {{group_name}} is bevestigd. We nemen op korte termijn contact op met de praktische details.\n\n— {{tenant_name}}",
   },
   {
+    key: "intake_review_link",
+    name: "Intake — voorstellen-link",
+    subject: "Kies een tijdsblok bij {{tenant_name}}",
+    content_html: wrap(
+      "We hebben 3 voorstellen voor je",
+      "<p>Beste {{contact_name}},</p>" +
+        "<p>We hebben je intake-aanvraag bekeken en hebben <strong>3 best passende tijdsblokken</strong> voor je geselecteerd. Klik hieronder om ze te bekijken en je voorkeur te kiezen:</p>" +
+        '<p><a href="{{review_url}}" style="display:inline-block;padding:10px 16px;background:#1f9d55;color:#fff;border-radius:8px;text-decoration:none;">Bekijk de voorstellen</a></p>' +
+        "<p style=\"font-size:12px;color:#666;\">Deze link is geldig tot <strong>{{expires_label}}</strong>. Daarna kun je opnieuw contact met ons opnemen.</p>",
+    ),
+    content_text:
+      "Beste {{contact_name}},\n\n" +
+      "We hebben je intake-aanvraag bekeken en hebben 3 best passende tijdsblokken voor je geselecteerd.\n\n" +
+      "Bekijk en kies je voorkeur: {{review_url}}\n\n" +
+      "Deze link is geldig tot {{expires_label}}. Daarna kun je opnieuw contact met ons opnemen.\n\n— {{tenant_name}}",
+  },
+  {
     key: "group_announcement",
     name: "Groep — mededeling",
     subject: "Mededeling voor {{group_name}}",
