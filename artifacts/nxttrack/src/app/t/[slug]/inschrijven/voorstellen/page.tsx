@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
-import { resolveSubmissionByReviewToken } from "@/lib/actions/public/propose-slot";
+import {
+  getTenantContactEmailBySlug,
+  resolveSubmissionByReviewToken,
+} from "@/lib/actions/public/propose-slot";
 import { scorePlacementCandidatesPublic } from "@/lib/db/placement";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWaitEstimate, toneForWaitWeeks, labelForWaitWeeks } from "@/lib/intake/wait-time";
 import { ChooseSlotList, type ProposalRow } from "@/components/public/intake/ChooseSlotList";
+import { ExpiredReviewLinkNotice } from "@/components/public/intake/ExpiredReviewLinkNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -19,26 +23,9 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
 
   const sub = await resolveSubmissionByReviewToken(token);
   if (!sub || sub.tenant_slug !== slug) {
+    const contactEmail = await getTenantContactEmailBySlug(slug);
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div
-          className="rounded-2xl p-6"
-          style={{
-            backgroundColor: "var(--surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <h1
-            className="text-lg font-semibold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Deze link is niet langer geldig
-          </h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-            De voorstellen-link is verlopen of al gebruikt. Neem contact op met de organisatie als je vragen hebt over je aanvraag.
-          </p>
-        </div>
-      </main>
+      <ExpiredReviewLinkNotice tenantSlug={slug} contactEmail={contactEmail} />
     );
   }
 

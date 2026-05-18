@@ -35,6 +35,37 @@ interface SubmissionLookup {
   form_id: string | null;
 }
 
+/**
+ * Sprint 82c follow-up (task #148) — vriendelijke fallback bij verlopen
+ * review-link. We tonen op `/voorstellen` en `/geen-plek` een "Neem
+ * contact op"-knop wanneer het token niet (meer) resolved. Hier halen we
+ * een mailto-bestemming op: bij voorkeur `tenant_email_settings.reply_to_email`,
+ * anders `tenants.contact_email`. Geen RLS/auth check — slug + tenant
+ * contact-info is publiek (staat ook in de footer van marketing-pages).
+ */
+export async function getTenantContactEmailBySlug(
+  slug: string,
+): Promise<string | null> {
+  if (!slug) return null;
+  const admin = createAdminClient();
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("id, contact_email")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!tenant) return null;
+  const t = tenant as { id: string; contact_email: string | null };
+  const { data: settings } = await admin
+    .from("tenant_email_settings")
+    .select("reply_to_email")
+    .eq("tenant_id", t.id)
+    .maybeSingle();
+  const replyTo = (settings as { reply_to_email: string | null } | null)
+    ?.reply_to_email?.trim();
+  if (replyTo) return replyTo;
+  return t.contact_email?.trim() || null;
+}
+
 export async function resolveSubmissionByReviewToken(
   plainToken: string,
 ): Promise<SubmissionLookup | null> {

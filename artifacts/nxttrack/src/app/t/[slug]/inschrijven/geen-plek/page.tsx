@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
-import { resolveSubmissionByReviewToken } from "@/lib/actions/public/propose-slot";
+import {
+  getTenantContactEmailBySlug,
+  resolveSubmissionByReviewToken,
+} from "@/lib/actions/public/propose-slot";
 import { NoCapacityChoiceForm } from "@/components/public/intake/NoCapacityChoiceForm";
+import { ExpiredReviewLinkNotice } from "@/components/public/intake/ExpiredReviewLinkNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -15,29 +19,9 @@ export default async function NoCapacityPage({ params, searchParams }: PageProps
   if (!token) redirect(`/t/${slug}`);
   const sub = await resolveSubmissionByReviewToken(token);
   if (!sub || sub.tenant_slug !== slug) {
+    const contactEmail = await getTenantContactEmailBySlug(slug);
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div
-          className="rounded-2xl p-6"
-          style={{
-            backgroundColor: "var(--surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <h1
-            className="text-lg font-semibold"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Deze link is niet langer geldig
-          </h1>
-          <p
-            className="mt-2 text-sm"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            De link is verlopen of al gebruikt.
-          </p>
-        </div>
-      </main>
+      <ExpiredReviewLinkNotice tenantSlug={slug} contactEmail={contactEmail} />
     );
   }
 
