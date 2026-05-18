@@ -4,6 +4,7 @@ import type { Tenant } from "@/types/database";
 import { getUser } from "@/lib/auth/get-user";
 import {
   getUserTenantContext,
+  isAthlete,
   isParent,
   isTrainer,
 } from "@/lib/auth/user-role-rules";
@@ -82,7 +83,9 @@ export async function PublicTenantShell({
       getUserThemePreference(user.id, tenant.id),
       getMyMember(tenant.id, user.id),
     ]);
-    showKinderen = isParent(ctx);
+    // Sprint 81 — toon de "Mijn sport"-sectie ook voor athletes-zonder-parent,
+    // niet alleen voor ouders met member_links.
+    showKinderen = isParent(ctx) || isAthlete(ctx);
     showGroepen = isTrainer(ctx);
     unreadCount = rows.filter(
       (r) => r.notification.tenant_id === tenant.id && !r.is_read,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Home,
@@ -23,6 +23,9 @@ import {
   TrendingUp,
   Award,
   CreditCard,
+  ArrowLeft,
+  ArrowRight,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Tenant } from "@/types/database";
@@ -49,6 +52,7 @@ export type PublicNavKey =
   | "taken"
   | "voortgang"
   | "lessen"
+  | "leerlingen"
   | "diplomas"
   | "betalingen"
   | "custom";
@@ -72,8 +76,6 @@ export interface PublicSidebarProps {
   onNavigate?: () => void;
 }
 
-const NXTTRACK_LOGO = "https://dgwebservices.nl/logonxttrack.svg";
-
 interface NavItem {
   key: PublicNavKey | string;
   label: string;
@@ -81,7 +83,6 @@ interface NavItem {
   icon: LucideIcon;
   badge?: number;
   children?: NavItem[];
-  /** For custom pages — match against customActivePath. */
   customPath?: string;
 }
 
@@ -106,14 +107,10 @@ function customNodeToItem(slug: string, node: CustomPageNode): NavItem {
   };
 }
 
-function buildSections(
+/** Publieke secties: Algemeen + Pagina's. */
+function buildPublicSections(
   slug: string,
-  isAuthed: boolean,
-  showKinderen: boolean,
-  showGroepen: boolean,
   showProgrammas: boolean,
-  unreadCount: number,
-  messagesUnread: number,
   customPages: CustomPageNode[],
 ): NavSection[] {
   const generalItems: NavItem[] = [
@@ -137,11 +134,9 @@ function buildSections(
     href: `/t/${slug}/inschrijven`,
     icon: ClipboardList,
   });
-  const general: NavSection = { heading: "Algemeen", items: generalItems };
 
-  const sections: NavSection[] = [general];
+  const sections: NavSection[] = [{ heading: "Algemeen", items: generalItems }];
 
-  // Custom pages — only show roots flagged show_in_menu.
   const menuRoots = customPages.filter((p) => p.show_in_menu);
   if (menuRoots.length > 0) {
     sections.push({
@@ -149,42 +144,44 @@ function buildSections(
       items: menuRoots.map((p) => customNodeToItem(slug, p)),
     });
   }
+  return sections;
+}
 
-  if (!isAuthed) return sections;
+/** Rol-secties: Home + Trainer + Mijn sport + Mijn account. */
+function buildRoleSections(
+  slug: string,
+  showKinderen: boolean,
+  showGroepen: boolean,
+  unreadCount: number,
+  messagesUnread: number,
+): NavSection[] {
+  const sections: NavSection[] = [
+    {
+      items: [{ key: "home", label: "Home", href: `/t/${slug}`, icon: Home }],
+    },
+  ];
 
-  // Sprint 78/80 — Trainer-sectie: Taken + Documenten.
   if (showGroepen) {
     sections.push({
       heading: "Trainer",
       items: [
-        {
-          key: "taken",
-          label: "Taken",
-          href: `/t/${slug}/taken`,
-          icon: CheckSquare,
-        },
-        {
-          key: "documenten",
-          label: "Documenten",
-          href: `/t/${slug}/documenten`,
-          icon: FolderOpen,
-        },
+        { key: "agenda", label: "Mijn agenda", href: `/t/${slug}/agenda`, icon: CalendarDays },
+        { key: "lessen", label: "Mijn lessen", href: `/t/${slug}/schedule`, icon: CalendarDays },
+        { key: "leerlingen", label: "Mijn leerlingen", href: `/t/${slug}/leerlingen`, icon: Users },
+        { key: "taken", label: "Taken", href: `/t/${slug}/taken`, icon: CheckSquare },
+        { key: "documenten", label: "Documenten", href: `/t/${slug}/documenten`, icon: FolderOpen },
       ],
     });
   }
 
-  // Sprint 80 — Ouder/lid-sectie: Voortgang, Lessen, Diploma's, Betalingen.
-  // showKinderen wordt true voor ouders met member_links; we tonen de sectie
-  // ook voor leden die zelf een member-row hebben (athletes). De gating is
-  // verfijnd door de routes zelf via getUserTenantContext().
   if (showKinderen) {
     sections.push({
       heading: "Mijn sport",
       items: [
         { key: "voortgang", label: "Voortgang", href: `/t/${slug}/voortgang`, icon: TrendingUp },
-        { key: "lessen",    label: "Mijn lessen", href: `/t/${slug}/lessen`,    icon: CalendarDays },
-        { key: "diplomas",  label: "Diploma's", href: `/t/${slug}/diplomas`,  icon: Award },
-        { key: "betalingen",label: "Betalingen",href: `/t/${slug}/betalingen`,icon: CreditCard },
+        { key: "lessen", label: "Mijn lessen", href: `/t/${slug}/lessen`, icon: CalendarDays },
+        { key: "diplomas", label: "Diploma's", href: `/t/${slug}/diplomas`, icon: Award },
+        { key: "betalingen", label: "Betalingen", href: `/t/${slug}/betalingen`, icon: CreditCard },
       ],
     });
   }
@@ -250,6 +247,8 @@ function initialsFor(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+type ShellMode = "role" | "public";
+
 export function PublicSidebar({
   tenant,
   active,
@@ -264,19 +263,57 @@ export function PublicSidebar({
   socialBar,
   onNavigate,
 }: PublicSidebarProps) {
-  const sections = buildSections(
+  const hasRole = !!isAuthenticated && (showGroepen || showKinderen);
+
+  // Sprint 81 — Twee-panel slider. Default = role-modus voor users met een rol;
+  // anders altijd public-modus. Persist in sessionStorage zodat de keuze door
+  // navigaties heen blijft.
+  const storageKey = `nxt-shell-mode-${tenant.slug}`;
+  const [shellMode, setShellMode] = useState<ShellMode>(
+    hasRole ? "role" : "public",
+  );
+
+  useEffect(() => {
+    if (!hasRole) {
+      setShellMode("public");
+      return;
+    }
+    try {
+      const stored = window.sessionStorage.getItem(storageKey);
+      if (stored === "role" || stored === "public") {
+        setShellMode(stored);
+      }
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasRole]);
+
+  function switchMode(next: ShellMode) {
+    setShellMode(next);
+    try {
+      window.sessionStorage.setItem(storageKey, next);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const publicSections = buildPublicSections(
     tenant.slug,
-    !!isAuthenticated,
-    !!showKinderen,
-    !!showGroepen,
     !!showProgrammas,
-    unreadCount,
-    messagesUnread,
     customPages,
   );
+  const roleSections = hasRole
+    ? buildRoleSections(
+        tenant.slug,
+        !!showKinderen,
+        !!showGroepen,
+        unreadCount,
+        messagesUnread,
+      )
+    : [];
+
   const initials = initialsFor(tenant.name);
-  // Wanneer tenant.logo_url een 404 of broken image teruggeeft, vallen we
-  // visueel terug op de initialen i.p.v. een kapot afbeelding-icoontje.
   const [logoFailed, setLogoFailed] = useState(false);
   const showLogo = !!tenant.logo_url && !logoFailed;
 
@@ -286,6 +323,9 @@ export function PublicSidebar({
       buildPublicTenantUrl(tenant.slug, tenant.domain) ?? `/t/${tenant.slug}`;
     await signOutAction(target);
   }
+
+  // Portal-knop label: trainers → Trainerportaal, anders Leerlingportaal.
+  const portalLabel = showGroepen ? "Trainerportaal" : "Leerlingportaal";
 
   return (
     <aside
@@ -330,21 +370,95 @@ export function PublicSidebar({
           className="-mt-1 text-[11px]"
           style={{ color: "var(--text-secondary)", opacity: 0.75 }}
         >
-          Publieke pagina
+          {hasRole && shellMode === "role"
+            ? portalLabel
+            : "Publieke pagina"}
         </p>
       </div>
 
-      <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-        {sections.map((section, i) => (
-          <SidebarSection
-            key={section.heading ?? `section-${i}`}
-            section={section}
-            active={active}
-            customActivePath={customActivePath}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </nav>
+      {/* Sprint 81 — Role-mode top: pijl naar publieke menu. */}
+      {hasRole && shellMode === "role" && (
+        <button
+          type="button"
+          onClick={() => switchMode("public")}
+          className="mx-1 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors hover:bg-black/5"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <Globe className="h-4 w-4" />
+          <span>Publieke pagina&apos;s</span>
+        </button>
+      )}
+
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        {/* Public panel */}
+        <nav
+          aria-hidden={hasRole && shellMode !== "public"}
+          className="absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
+          style={{
+            transform:
+              hasRole && shellMode === "role"
+                ? "translateX(-110%)"
+                : "translateX(0)",
+            pointerEvents:
+              hasRole && shellMode !== "public" ? "none" : undefined,
+          }}
+        >
+          {publicSections.map((section, i) => (
+            <SidebarSection
+              key={section.heading ?? `pub-${i}`}
+              section={section}
+              active={active}
+              customActivePath={customActivePath}
+              onNavigate={onNavigate}
+            />
+          ))}
+
+          {hasRole && (
+            <div
+              className="mt-auto border-t pt-3"
+              style={{ borderColor: "var(--surface-border)" }}
+            >
+              <button
+                type="button"
+                onClick={() => switchMode("role")}
+                className="inline-flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
+                style={{
+                  backgroundColor:
+                    "color-mix(in srgb, var(--tenant-accent) 18%, transparent)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                <span>{portalLabel}</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </nav>
+
+        {/* Role panel */}
+        {hasRole && (
+          <nav
+            aria-hidden={shellMode !== "role"}
+            className="absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
+            style={{
+              transform:
+                shellMode === "role" ? "translateX(0)" : "translateX(110%)",
+              pointerEvents: shellMode !== "role" ? "none" : undefined,
+            }}
+          >
+            {roleSections.map((section, i) => (
+              <SidebarSection
+                key={section.heading ?? `role-${i}`}
+                section={section}
+                active={active}
+                customActivePath={customActivePath}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </nav>
+        )}
+      </div>
 
       {socialBar && (
         <div

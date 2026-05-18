@@ -113,7 +113,7 @@ export default async function PublicHomePage({ params }: PageProps) {
       {/* Module-grid: 3-koloms op desktop. Sprint 78b voegt Welkom, Locatie
           en Trainers toe naast de bestaande CTA's, Nieuws en Foto's. Lege
           modules (zonder data) renderen `null` en houden de grid schoon. */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:auto-rows-[280px] lg:grid-cols-3">
         <WelcomeCard tenant={tenant} />
         <CtaCard
           icon={CalendarPlus}

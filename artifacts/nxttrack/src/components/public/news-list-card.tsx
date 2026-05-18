@@ -82,7 +82,7 @@ export function NewsListCard({
                 <Link
                   key={post.id}
                   href={`/t/${tenantSlug}/nieuws/${post.slug}`}
-                  className="group block border-l-2 pl-4 transition-colors hover:opacity-90"
+                  className="group flex items-start gap-3 border-l-2 pl-4 transition-colors hover:opacity-90"
                   style={{
                     borderColor:
                       i === 0
@@ -90,26 +90,36 @@ export function NewsListCard({
                         : "var(--surface-border)",
                   }}
                 >
-                  <div
-                    className="mb-1 text-[11px] font-bold uppercase tracking-wider"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    {shortDateNL(date)}
-                  </div>
-                  <h4
-                    className="mb-1 line-clamp-1 text-sm font-semibold"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {post.title}
-                  </h4>
-                  {post.excerpt && (
-                    <p
-                      className="line-clamp-2 text-xs"
+                  {post.cover_image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={post.cover_image_url}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="mb-1 text-[11px] font-bold uppercase tracking-wider"
                       style={{ color: "var(--text-secondary)" }}
                     >
-                      {post.excerpt}
-                    </p>
-                  )}
+                      {shortDateNL(date)}
+                    </div>
+                    <h4
+                      className="mb-1 line-clamp-1 text-sm font-semibold"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {post.title}
+                    </h4>
+                    {post.excerpt && (
+                      <p
+                        className="line-clamp-2 text-xs"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        {post.excerpt}
+                      </p>
+                    )}
+                  </div>
                 </Link>
               );
             })}
