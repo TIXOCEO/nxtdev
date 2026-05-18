@@ -19,6 +19,10 @@ import {
   FolderOpen,
   MessageSquare,
   Rss,
+  CheckSquare,
+  TrendingUp,
+  Award,
+  CreditCard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Tenant } from "@/types/database";
@@ -42,6 +46,11 @@ export type PublicNavKey =
   | "messages"
   | "feed"
   | "documenten"
+  | "taken"
+  | "voortgang"
+  | "lessen"
+  | "diplomas"
+  | "betalingen"
   | "custom";
 
 export interface PublicSidebarProps {
@@ -143,17 +152,39 @@ function buildSections(
 
   if (!isAuthed) return sections;
 
-  // Sprint 78 — Trainer-sectie: Documenten (read-only stub).
+  // Sprint 78/80 — Trainer-sectie: Taken + Documenten.
   if (showGroepen) {
     sections.push({
       heading: "Trainer",
       items: [
+        {
+          key: "taken",
+          label: "Taken",
+          href: `/t/${slug}/taken`,
+          icon: CheckSquare,
+        },
         {
           key: "documenten",
           label: "Documenten",
           href: `/t/${slug}/documenten`,
           icon: FolderOpen,
         },
+      ],
+    });
+  }
+
+  // Sprint 80 — Ouder/lid-sectie: Voortgang, Lessen, Diploma's, Betalingen.
+  // showKinderen wordt true voor ouders met member_links; we tonen de sectie
+  // ook voor leden die zelf een member-row hebben (athletes). De gating is
+  // verfijnd door de routes zelf via getUserTenantContext().
+  if (showKinderen) {
+    sections.push({
+      heading: "Mijn sport",
+      items: [
+        { key: "voortgang", label: "Voortgang", href: `/t/${slug}/voortgang`, icon: TrendingUp },
+        { key: "lessen",    label: "Mijn lessen", href: `/t/${slug}/lessen`,    icon: CalendarDays },
+        { key: "diplomas",  label: "Diploma's", href: `/t/${slug}/diplomas`,  icon: Award },
+        { key: "betalingen",label: "Betalingen",href: `/t/${slug}/betalingen`,icon: CreditCard },
       ],
     });
   }
