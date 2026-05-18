@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Home,
@@ -289,6 +289,12 @@ export function PublicSidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasRole]);
 
+  // Sprint 81 — refs naar de twee panel-navs zodat we focus kunnen verplaatsen
+  // naar het eerste interactieve element in het zojuist geactiveerde paneel
+  // (a11y: tab-volgorde sluit aan bij wat zichtbaar is).
+  const publicNavRef = useRef<HTMLElement | null>(null);
+  const roleNavRef = useRef<HTMLElement | null>(null);
+
   function switchMode(next: ShellMode) {
     setShellMode(next);
     try {
@@ -296,6 +302,14 @@ export function PublicSidebar({
     } catch {
       /* ignore */
     }
+    // Restore focus naar het nieuwe paneel na de translateX-transitie (300ms).
+    window.setTimeout(() => {
+      const target = next === "role" ? roleNavRef.current : publicNavRef.current;
+      const first = target?.querySelector<HTMLElement>(
+        'a[href], button:not([disabled])',
+      );
+      first?.focus();
+    }, 320);
   }
 
   const publicSections = buildPublicSections(
@@ -331,8 +345,14 @@ export function PublicSidebar({
     await signOutAction(target);
   }
 
-  // Portal-knop label: trainers → Trainerportaal, anders Leerlingportaal.
-  const portalLabel = showGroepen ? "Trainerportaal" : "Leerlingportaal";
+  // Portal-knop label: dual-role (trainer + parent/athlete) → "Mijn portaal";
+  // alleen-trainer → "Trainerportaal"; alleen-parent/athlete → "Leerlingportaal".
+  const portalLabel =
+    showGroepen && showKinderen
+      ? "Mijn portaal"
+      : showGroepen
+        ? "Trainerportaal"
+        : "Leerlingportaal";
 
   return (
     <aside
@@ -400,6 +420,7 @@ export function PublicSidebar({
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {/* Public panel */}
         <nav
+          ref={publicNavRef}
           aria-hidden={hasRole && shellMode !== "public"}
           className="absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
           style={{
@@ -451,6 +472,7 @@ export function PublicSidebar({
         {/* Role panel */}
         {hasRole && (
           <nav
+            ref={roleNavRef}
             aria-hidden={shellMode !== "role"}
             className="absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
             style={{
@@ -599,6 +621,7 @@ function SidebarLinkRow({
       <Link
         href={item.href}
         onClick={onNavigate}
+        aria-current={isActive ? "page" : undefined}
         className={`group relative inline-flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition-colors ${
           nested ? "ml-4 pl-3 pr-3" : "px-3 py-2.5"
         }`}
