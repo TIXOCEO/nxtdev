@@ -94,7 +94,8 @@ export function NewsListCard({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={post.cover_image_url}
-                      alt=""
+                      alt={post.title || "Nieuwsafbeelding"}
+                      loading="lazy"
                       className="h-12 w-12 shrink-0 rounded-lg object-cover"
                     />
                   )}

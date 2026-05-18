@@ -9,9 +9,17 @@ export interface TrainerAthleteRow {
 
 /**
  * Sprint 81 — Leerlingen-overzicht voor een trainer.
- * Vindt alle members die in dezelfde groepen zitten als de ingelogde user
- * (via member-rows van de user), gefilterd op athlete-rol, gegroepeerd per
- * leerling met hun groepen.
+ *
+ * Authorization-pad (instructor-bound, niet alleen "lid van groep"):
+ *  1. Mijn member-rows in deze tenant (members.user_id = userId).
+ *  2. Sessies waar ik officieel instructeur ben (session_instructors.member_id = mijn-id,
+ *     tenant_id = tenant). Dit is de canonical bron van "ben jij hier trainer?".
+ *  3. Uit die sessies → unieke group_ids (training_sessions.group_id), tenant-gefilterd.
+ *  4. Group_members van die groepen → kandidaat-members (excl. mijzelf).
+ *  5. Filter op member_roles.role='athlete' + archived_at IS NULL.
+ *
+ * Alle reads via admin-client met expliciete tenant_id-filters via !inner JOINs zodat
+ * cross-tenant rijen op DB-niveau wegvallen.
  */
 export async function listAthletesForTrainer(
   tenantId: string,
@@ -28,20 +36,38 @@ export async function listAthletesForTrainer(
   const myMemberIds = ((myMembers ?? []) as Array<{ id: string }>).map((m) => m.id);
   if (myMemberIds.length === 0) return [];
 
-  // Stap 2: groepen waar ik in zit — tenant_id-filter via groups!inner zodat
-  // de query stopt op DB-niveau bij cross-tenant group-membership-rijen.
-  const { data: myGroupRows } = await admin
-    .from("group_members")
-    .select("group_id, groups!inner(id,tenant_id)")
-    .in("member_id", myMemberIds)
-    .eq("groups.tenant_id", tenantId);
+  // Stap 2: sessies waar ik officieel als instructeur is toegewezen
+  const { data: instructorRows } = await admin
+    .from("session_instructors")
+    .select("session_id, tenant_id")
+    .eq("tenant_id", tenantId)
+    .in("member_id", myMemberIds);
+  const sessionIds = Array.from(
+    new Set(
+      ((instructorRows ?? []) as Array<{ session_id: string }>).map(
+        (r) => r.session_id,
+      ),
+    ),
+  );
+  if (sessionIds.length === 0) return [];
+
+  // Stap 3: group_ids uit die sessies (tenant-gefilterd via inner-join)
+  const { data: sessionRows } = await admin
+    .from("training_sessions")
+    .select("id, group_id, tenant_id")
+    .eq("tenant_id", tenantId)
+    .in("id", sessionIds);
   const groupIds = Array.from(
-    new Set(((myGroupRows ?? []) as Array<{ group_id: string }>).map((r) => r.group_id)),
+    new Set(
+      ((sessionRows ?? []) as Array<{ group_id: string | null }>)
+        .map((r) => r.group_id)
+        .filter((id): id is string => !!id),
+    ),
   );
   if (groupIds.length === 0) return [];
 
-  // Stap 3: alle group_members in die groepen + group-naam — tenant_id-filter
-  // op zowel groups als members als defense-in-depth bovenop Stap 2.
+  // Stap 4: group_members in die groepen — tenant_id-filter via groups!inner +
+  // members!inner als defense-in-depth bovenop de admin-client (geen RLS).
   const { data: rows } = await admin
     .from("group_members")
     .select("member_id, group_id, groups!inner(id,name,tenant_id), members!inner(id,full_name,email,tenant_id,archived_at)")
@@ -65,7 +91,7 @@ export async function listAthletesForTrainer(
     return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
   }
 
-  // Stap 4: filter op athletes via member_roles
+  // Stap 5: filter op athletes via member_roles, sluit mijzelf uit
   const candidateMemberIds = Array.from(
     new Set(
       ((rows ?? []) as Row[])
@@ -85,7 +111,7 @@ export async function listAthletesForTrainer(
   );
   if (athleteIds.size === 0) return [];
 
-  // Stap 5: aggregeer per athlete + filter tenant + archived
+  // Stap 6: aggregeer per athlete + filter tenant + archived
   const byMember = new Map<string, TrainerAthleteRow>();
   for (const r of (rows ?? []) as Row[]) {
     if (!athleteIds.has(r.member_id)) continue;

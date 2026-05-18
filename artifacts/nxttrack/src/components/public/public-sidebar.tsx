@@ -319,6 +319,13 @@ export function PublicSidebar({
 
   async function onLogout() {
     onNavigate?.();
+    // Sprint 81 — reset shell-modus bij logout zodat de volgende sessie
+    // niet onbedoeld nog in role-modus opent.
+    try {
+      window.sessionStorage.removeItem(storageKey);
+    } catch {
+      /* ignore */
+    }
     const target =
       buildPublicTenantUrl(tenant.slug, tenant.domain) ?? `/t/${tenant.slug}`;
     await signOutAction(target);
@@ -419,9 +426,14 @@ export function PublicSidebar({
               className="mt-auto border-t pt-3"
               style={{ borderColor: "var(--surface-border)" }}
             >
-              <button
-                type="button"
-                onClick={() => switchMode("role")}
+              {/* Sprint 81 — portal-knop schakelt naar role-modus én navigeert
+                  naar de tenant-home (rol-dashboard landingspagina). */}
+              <Link
+                href={`/t/${tenant.slug}`}
+                onClick={() => {
+                  switchMode("role");
+                  onNavigate?.();
+                }}
                 className="inline-flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
                 style={{
                   backgroundColor:
@@ -431,7 +443,7 @@ export function PublicSidebar({
               >
                 <span>{portalLabel}</span>
                 <ArrowRight className="h-4 w-4" />
-              </button>
+              </Link>
             </div>
           )}
         </nav>
