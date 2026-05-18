@@ -57,7 +57,7 @@ export default async function PublicSchedulePage({ params }: PageProps) {
   };
 
   return (
-    <PublicTenantShell tenant={tenant} pageTitle="Agenda" active={["agenda", "lessen"]}>
+    <PublicTenantShell tenant={tenant} pageTitle="Agenda" active="lessen">
       <div className="space-y-3">
         <div>
           <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>

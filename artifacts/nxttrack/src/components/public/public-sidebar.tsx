@@ -294,8 +294,7 @@ export function PublicSidebar({
     } catch {
       /* ignore */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasRole]);
+  }, [hasRole, storageKey]);
 
   // Sprint 81 — refs naar de twee panel-navs zodat we focus kunnen verplaatsen
   // naar het eerste interactieve element in het zojuist geactiveerde paneel
