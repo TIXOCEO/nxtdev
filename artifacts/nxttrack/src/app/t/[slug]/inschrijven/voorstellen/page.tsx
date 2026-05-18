@@ -43,12 +43,45 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
   }
 
   // Top-3 kandidaten op match-score; daarna wachttijd-info per row.
-  const candidates = await scorePlacementCandidates(sub.id).catch(() => []);
+  // Geen silent-catch: bij echte RPC-fout willen we de fout zien i.p.v.
+  // de aanvrager misleidend naar /geen-plek te sturen.
+  let candidates: Awaited<ReturnType<typeof scorePlacementCandidates>>;
+  try {
+    candidates = await scorePlacementCandidates(sub.id);
+  } catch (err) {
+    return (
+      <main className="mx-auto w-full max-w-2xl px-4 py-10">
+        <div
+          className="rounded-2xl p-6"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+            Tijdelijk geen voorstellen beschikbaar
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            We konden de voorstellen niet ophalen. Probeer het later opnieuw, of neem contact op met de organisatie.
+          </p>
+          <p className="mt-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+            {(err as Error).message}
+          </p>
+        </div>
+      </main>
+    );
+  }
   const top3 = candidates.slice(0, 3);
 
   const admin = createAdminClient();
   const groupIds = Array.from(new Set(top3.map((c) => c.group_id).filter(Boolean)));
   let groupNameById: Record<string, string> = {};
+  type NextSessionInfo = {
+    starts_at: string;
+    ends_at: string | null;
+    instructor_names: string[];
+  };
+  const nextSessionByGroup: Record<string, NextSessionInfo | undefined> = {};
   if (groupIds.length > 0) {
     const { data: gNames } = await admin
       .from("groups")
@@ -58,8 +91,49 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
     groupNameById = Object.fromEntries(
       (gNames ?? []).map((g) => [g.id as string, (g.name as string) ?? ""]),
     );
+
+    // Eerstvolgende sessie per groep (status<>cancelled, vanaf nu).
+    const { data: sessions } = await admin
+      .from("training_sessions")
+      .select(
+        "id, group_id, starts_at, ends_at, status, session_instructors(member_id, members(full_name))",
+      )
+      .eq("tenant_id", sub.tenant_id)
+      .in("group_id", groupIds)
+      .neq("status", "cancelled")
+      .gte("starts_at", new Date().toISOString())
+      .order("starts_at", { ascending: true })
+      .limit(50);
+    type SessionRow = {
+      group_id: string;
+      starts_at: string;
+      ends_at: string | null;
+      session_instructors?: Array<{
+        members?: { full_name?: string | null } | { full_name?: string | null }[] | null;
+      }> | null;
+    };
+    for (const s of (sessions ?? []) as SessionRow[]) {
+      if (nextSessionByGroup[s.group_id]) continue;
+      const names: string[] = [];
+      for (const si of s.session_instructors ?? []) {
+        const m = Array.isArray(si.members) ? si.members[0] : si.members;
+        const name = m?.full_name?.trim();
+        if (name) names.push(name);
+      }
+      nextSessionByGroup[s.group_id] = {
+        starts_at: s.starts_at,
+        ends_at: s.ends_at,
+        instructor_names: names,
+      };
+    }
   }
 
+  const fmtDay = new Intl.DateTimeFormat("nl-NL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const fmtTime = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" });
   const rows: ProposalRow[] = [];
   for (const c of top3) {
     const groupId = (c as { group_id: string }).group_id;
@@ -70,6 +144,16 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
       groupId,
       stageId,
     });
+    const next = nextSessionByGroup[groupId];
+    let dayLabel: string | null = null;
+    let timeLabel: string | null = null;
+    if (next) {
+      const s = new Date(next.starts_at);
+      dayLabel = fmtDay.format(s);
+      const startStr = fmtTime.format(s);
+      const endStr = next.ends_at ? fmtTime.format(new Date(next.ends_at)) : null;
+      timeLabel = endStr ? `${startStr}–${endStr}` : startStr;
+    }
     rows.push({
       group_id: groupId,
       stage_id: stageId,
@@ -80,6 +164,9 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
       wait_label: labelForWaitWeeks(waitWeeks),
       wait_tone: toneForWaitWeeks(waitWeeks),
       suggestion_rank: rows.length + 1,
+      day_label: dayLabel,
+      time_label: timeLabel,
+      instructor_names: next?.instructor_names ?? [],
     });
   }
 

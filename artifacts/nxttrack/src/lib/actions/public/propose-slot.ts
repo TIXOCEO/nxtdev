@@ -6,6 +6,7 @@ import { sendNotification } from "@/lib/notifications/send-notification";
 import { sendEmail } from "@/lib/email/send-email";
 import { hashReviewToken } from "@/lib/intake/review-token";
 import { appBaseUrl } from "@/lib/url";
+import { scorePlacementCandidates } from "@/lib/db/placement";
 
 /**
  * Sprint 82 — Publieke server-actions voor de "kies-je-tijdsblok"-flow.
@@ -95,6 +96,15 @@ export async function chooseProposedSlot(
     };
   }
   if (!input.groupId) return { ok: false, error: "Ongeldige keuze." };
+
+  // Constrain naar top-3 server-side: voorkomt dat een aanvrager een
+  // willekeurige tenant-groep kiest die niet in de oorspronkelijke
+  // voorstellen voorkwam.
+  const candidates = await scorePlacementCandidates(sub.id);
+  const top3Ids = new Set(candidates.slice(0, 3).map((c) => c.group_id));
+  if (!top3Ids.has(input.groupId)) {
+    return { ok: false, error: "Deze groep zit niet in jouw voorstellen." };
+  }
 
   const admin = createAdminClient();
   const { data: grp } = await admin

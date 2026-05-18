@@ -13,6 +13,9 @@ export interface ProposalRow {
   wait_label: string;
   wait_tone: "green" | "yellow" | "red";
   suggestion_rank: number;
+  day_label: string | null;
+  time_label: string | null;
+  instructor_names: string[];
 }
 
 function toneColors(tone: "green" | "yellow" | "red") {
@@ -79,6 +82,24 @@ export function ChooseSlotList({
                 >
                   {row.group_name}
                 </div>
+                {row.day_label || row.time_label ? (
+                  <div
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {row.day_label}
+                    {row.day_label && row.time_label ? " · " : ""}
+                    {row.time_label}
+                  </div>
+                ) : null}
+                {row.instructor_names.length > 0 ? (
+                  <div
+                    className="mt-0.5 text-xs"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Trainer: {row.instructor_names.join(", ")}
+                  </div>
+                ) : null}
                 <div
                   className="mt-1 text-xs"
                   style={{ color: "var(--text-secondary)" }}
