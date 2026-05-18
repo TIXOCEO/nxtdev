@@ -16,7 +16,7 @@ import { getMyNotifications } from "@/lib/db/notifications";
 export interface PublicHeaderProps {
   tenant: Tenant;
   pageTitle: string;
-  active?: PublicNavKey;
+  active?: PublicNavKey | PublicNavKey[];
   /** Sprint 13. */
   isAuthenticated?: boolean;
   showKinderen?: boolean;

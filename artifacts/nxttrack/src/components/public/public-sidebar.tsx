@@ -57,9 +57,17 @@ export type PublicNavKey =
   | "betalingen"
   | "custom";
 
+export type PublicActive = PublicNavKey | PublicNavKey[];
+
+function matchesActive(active: PublicActive | undefined, key: string): boolean {
+  if (!active) return false;
+  if (Array.isArray(active)) return (active as string[]).includes(key);
+  return (active as string) === key;
+}
+
 export interface PublicSidebarProps {
   tenant: Tenant;
-  active?: PublicNavKey;
+  active?: PublicActive;
   isAuthenticated?: boolean;
   showKinderen?: boolean;
   showGroepen?: boolean;
@@ -565,7 +573,7 @@ export function PublicSidebar({
 
 interface SidebarSectionProps {
   section: NavSection;
-  active?: PublicNavKey;
+  active?: PublicActive;
   customActivePath?: string;
   onNavigate?: () => void;
 }
@@ -601,7 +609,7 @@ function SidebarSection({
 
 interface SidebarLinkRowProps {
   item: NavItem;
-  active?: PublicNavKey;
+  active?: PublicActive;
   customActivePath?: string;
   onNavigate?: () => void;
   nested?: boolean;
@@ -618,7 +626,7 @@ function SidebarLinkRow({
   const isCustom = !!item.customPath;
   const isActive = isCustom
     ? !!customActivePath && customActivePath === item.customPath
-    : active === item.key;
+    : matchesActive(active, item.key);
   return (
     <>
       <Link

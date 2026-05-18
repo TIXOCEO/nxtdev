@@ -43,7 +43,7 @@ function isSafeHexColor(value: string | null | undefined): boolean {
 export interface PublicTenantShellProps {
   tenant: Tenant;
   pageTitle: string;
-  active?: PublicNavKey;
+  active?: PublicNavKey | PublicNavKey[];
   /** When true, the active nav highlight is suppressed (used for custom pages). */
   customActivePath?: string;
   children: ReactNode;
@@ -200,7 +200,7 @@ export async function PublicTenantShell({
             </main>
             <PublicBottomTabBar
               slug={tenant.slug}
-              active={active}
+              active={Array.isArray(active) ? active[0] : active}
               isAuthenticated={!!user}
               unreadCount={unreadCount}
               messagesUnread={messagesUnread}
