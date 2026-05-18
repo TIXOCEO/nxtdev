@@ -34,7 +34,10 @@ import { scorePlacementCandidates } from "@/lib/db/placement";
  */
 
 export type IntakeActionResult =
-  | { ok: true; data: { submissionId: string } }
+  | {
+      ok: true;
+      data: { submissionId: string; redirectUrl?: string };
+    }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 function fail(
@@ -357,11 +360,41 @@ export async function submitIntake(
     });
   }
 
-  // Sprint 74 — auto-waitlist. Wanneer de submission op 'submitted'
-  // staat (dus geen needs_review-blokkade) checken we direct of er
-  // capaciteit is in de top-kandidaat. Top-1 capacity_match=0 →
-  // status='waitlisted' + wachtbericht-mail. Best-effort: RPC-fouten
-  // mogen de submission niet ongedaan maken.
+  // Sprint 82 — Feature-flag `public_intake_propose_slots`. Wanneer
+  // aan, vervangen we het stille auto-waitlist-pad door een publieke
+  // "kies je tijdsblok"-flow. Een review-token (sha256-hash, 7d TTL)
+  // wordt aan de submission gehangen en als redirectUrl teruggegeven;
+  // de form-component navigeert naar /t/<slug>/inschrijven/voorstellen
+  // waar de aanvrager top-3 voorstellen ziet of expliciet voor
+  // wachtlijst kiest. Wanneer flag uit → Sprint 74-gedrag (auto-
+  // waitlist) blijft 1:1 werken.
+  const flagProposeSlots =
+    (tenant.settings_json as { public_intake_propose_slots?: boolean })
+      .public_intake_propose_slots === true;
+
+  if (initialStatus === "submitted" && flagProposeSlots) {
+    const { generateReviewToken } = await import("@/lib/intake/review-token");
+    const tok = generateReviewToken();
+    const { error: tokErr } = await admin
+      .from("intake_submissions")
+      .update({
+        review_token_hash: tok.hash,
+        review_token_expires_at: tok.expiresAt,
+      })
+      .eq("id", submissionId)
+      .eq("tenant_id", tenant.id);
+    if (!tokErr) {
+      const redirectUrl =
+        `/t/${payload.tenant_slug}/inschrijven/voorstellen?token=${tok.plain}`;
+      return {
+        ok: true,
+        data: { submissionId, redirectUrl },
+      };
+    }
+    // Bij token-failure vallen we terug op het legacy auto-waitlist
+    // pad zodat de aanvrager nooit in een dood spoor belandt.
+  }
+
   if (initialStatus === "submitted") {
     let topCapacity: number | null = null;
     let topScore: number | null = null;

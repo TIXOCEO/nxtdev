@@ -106,15 +106,35 @@ function fieldZod(f: IntakeFormFieldConfig): z.ZodTypeAny {
  * Evalueer single-clause show-if. Wanneer hidden, mag het veld
  * leeg/ongedefinieerd zijn.
  */
+function valueMatches(
+  expected: string | number | boolean,
+  actual: unknown,
+): boolean {
+  if (typeof expected === "boolean") return Boolean(actual) === expected;
+  if (typeof expected === "number") return Number(actual) === expected;
+  return String(actual ?? "") === String(expected);
+}
+
 export function isFieldVisible(
   showIf: IntakeShowIf | null | undefined,
   values: Record<string, unknown>,
 ): boolean {
   if (!showIf) return true;
   const v = values[showIf.field_key];
-  if (typeof showIf.equals === "boolean") return Boolean(v) === showIf.equals;
-  if (typeof showIf.equals === "number") return Number(v) === showIf.equals;
-  return String(v ?? "") === String(showIf.equals);
+  // Sprint 82 — meerdere operators ondersteund. Prioriteit: `in` >
+  // `not_equals` > `equals`. Backwards compatible: oude rows met
+  // alleen `equals` blijven 1:1 werken.
+  if (Array.isArray(showIf.in)) {
+    return showIf.in.some((opt) => valueMatches(opt, v));
+  }
+  if (showIf.not_equals !== undefined) {
+    return !valueMatches(showIf.not_equals, v);
+  }
+  if (showIf.equals !== undefined) {
+    return valueMatches(showIf.equals, v);
+  }
+  // Geen criterium gespecificeerd → zichtbaar (safe default).
+  return true;
 }
 
 /**

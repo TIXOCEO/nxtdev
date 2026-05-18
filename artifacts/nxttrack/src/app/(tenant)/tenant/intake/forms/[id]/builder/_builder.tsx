@@ -632,9 +632,21 @@ function ShowIfEditor({
   otherKeys,
   onChange,
 }: {
-  value: { field_key: string; equals: string | number | boolean } | null;
+  value: {
+    field_key: string;
+    equals?: string | number | boolean;
+    not_equals?: string | number | boolean;
+    in?: Array<string | number | boolean>;
+  } | null;
   otherKeys: string[];
-  onChange: (next: { field_key: string; equals: string | number | boolean } | null) => void;
+  onChange: (
+    next: {
+      field_key: string;
+      equals?: string | number | boolean;
+      not_equals?: string | number | boolean;
+      in?: Array<string | number | boolean>;
+    } | null,
+  ) => void;
 }) {
   const enabled = !!value;
   return (

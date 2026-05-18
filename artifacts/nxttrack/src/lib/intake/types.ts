@@ -48,12 +48,15 @@ export type IntakeSubmissionStatus =
 export type IntakeRegistrationTarget = "self" | "child";
 
 /**
- * Single-clause show-if. MVP ondersteunt alleen `equals` op één veld;
- * uitgebreidere logica volgt in latere sprints.
+ * Single-clause show-if. Ondersteunt `equals`, `not_equals` of `in`
+ * op één veld. Backwards compatible: oude rows met alleen `equals`
+ * blijven werken (Sprint 82).
  */
 export interface IntakeShowIf {
   field_key: string;
-  equals: string | number | boolean;
+  equals?: string | number | boolean;
+  not_equals?: string | number | boolean;
+  in?: Array<string | number | boolean>;
 }
 
 export interface IntakeFieldOption {

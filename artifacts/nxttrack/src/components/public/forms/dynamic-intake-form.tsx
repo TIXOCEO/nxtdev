@@ -110,6 +110,14 @@ export function DynamicIntakeForm({
         answers: values,
       });
       if (res.ok) {
+        // Sprint 82 — wanneer de server een redirectUrl meegeeft
+        // (feature-flag `public_intake_propose_slots`), navigeren we
+        // direct naar de voorstellen-pagina i.p.v. de generieke
+        // bedankt-state te tonen.
+        if (res.data?.redirectUrl) {
+          window.location.assign(res.data.redirectUrl);
+          return;
+        }
         setSuccess(true);
         setValues(emptyDefaults(form));
       } else {

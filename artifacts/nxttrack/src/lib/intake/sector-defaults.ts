@@ -108,11 +108,25 @@ const SWIMMING_TRYOUT: IntakeFormConfig = {
   source: "sector-default",
   fields: [
     ...COMMON_CONTACT_FIELDS,
-    field("current_level", "Huidig niveau", "select", {
-      help_text: "Optioneel — selecteer indien bekend.",
-      canonical_target: "preferred_level",
+    // Sprint 82 — Conditional branching: "had_lessons" bovenaan; alleen
+    // bij `ja` verschijnt "Huidig niveau". Bij `nee` skipt formulier
+    // direct naar voorkeuren/details (recommendStage doet later
+    // Watergewenning-fallback). Backwards compatible: bestaande
+    // submissions zonder dit veld blijven zichtbaar voor admin.
+    field("had_lessons", "Heeft uw kind al zwemles gehad?", "radio", {
+      is_required: true,
       options: [
-        { value: "watervrij", label: "Watervrij / nog geen ervaring" },
+        { value: "ja", label: "Ja" },
+        { value: "nee", label: "Nee" },
+      ],
+      sort_order: 55,
+    }),
+    field("current_level", "Huidig niveau", "select", {
+      help_text: "Selecteer waar uw kind nu mee bezig is.",
+      canonical_target: "preferred_level",
+      show_if: { field_key: "had_lessons", equals: "ja" },
+      options: [
+        { value: "watervrij", label: "Watervrij" },
         { value: "A", label: "Werkt aan zwemdiploma A" },
         { value: "B", label: "Werkt aan zwemdiploma B" },
         { value: "C", label: "Werkt aan zwemdiploma C" },

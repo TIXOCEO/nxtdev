@@ -80,7 +80,9 @@ const fieldSchema = z.object({
   show_if: z
     .object({
       field_key: z.string().min(1),
-      equals: z.union([z.string(), z.number(), z.boolean()]),
+      equals: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      not_equals: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      in: z.array(z.union([z.string(), z.number(), z.boolean()])).optional(),
     })
     .nullable()
     .optional(),
