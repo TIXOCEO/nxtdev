@@ -49,6 +49,12 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
   try {
     candidates = await scorePlacementCandidatesPublic(sub.id, token);
   } catch (err) {
+    // Server-side log voor diagnose; UI toont een generieke melding.
+    // eslint-disable-next-line no-console
+    console.error(
+      "[voorstellen] scorePlacementCandidatesPublic failed:",
+      err instanceof Error ? err.message : String(err),
+    );
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
         <div
@@ -63,9 +69,6 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
           </h1>
           <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
             We konden de voorstellen niet ophalen. Probeer het later opnieuw, of neem contact op met de organisatie.
-          </p>
-          <p className="mt-2 text-xs" style={{ color: "var(--text-secondary)" }}>
-            {(err as Error).message}
           </p>
         </div>
       </main>

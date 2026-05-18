@@ -284,6 +284,13 @@ export async function confirmWaitlistChoice(input: {
 export async function cancelSubmissionChoice(input: {
   reviewToken: string;
 }): Promise<{ ok: boolean; error?: string }> {
+  // Sprint 82b architect-comment: aanvrager-zijde "Annuleren" wordt naar
+  // de bestaande terminale status `rejected` gemapt. De `intake_submissions.status`
+  // enum bevat geen aparte `cancelled`-waarde (alleen submitted/in_review/
+  // needs_review/waitlisted/placed/rejected/converted); het audit-event
+  // `intake.submission.cancelled_by_applicant` documenteert de échte
+  // semantiek voor admins. Bij een toekomstige status-uitbreiding hoort
+  // `rejected` hier vervangen te worden door `cancelled`.
   const sub = await resolveSubmissionByReviewToken(input.reviewToken);
   if (!sub) return { ok: false, error: "Deze link is niet langer geldig." };
   if (sub.status === "rejected") return { ok: true };
