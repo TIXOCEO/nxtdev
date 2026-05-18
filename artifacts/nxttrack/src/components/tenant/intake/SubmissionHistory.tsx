@@ -66,6 +66,10 @@ function describeRow(row: SubmissionAuditRow): string {
       return typeof m.stage_name === "string" && m.stage_name
         ? `Stage gekozen: ${m.stage_name}`
         : "Stage-keuze teruggenomen";
+    case "intake.review_link_sent":
+      return typeof m.recipient_email === "string" && m.recipient_email
+        ? `Voorstellen-link verstuurd naar ${m.recipient_email}`
+        : "Voorstellen-link verstuurd";
     default:
       return row.action;
   }

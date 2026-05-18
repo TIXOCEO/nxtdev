@@ -94,7 +94,7 @@ export default async function TenantIntakeDetailPage({
   const { data: sub } = await admin
     .from("intake_submissions")
     .select(
-      "id, tenant_id, form_id, submission_type, status, registration_target, contact_name, contact_email, contact_phone, contact_date_of_birth, preferences_json, program_id, assigned_group_id, recommended_stage_id, selected_stage_id, created_at, priority_date",
+      "id, tenant_id, form_id, submission_type, status, registration_target, contact_name, contact_email, contact_phone, contact_date_of_birth, preferences_json, program_id, assigned_group_id, recommended_stage_id, selected_stage_id, created_at, priority_date, review_token_expires_at",
     )
     .eq("id", id)
     .eq("tenant_id", tenantId)
@@ -199,6 +199,7 @@ export default async function TenantIntakeDetailPage({
       "intake.submission.rejected",
       "intake.submission.placed",
       "intake.submission.stage_selected",
+      "intake.review_link_sent",
     ])
     .filter("meta->>submission_id", "eq", sub.id)
     .order("created_at", { ascending: false })
@@ -323,6 +324,17 @@ export default async function TenantIntakeDetailPage({
   const labelByKey = new Map<string, string>(
     (fields ?? []).map((f) => [f.key as string, (f.label as string) ?? (f.key as string)]),
   );
+
+  // Task #147 — laatste "intake.review_link_sent" voor deze submission
+  // + actief review-token (alleen tonen wanneer nog niet verlopen).
+  const lastReviewLinkSentAt =
+    filtered.find((r) => r.action === "intake.review_link_sent")?.created_at ?? null;
+  const reviewTokenExpiresAt =
+    (sub as { review_token_expires_at?: string | null }).review_token_expires_at ?? null;
+  const activeReviewTokenExpiresAt =
+    reviewTokenExpiresAt && new Date(reviewTokenExpiresAt).getTime() > Date.now()
+      ? reviewTokenExpiresAt
+      : null;
 
   const prefs = (sub.preferences_json ?? {}) as Record<string, unknown>;
   const prefsEmpty = Object.keys(prefs).length === 0;
@@ -466,6 +478,8 @@ export default async function TenantIntakeDetailPage({
                   ? `Aanvraag is al ${STATUS_LABEL[sub.status] ?? sub.status} — voorstellen versturen is niet meer mogelijk.`
                   : null
               }
+              lastSentAt={lastReviewLinkSentAt}
+              linkValidUntil={activeReviewTokenExpiresAt}
             />
           ) : null}
           <PlacementSuggestionsPanel

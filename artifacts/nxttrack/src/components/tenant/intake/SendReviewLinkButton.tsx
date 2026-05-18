@@ -16,12 +16,29 @@ export interface SendReviewLinkButtonProps {
   submissionId: string;
   contactEmail: string | null;
   disabledReason?: string | null;
+  /** Task #147 — ISO-timestamp van de meest recente "intake.review_link_sent" audit-row. */
+  lastSentAt?: string | null;
+  /** Task #147 — ISO-timestamp van een nog-niet-verlopen review_token_expires_at. */
+  linkValidUntil?: string | null;
+}
+
+function formatDateTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("nl-NL", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 export function SendReviewLinkButton({
   submissionId,
   contactEmail,
   disabledReason,
+  lastSentAt = null,
+  linkValidUntil = null,
 }: SendReviewLinkButtonProps) {
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<
@@ -32,15 +49,17 @@ export function SendReviewLinkButton({
 
   const noEmail = !contactEmail;
   const disabled = noEmail || Boolean(disabledReason);
+  const hasActiveLink = Boolean(linkValidUntil);
+  const buttonLabel = hasActiveLink
+    ? "Stuur nieuwe voorstellen-link"
+    : "Stuur 3 voorstellen aan aanvrager";
 
   function handleClick() {
     if (disabled) return;
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `3 voorstellen mailen naar ${contactEmail}? De aanvrager krijgt een link (7 dagen geldig) naar de "Kies je tijdsblok"-pagina.`,
-      )
-    ) {
+    const confirmText = hasActiveLink
+      ? `Er is al een actieve voorstellen-link voor ${contactEmail}. Nieuwe mail versturen? De oude link blijft werken tot deze verloopt.`
+      : `3 voorstellen mailen naar ${contactEmail}? De aanvrager krijgt een link (7 dagen geldig) naar de "Kies je tijdsblok"-pagina.`;
+    if (typeof window !== "undefined" && !window.confirm(confirmText)) {
       return;
     }
     setFeedback(null);
@@ -87,8 +106,15 @@ export function SendReviewLinkButton({
           color: "var(--accent-foreground, white)",
         }}
       >
-        {pending ? "Bezig…" : "Stuur 3 voorstellen aan aanvrager"}
+        {pending ? "Bezig…" : buttonLabel}
       </button>
+
+      {(lastSentAt || linkValidUntil) && (
+        <div className="space-y-0.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+          {lastSentAt && <p>Laatst verstuurd op {formatDateTime(lastSentAt)}</p>}
+          {linkValidUntil && <p>Link nog geldig tot {formatDateTime(linkValidUntil)}</p>}
+        </div>
+      )}
 
       {noEmail && (
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
