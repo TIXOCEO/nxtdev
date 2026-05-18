@@ -444,8 +444,11 @@ export function PublicSidebar({
 
           {hasRole && (
             <div
-              className="mt-auto border-t pt-3"
-              style={{ borderColor: "var(--surface-border)" }}
+              className="sticky bottom-0 mt-auto border-t pt-3"
+              style={{
+                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--sidebar-bg)",
+              }}
             >
               {/* Sprint 81 — portal-knop schakelt naar role-modus én navigeert
                   naar de tenant-home (rol-dashboard landingspagina). */}
