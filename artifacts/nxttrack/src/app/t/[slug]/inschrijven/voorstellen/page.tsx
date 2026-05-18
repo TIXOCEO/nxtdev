@@ -71,10 +71,17 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
       </main>
     );
   }
-  const top3 = candidates.slice(0, 3);
+  // Sprint 82b post-review fix: enrich wait-time voor ALLE kandidaten
+  // (capped op top-12 by score om query-blowup op tenants met veel
+  // groepen te voorkomen), daarna sort op (capaciteit > wachttijd >
+  // score), pas dán slice(0,3). Voorheen werd slice(0,3) vóór de
+  // wachttijd-lookup gedaan, waardoor groepen met betere wachttijd buiten
+  // de top-3-by-score nooit kans kregen en de noCapacity-fallback
+  // foutief kon redirecten naar /geen-plek.
+  const enrichmentSet = candidates.slice(0, 12);
 
   const admin = createAdminClient();
-  const groupIds = Array.from(new Set(top3.map((c) => c.group_id).filter(Boolean)));
+  const groupIds = Array.from(new Set(enrichmentSet.map((c) => c.group_id).filter(Boolean)));
   let groupNameById: Record<string, string> = {};
   type NextSessionInfo = {
     starts_at: string;
@@ -140,7 +147,7 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
   // delen dezelfde target-stage (resolved van submission's
   // selected_stage_id / recommended_stage_id / preferred_level).
   const rows: ProposalRow[] = [];
-  for (const c of top3) {
+  for (const c of enrichmentSet) {
     const groupId = c.group_id;
     const stageId = c.rationale_json.target_stage_id ?? null;
     const waitWeeks = await getWaitEstimate(admin, {
@@ -167,7 +174,7 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
       wait_weeks: waitWeeks,
       wait_label: labelForWaitWeeks(waitWeeks),
       wait_tone: toneForWaitWeeks(waitWeeks),
-      suggestion_rank: rows.length + 1,
+      suggestion_rank: 0, // herberekend ná sortering
       day_label: dayLabel,
       time_label: timeLabel,
       instructor_names: next?.instructor_names ?? [],
@@ -184,10 +191,18 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
     return b.total_score - a.total_score;
   });
 
+  // noCapacity-check op de VOLLEDIGE enriched set, niet op top-3. Anders
+  // zou een aanvrager naar /geen-plek geredirect worden terwijl candidate
+  // #4+ wél vrije plaatsen heeft.
   const noCapacity = rows.length === 0 || rows.every((r) => r.capacity_match === 0);
   if (noCapacity) {
     redirect(`/t/${slug}/inschrijven/geen-plek?token=${token}`);
   }
+
+  // Nu pas top-3 (sortering boven garandeert dat dit de échte best-3 is)
+  // en herbereken suggestion_rank zodat consumer (server-action +
+  // audit-log) consistent 1/2/3 ontvangt.
+  const top3Rows = rows.slice(0, 3).map((r, i) => ({ ...r, suggestion_rank: i + 1 }));
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-10">
@@ -202,7 +217,7 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
           Bedankt {sub.contact_name ?? ""}! Op basis van je aanvraag hebben we 3 mogelijke groepen gevonden. Kies de groep waar je het liefst start.
         </p>
       </header>
-      <ChooseSlotList rows={rows} reviewToken={token} />
+      <ChooseSlotList rows={top3Rows} reviewToken={token} />
       <p className="mt-6 text-xs" style={{ color: "var(--text-secondary)" }}>
         Geen van deze tijden geschikt?{" "}
         <a

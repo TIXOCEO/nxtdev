@@ -8,6 +8,7 @@ import { getAdminRoleTenantIds } from "@/lib/auth/get-admin-role-tenants";
 import { hasTenantAccess, hasMembership } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { scorePlacementCandidates } from "@/lib/db/placement";
+import { getWaitEstimate } from "@/lib/intake/wait-time";
 import { PlacementSuggestionsPanel } from "@/components/tenant/intake/PlacementSuggestionsPanel";
 import { SubmissionStatusStrip } from "@/components/tenant/intake/SubmissionStatusStrip";
 import { RecommendedStageBadge } from "@/components/tenant/intake/RecommendedStageBadge";
@@ -299,6 +300,25 @@ export default async function TenantIntakeDetailPage({
     );
   }
 
+  // Sprint 82b — wachttijd per top-5 kandidaat-groep voor de resolved
+  // target-stage (selected of recommended). Identiek aan wat de
+  // aanvrager publiek ziet via /voorstellen, zodat de admin geen mismatch
+  // ervaart bij het kiezen van een groep.
+  const waitWeeksByGroupId: Record<string, number | null> = {};
+  const adminWaitCandidates = candidates.slice(0, 5);
+  for (const c of adminWaitCandidates) {
+    const stageId = c.rationale_json.target_stage_id ?? null;
+    try {
+      waitWeeksByGroupId[c.group_id] = await getWaitEstimate(admin, {
+        tenantId,
+        groupId: c.group_id,
+        stageId,
+      });
+    } catch {
+      waitWeeksByGroupId[c.group_id] = null;
+    }
+  }
+
   const labelByKey = new Map<string, string>(
     (fields ?? []).map((f) => [f.key as string, (f.label as string) ?? (f.key as string)]),
   );
@@ -442,6 +462,7 @@ export default async function TenantIntakeDetailPage({
             groupNames={groupNames}
             missingSignals={missingSignals}
             canPlace={isAdmin}
+            waitWeeksByGroupId={waitWeeksByGroupId}
           />
         </div>
       </div>

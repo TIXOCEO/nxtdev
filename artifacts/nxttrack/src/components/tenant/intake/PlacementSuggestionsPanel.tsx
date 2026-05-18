@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { PlacementCandidate } from "@/lib/db/placement";
 import { placeSubmission } from "@/lib/actions/tenant/placements";
 import { offerIntakeSlot } from "@/lib/actions/tenant/slot-offers";
+import { labelForWaitWeeks, toneForWaitWeeks } from "@/lib/intake/wait-time";
 
 /**
  * Sprint 70 — Advisory placement-suggestions paneel.
@@ -25,6 +26,14 @@ export interface PlacementSuggestionsPanelProps {
   missingSignals: { preferences: boolean; dateOfBirth: boolean };
   /** Alleen tenant-admins mogen daadwerkelijk plaatsen; staff ziet alleen suggesties. */
   canPlace: boolean;
+  /**
+   * Sprint 82b — geschatte wachttijd in weken per group_id, voor de
+   * resolved target-stage van de submission. Wordt server-side berekend
+   * met `getWaitEstimate` zodat admins de top-5-suggesties al met
+   * realistische wachttijd-context zien (consistent met wat de aanvrager
+   * publiek ziet via /voorstellen).
+   */
+  waitWeeksByGroupId?: Record<string, number | null>;
 }
 
 const COMPONENT_LABELS: Array<{ key: keyof PlacementCandidate; label: string; rationaleKey: string }> = [
@@ -47,6 +56,7 @@ export function PlacementSuggestionsPanel({
   groupNames,
   missingSignals,
   canPlace,
+  waitWeeksByGroupId,
 }: PlacementSuggestionsPanelProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -211,6 +221,36 @@ export function PlacementSuggestionsPanel({
                       >
                         {c.free_seats} vrij
                       </span>
+                      {(() => {
+                        const w = waitWeeksByGroupId?.[c.group_id];
+                        if (w === undefined || w === null) return null;
+                        const tone = toneForWaitWeeks(w);
+                        const bg =
+                          tone === "green"
+                            ? "#dcfce7"
+                            : tone === "yellow"
+                            ? "#fef9c3"
+                            : tone === "red"
+                            ? "#fee2e2"
+                            : "var(--surface-muted, #eef0f3)";
+                        const fg =
+                          tone === "green"
+                            ? "#166534"
+                            : tone === "yellow"
+                            ? "#854d0e"
+                            : tone === "red"
+                            ? "#991b1b"
+                            : "var(--text-secondary)";
+                        return (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                            style={{ backgroundColor: bg, color: fg }}
+                            title={`Geschatte wachttijd voor deze groep`}
+                          >
+                            ⏱ {labelForWaitWeeks(w)}
+                          </span>
+                        );
+                      })()}
                       {(c.rationale_json.group_stage_names ?? []).length > 0 && (
                         <span className="flex flex-wrap items-center gap-1">
                           {(c.rationale_json.group_stage_names ?? []).map((sn) => {

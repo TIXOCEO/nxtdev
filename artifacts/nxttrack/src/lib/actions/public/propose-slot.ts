@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email/send-email";
 import { hashReviewToken } from "@/lib/intake/review-token";
 import { appBaseUrl } from "@/lib/url";
 import { scorePlacementCandidatesPublic } from "@/lib/db/placement";
+import { getWaitEstimate } from "@/lib/intake/wait-time";
 
 /**
  * Sprint 82 — Publieke server-actions voor de "kies-je-tijdsblok"-flow.
@@ -101,8 +102,39 @@ export async function chooseProposedSlot(
   // willekeurige tenant-groep kiest die niet in de oorspronkelijke
   // voorstellen voorkwam. Gebruikt de token-authorized publieke RPC zodat
   // anon-callers ook bij scoring kunnen.
+  //
+  // Sprint 82b post-review fix: zelfde ordering-pipeline als in
+  // /voorstellen — enrich top-12 met wachttijd, sorteer op (capaciteit >
+  // wachttijd > score), pas dán top-3. Anders kan input.groupId wel in
+  // de score-top3 zitten maar niet in de wachttijd-gesorteerde top-3 die
+  // de aanvrager op het scherm zag, of vice versa.
   const candidates = await scorePlacementCandidatesPublic(sub.id, input.reviewToken);
-  const top3Ids = new Set(candidates.slice(0, 3).map((c) => c.group_id));
+  const adminEarly = createAdminClient();
+  type Enriched = { group_id: string; capacity_match: number; total_score: number; wait_weeks: number | null };
+  const enriched: Enriched[] = [];
+  for (const c of candidates.slice(0, 12)) {
+    const stageId = c.rationale_json.target_stage_id ?? null;
+    const wait = await getWaitEstimate(adminEarly, {
+      tenantId: sub.tenant_id,
+      groupId: c.group_id,
+      stageId,
+    });
+    enriched.push({
+      group_id: c.group_id,
+      capacity_match: c.capacity_match,
+      total_score: c.total_score,
+      wait_weeks: wait,
+    });
+  }
+  enriched.sort((a, b) => {
+    const capDiff = (b.capacity_match > 0 ? 1 : 0) - (a.capacity_match > 0 ? 1 : 0);
+    if (capDiff !== 0) return capDiff;
+    const wA = a.wait_weeks ?? 99;
+    const wB = b.wait_weeks ?? 99;
+    if (wA !== wB) return wA - wB;
+    return b.total_score - a.total_score;
+  });
+  const top3Ids = new Set(enriched.slice(0, 3).map((c) => c.group_id));
   if (!top3Ids.has(input.groupId)) {
     return { ok: false, error: "Deze groep zit niet in jouw voorstellen." };
   }
