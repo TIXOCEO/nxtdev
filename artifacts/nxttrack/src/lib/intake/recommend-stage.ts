@@ -97,6 +97,11 @@ function recommendSwimming(
     pickString(input.preferences, "current_level");
   const floats = pickBool(input.preferences, "can_float");
   const underwater = pickBool(input.preferences, "underwater_comfort");
+  // Sprint 82 — Conditional branch: aanvrager geeft expliciet aan dat
+  // het kind nog géén zwemles heeft gehad → start op instap-niveau,
+  // ongeacht eventuele level/floats/underwater-velden (die zijn dan
+  // ofwel leeg via show_if, ofwel niet representatief).
+  const hadLessons = pickBool(input.preferences, "had_lessons");
 
   // Leeftijds-gates komen vóór ervaring: ook al claimt iemand B/C,
   // een 3-jarige hoort niet in een afzwem-groep.
@@ -110,6 +115,14 @@ function recommendSwimming(
     return {
       stageName: "Watergewenning",
       rationale: `Leeftijd ${age} — start op instap-niveau`,
+    };
+  }
+
+  // Sprint 82 — Expliciete "nog geen lessen" beats alle andere signalen.
+  if (hadLessons === false) {
+    return {
+      stageName: "Watergewenning",
+      rationale: "Nog geen zwemles gehad — start op instap-niveau",
     };
   }
 

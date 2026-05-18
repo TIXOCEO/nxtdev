@@ -6,7 +6,7 @@ import { sendNotification } from "@/lib/notifications/send-notification";
 import { sendEmail } from "@/lib/email/send-email";
 import { hashReviewToken } from "@/lib/intake/review-token";
 import { appBaseUrl } from "@/lib/url";
-import { scorePlacementCandidates } from "@/lib/db/placement";
+import { scorePlacementCandidatesPublic } from "@/lib/db/placement";
 
 /**
  * Sprint 82 — Publieke server-actions voor de "kies-je-tijdsblok"-flow.
@@ -99,8 +99,9 @@ export async function chooseProposedSlot(
 
   // Constrain naar top-3 server-side: voorkomt dat een aanvrager een
   // willekeurige tenant-groep kiest die niet in de oorspronkelijke
-  // voorstellen voorkwam.
-  const candidates = await scorePlacementCandidates(sub.id);
+  // voorstellen voorkwam. Gebruikt de token-authorized publieke RPC zodat
+  // anon-callers ook bij scoring kunnen.
+  const candidates = await scorePlacementCandidatesPublic(sub.id, input.reviewToken);
   const top3Ids = new Set(candidates.slice(0, 3).map((c) => c.group_id));
   if (!top3Ids.has(input.groupId)) {
     return { ok: false, error: "Deze groep zit niet in jouw voorstellen." };

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { resolveSubmissionByReviewToken } from "@/lib/actions/public/propose-slot";
-import { scorePlacementCandidates } from "@/lib/db/placement";
+import { scorePlacementCandidatesPublic } from "@/lib/db/placement";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWaitEstimate, toneForWaitWeeks, labelForWaitWeeks } from "@/lib/intake/wait-time";
 import { ChooseSlotList, type ProposalRow } from "@/components/public/intake/ChooseSlotList";
@@ -45,9 +45,9 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
   // Top-3 kandidaten op match-score; daarna wachttijd-info per row.
   // Geen silent-catch: bij echte RPC-fout willen we de fout zien i.p.v.
   // de aanvrager misleidend naar /geen-plek te sturen.
-  let candidates: Awaited<ReturnType<typeof scorePlacementCandidates>>;
+  let candidates: Awaited<ReturnType<typeof scorePlacementCandidatesPublic>>;
   try {
-    candidates = await scorePlacementCandidates(sub.id);
+    candidates = await scorePlacementCandidatesPublic(sub.id, token);
   } catch (err) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
@@ -134,11 +134,15 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
     month: "long",
   });
   const fmtTime = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" });
+  // Sprint 82b — target_stage_id zit in rationale_json (gevuld door de
+  // publieke RPC, identiek aan v_target_stage in de scoring-logica).
+  // Wordt als stageId voor wait-estimate gebruikt — alle top-3 voorstellen
+  // delen dezelfde target-stage (resolved van submission's
+  // selected_stage_id / recommended_stage_id / preferred_level).
   const rows: ProposalRow[] = [];
   for (const c of top3) {
-    const groupId = (c as { group_id: string }).group_id;
-    const stageId =
-      ((c as unknown) as { stage_id?: string | null }).stage_id ?? null;
+    const groupId = c.group_id;
+    const stageId = c.rationale_json.target_stage_id ?? null;
     const waitWeeks = await getWaitEstimate(admin, {
       tenantId: sub.tenant_id,
       groupId,
@@ -158,8 +162,8 @@ export default async function ProposeSlotsPage({ params, searchParams }: PagePro
       group_id: groupId,
       stage_id: stageId,
       group_name: groupNameById[groupId] ?? "Groep",
-      total_score: Number((c as { total_score: number | null }).total_score ?? 0),
-      capacity_match: Number((c as { capacity_match: number | null }).capacity_match ?? 0),
+      total_score: c.total_score,
+      capacity_match: c.capacity_match,
       wait_weeks: waitWeeks,
       wait_label: labelForWaitWeeks(waitWeeks),
       wait_tone: toneForWaitWeeks(waitWeeks),
