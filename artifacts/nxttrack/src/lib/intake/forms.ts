@@ -158,9 +158,69 @@ export async function resolveIntakeForm(args: {
   }
 
   const anyDefault = await loadFormFromDb(tenantId, null);
-  if (anyDefault) return anyDefault;
+  if (anyDefault) {
+    return applyDynamicStageOptionsIfPossible(anyDefault, tenantId);
+  }
 
-  return getSectorDefaultForm(sectorTemplateKey);
+  const sectorDefault = getSectorDefaultForm(sectorTemplateKey);
+  return applyDynamicStageOptionsIfPossible(sectorDefault, tenantId);
+}
+
+/**
+ * Sprint 82b architect-comment: sector-default `current_level` opties
+ * waren hardcoded ("Watervrij", "A", "B", "C") — die kloppen niet voor
+ * tenants die hun stages hernoemd hebben (bv. "Watergewenning",
+ * "Snorkelend Beren"). Wanneer de tenant minstens één gepubliceerd
+ * programma heeft met `use_stages=true`, vervangen we de opties van elk
+ * veld met `canonical_target='preferred_level'` (of `key='current_level'`)
+ * door de daadwerkelijke stage-namen. Best-effort: bij fout / geen
+ * use_stages-programma blijven de statische fallback-opties staan.
+ */
+async function applyDynamicStageOptionsIfPossible(
+  form: IntakeFormConfig,
+  tenantId: string,
+): Promise<IntakeFormConfig> {
+  // Lazy import om circular-import met admin-client te vermijden in
+  // unit-test-contexten.
+  const needsRewrite = form.fields.some(
+    (f) => f.canonical_target === "preferred_level" || f.key === "current_level",
+  );
+  if (!needsRewrite) return form;
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prog } = await admin
+      .from("programs")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("use_stages", true)
+      .is("archived_at", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!prog?.id) return form;
+    const { data: stages } = await admin
+      .from("program_stages")
+      .select("id, name, sort_order")
+      .eq("tenant_id", tenantId)
+      .eq("program_id", prog.id as string)
+      .is("archived_at", null)
+      .order("sort_order", { ascending: true });
+    if (!stages || stages.length === 0) return form;
+    const stageOptions = stages.map((s) => ({
+      value: String(s.name),
+      label: String(s.name),
+    }));
+    const fields = form.fields.map((f) => {
+      if (f.canonical_target === "preferred_level" || f.key === "current_level") {
+        return { ...f, options: stageOptions };
+      }
+      return f;
+    });
+    return { ...form, fields };
+  } catch {
+    return form;
+  }
 }
 
 export function isDynamicIntakeEnabled(

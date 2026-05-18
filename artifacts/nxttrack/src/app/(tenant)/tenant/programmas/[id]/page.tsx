@@ -119,6 +119,40 @@ async function StagesTabSection({
   useStages: boolean;
 }) {
   const stages = await listProgramStages(tenantId, programId, { includeArchived: true });
+
+  // Sprint 82b — wachttijd-info per stage. View
+  // `program_group_waitlist_estimate` heeft (group_id, stage_id) — voor de
+  // stage-tab aggregeren we per stage_id over alle groepen die deze stage
+  // gebruiken: SUM(waitlist_count) en MAX(estimated_wait_weeks). Best-effort:
+  // bij view-fout / geen rows blijft de tab gewoon werken zonder badges.
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const waitInfoByStageId: Record<string, { weeks: number; count: number }> = {};
+  try {
+    const stageIds = stages.map((s) => s.id);
+    if (stageIds.length > 0) {
+      const { data: rows } = await admin
+        .from("program_group_waitlist_estimate")
+        .select("stage_id, current_waitlist_count, estimated_wait_weeks")
+        .eq("tenant_id", tenantId)
+        .in("stage_id", stageIds);
+      for (const r of (rows ?? []) as Array<{
+        stage_id: string | null;
+        current_waitlist_count: number | null;
+        estimated_wait_weeks: number | null;
+      }>) {
+        if (!r.stage_id) continue;
+        const prev = waitInfoByStageId[r.stage_id] ?? { weeks: 0, count: 0 };
+        waitInfoByStageId[r.stage_id] = {
+          weeks: Math.max(prev.weeks, Number(r.estimated_wait_weeks ?? 0)),
+          count: prev.count + Number(r.current_waitlist_count ?? 0),
+        };
+      }
+    }
+  } catch {
+    /* swallow — wachttijd-kolom is best-effort */
+  }
+
   return (
     <StagesTab
       tenantId={tenantId}
@@ -132,6 +166,7 @@ async function StagesTabSection({
         sort_order: s.sort_order,
         archived_at: s.archived_at,
       }))}
+      waitInfoByStageId={waitInfoByStageId}
     />
   );
 }

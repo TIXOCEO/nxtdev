@@ -25,11 +25,19 @@ export function StagesTab({
   programId,
   useStages,
   stages,
+  waitInfoByStageId,
 }: {
   tenantId: string;
   programId: string;
   useStages: boolean;
   stages: StageRow[];
+  /**
+   * Sprint 82b — wachttijd-info per stage. Aggregeert
+   * `program_group_waitlist_estimate` over alle groepen die de stage
+   * gebruiken: `weeks` = max geschatte wachttijd in weken, `count` = som
+   * van kinderen op wachtlijst. Optioneel; afwezig of leeg → geen badge.
+   */
+  waitInfoByStageId?: Record<string, { weeks: number; count: number }>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -281,13 +289,40 @@ export function StagesTab({
                         aria-hidden
                       />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
                             {s.name}
                           </span>
                           <span style={{ color: "var(--text-secondary)" }}>
                             #{s.sort_order}
                           </span>
+                          {(() => {
+                            const info = waitInfoByStageId?.[s.id];
+                            if (!info || (info.weeks === 0 && info.count === 0)) return null;
+                            const tone =
+                              info.weeks <= 2 ? "green" : info.weeks <= 8 ? "yellow" : "red";
+                            const bg =
+                              tone === "green"
+                                ? "#dcfce7"
+                                : tone === "yellow"
+                                ? "#fef9c3"
+                                : "#fee2e2";
+                            const fg =
+                              tone === "green"
+                                ? "#166534"
+                                : tone === "yellow"
+                                ? "#854d0e"
+                                : "#991b1b";
+                            return (
+                              <span
+                                className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                style={{ backgroundColor: bg, color: fg }}
+                                title="Geaggregeerde wachttijd over alle groepen met deze stage"
+                              >
+                                ⏱ {info.weeks}w · {info.count} op wachtlijst
+                              </span>
+                            );
+                          })()}
                         </div>
                         {s.description && (
                           <p className="mt-0.5" style={{ color: "var(--text-secondary)" }}>
