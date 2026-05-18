@@ -200,7 +200,13 @@ export async function PublicTenantShell({
             </main>
             <PublicBottomTabBar
               slug={tenant.slug}
-              active={Array.isArray(active) ? active[0] : active}
+              active={
+                Array.isArray(active)
+                  ? ((active.find((k) =>
+                      ["home", "nieuws", "agenda", "profile", "notifications", "messages"].includes(k),
+                    ) ?? active[0]) as PublicNavKey)
+                  : active
+              }
               isAuthenticated={!!user}
               unreadCount={unreadCount}
               messagesUnread={messagesUnread}
