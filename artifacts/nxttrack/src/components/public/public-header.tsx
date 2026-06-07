@@ -75,8 +75,11 @@ export async function PublicHeader({
 
   return (
     <header
-      className="flex h-14 shrink-0 items-center gap-3 px-3 sm:px-5"
-      style={{ backgroundColor: "var(--page-bg)" }}
+      className="flex h-16 shrink-0 items-center gap-3 border-b px-3 backdrop-blur-md sm:px-5"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--page-bg) 88%, #ffffff)",
+        borderColor: "var(--shell-border)",
+      }}
     >
       <PublicMobileNav
         tenant={tenant}
@@ -99,7 +102,8 @@ export async function PublicHeader({
             <Link
               href={`/t/${slug}`}
               aria-label="Home"
-              className="inline-flex items-center transition-opacity hover:opacity-80"
+              className="nxt-focus-ring inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors hover:bg-white/60"
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <Home className="h-4 w-4 shrink-0" />
             </Link>
@@ -109,7 +113,7 @@ export async function PublicHeader({
           </li>
           <li className="min-w-0">
             <span
-              className="truncate font-semibold"
+              className="truncate text-base font-semibold"
               style={{ color: "var(--text-primary)" }}
               aria-current="page"
             >
@@ -138,7 +142,7 @@ export async function PublicHeader({
           <Link
             href={`/t/${slug}/login`}
             aria-label="Inloggen"
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-black/5"
+            className="nxt-focus-ring inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/70"
             style={{ color: "var(--text-primary)" }}
           >
             <LogIn

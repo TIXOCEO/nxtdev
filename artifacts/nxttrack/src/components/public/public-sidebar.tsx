@@ -363,17 +363,20 @@ export function PublicSidebar({
 
   return (
     <aside
-      className="flex h-full w-full flex-col gap-2 border-r p-4"
+      className="flex h-full w-full flex-col gap-3 border-r p-4"
       style={{
         backgroundColor: "var(--sidebar-bg)",
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
       }}
     >
-      <div className="flex flex-col items-center gap-2 px-2 pb-3 pt-2 text-center">
+      <div
+        className="nxt-shell-surface flex flex-col items-center gap-2 rounded-lg px-3 pb-4 pt-3 text-center"
+        style={{ boxShadow: "none" }}
+      >
         <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border shadow-sm"
+          className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border shadow-sm"
           style={{
-            borderColor: "var(--surface-border)",
+            borderColor: "var(--shell-border)",
             backgroundColor: "var(--surface-main)",
           }}
         >
@@ -415,7 +418,7 @@ export function PublicSidebar({
         <button
           type="button"
           onClick={() => switchMode("public")}
-          className="mx-1 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors hover:bg-black/5"
+          className="nxt-focus-ring mx-1 inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/60"
           style={{ color: "var(--text-secondary)" }}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -429,7 +432,7 @@ export function PublicSidebar({
         <nav
           ref={publicNavRef}
           aria-hidden={hasRole && shellMode !== "public"}
-          className="absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
+          className="nxt-scrollbar absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
           style={{
             transform:
               hasRole && shellMode === "role"
@@ -465,7 +468,7 @@ export function PublicSidebar({
                   switchMode("role");
                   onNavigate?.();
                 }}
-                className="inline-flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
+              className="nxt-focus-ring inline-flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-white/70"
                 style={{
                   backgroundColor:
                     "color-mix(in srgb, var(--tenant-accent) 18%, transparent)",
@@ -484,7 +487,7 @@ export function PublicSidebar({
           <nav
             ref={roleNavRef}
             aria-hidden={shellMode !== "role"}
-            className="absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
+            className="nxt-scrollbar absolute inset-0 flex flex-col gap-4 overflow-y-auto pr-1 transition-transform duration-300 ease-out"
             style={{
               transform:
                 shellMode === "role" ? "translateX(0)" : "translateX(110%)",
@@ -521,7 +524,7 @@ export function PublicSidebar({
           <form action={onLogout}>
             <button
               type="submit"
-              className="group inline-flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-black/5"
+              className="nxt-focus-ring group inline-flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/60"
               style={{ color: "#b91c1c" }}
             >
               <LogOut className="h-4 w-4" />
@@ -532,7 +535,7 @@ export function PublicSidebar({
           <Link
             href={`/t/${tenant.slug}/login`}
             onClick={onNavigate}
-            className="group inline-flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-black/5"
+            className="nxt-focus-ring group inline-flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-white/60"
             style={{
               backgroundColor:
                 active === "login"
@@ -632,7 +635,7 @@ function SidebarLinkRow({
         href={item.href}
         onClick={onNavigate}
         aria-current={isActive ? "page" : undefined}
-        className={`group relative inline-flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition-colors ${
+        className={`nxt-focus-ring group relative inline-flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${
           nested ? "ml-4 pl-3 pr-3" : "px-3 py-2.5"
         }`}
         style={{
