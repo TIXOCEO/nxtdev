@@ -135,7 +135,7 @@ export async function UserHomeDashboard({ tenant, userId }: UserHomeDashboardPro
             }
             helper={
               nextSession
-                ? `${nextDate?.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}${nextSession.location ? ` · ${nextSession.location}` : ""}`
+                ? `${nextDate?.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}${nextSession.location ? ` - ${nextSession.location}` : ""}`
                 : "Geen aankomende les gevonden"
             }
             icon={CalendarDays}
