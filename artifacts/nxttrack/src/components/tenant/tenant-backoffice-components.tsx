@@ -196,11 +196,18 @@ export function TenantAdminListItem({
   children?: ReactNode;
 }) {
   const content = (
-    <div className="flex items-start gap-3 p-4">
+    <div
+      className="flex items-start gap-3 rounded-2xl border p-3.5 transition sm:p-4"
+      style={{
+        borderColor: "var(--shell-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+      }}
+    >
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border shadow-sm"
         style={{
-          backgroundColor: "var(--shell-panel-muted)",
+          borderColor: "var(--shell-border)",
+          backgroundColor: "color-mix(in srgb, var(--shell-info) 9%, var(--shell-panel-muted))",
           color: "var(--shell-info)",
         }}
       >
@@ -225,7 +232,7 @@ export function TenantAdminListItem({
 
   if (!href) return content;
   return (
-    <Link href={href} className="nxt-focus-ring block rounded-2xl transition-colors hover:bg-black/5">
+    <Link href={href} className="nxt-focus-ring block rounded-2xl transition hover:-translate-y-0.5 hover:shadow-md">
       {content}
     </Link>
   );
