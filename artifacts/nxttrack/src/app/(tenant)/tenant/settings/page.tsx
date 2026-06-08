@@ -1,121 +1,184 @@
 import Link from "next/link";
 import {
-  Mail,
-  CalendarDays,
-  ImageIcon,
   BellRing,
+  CalendarDays,
   ChevronRight,
-  Palette,
-  Search,
-  ShieldCheck,
-  Share2,
-  Rss,
   CreditCard,
+  ImageIcon,
+  Mail,
+  Palette,
+  Rss,
+  Search,
+  Settings,
+  Share2,
+  ShieldCheck,
 } from "lucide-react";
-import { PageHeading } from "@/components/ui/page-heading";
+import type { LucideIcon } from "lucide-react";
+import {
+  TenantAdminHero,
+  TenantAdminSectionHeader,
+  TenantAdminSurface,
+} from "@/components/tenant/tenant-backoffice-components";
 
 export const dynamic = "force-dynamic";
 
-const SECTIONS = [
+const GROUPS: Array<{
+  title: string;
+  description: string;
+  items: Array<{
+    href: string;
+    icon: LucideIcon;
+    title: string;
+    description: string;
+  }>;
+}> = [
   {
-    href: "/tenant/settings/email",
-    icon: Mail,
-    title: "E-mail",
-    description: "Afzendernaam, herinnering- en cooldown-instellingen voor uitnodigingen.",
+    title: "Identiteit en merk",
+    description: "Hoe de tenant eruitziet op publieke pagina's en in het ledenportaal.",
+    items: [
+      {
+        href: "/tenant/settings/themes",
+        icon: Palette,
+        title: "Thema's",
+        description: "Activeer light- en dark-thema's en beheer kleurenschema's.",
+      },
+      {
+        href: "/tenant/settings/profile-pictures",
+        icon: ImageIcon,
+        title: "Profielafbeeldingen",
+        description: "Templates en standaard profielfoto voor leden.",
+      },
+      {
+        href: "/tenant/settings/seo",
+        icon: Search,
+        title: "SEO",
+        description: "Titels, omschrijvingen en deelafbeeldingen voor zoekmachines.",
+      },
+    ],
   },
   {
-    href: "/tenant/settings/training",
-    icon: CalendarDays,
-    title: "Trainingen",
-    description: "Standaard herinneringen en cutoff voor late wijzigingen.",
+    title: "Communicatie",
+    description: "Alle kanalen waarmee leden, ouders en trainers berichten ontvangen.",
+    items: [
+      {
+        href: "/tenant/settings/email",
+        icon: Mail,
+        title: "E-mail",
+        description: "Afzendernaam, uitnodigingen, herinneringen en cooldowns.",
+      },
+      {
+        href: "/tenant/settings/push",
+        icon: BellRing,
+        title: "Pushmeldingen",
+        description: "Bepaal welke events pushberichten versturen.",
+      },
+      {
+        href: "/tenant/settings/social",
+        icon: Share2,
+        title: "Social media",
+        description: "Beheer actieve social kanalen en publieke URL's.",
+      },
+      {
+        href: "/tenant/settings/social-feed",
+        icon: Rss,
+        title: "Social feed",
+        description: "Zet community-feed onderdelen aan of uit.",
+      },
+    ],
   },
   {
-    href: "/tenant/settings/profile-pictures",
-    icon: ImageIcon,
-    title: "Profielafbeeldingen",
-    description: "Eigen templates en standaard profielfoto voor leden.",
+    title: "Operatie",
+    description: "Standaarden voor lessen, intake en betalingen.",
+    items: [
+      {
+        href: "/tenant/settings/training",
+        icon: CalendarDays,
+        title: "Trainingen",
+        description: "Herinneringen en cutoff voor late wijzigingen.",
+      },
+      {
+        href: "/tenant/settings/betaalmogelijkheden",
+        icon: CreditCard,
+        title: "Betaalmogelijkheden",
+        description: "Betaalmethoden die leden kunnen kiezen.",
+      },
+      {
+        href: "/tenant/settings/intake",
+        icon: Settings,
+        title: "Intake",
+        description: "Instellingen voor publieke intake en slotvoorstellen.",
+      },
+    ],
   },
   {
-    href: "/tenant/settings/push",
-    icon: BellRing,
-    title: "Pushmeldingen",
-    description: "Schakel pushmeldingen in en bepaal welke events er pushen.",
-  },
-  {
-    href: "/tenant/settings/themes",
-    icon: Palette,
-    title: "Thema's",
-    description: "Activeer light- en dark-thema's en beheer eigen kleurenschema's.",
-  },
-  {
-    href: "/tenant/settings/seo",
-    icon: Search,
-    title: "SEO",
-    description: "Standaard titel, omschrijving en deelafbeelding voor zoekmachines en sociale media.",
-  },
-  {
-    href: "/tenant/settings/roles",
-    icon: ShieldCheck,
-    title: "Rollen & permissies",
-    description: "Maak eigen rollen en geef leden gerichte permissies, gegroepeerd per onderdeel.",
-  },
-  {
-    href: "/tenant/settings/social",
-    icon: Share2,
-    title: "Social media",
-    description: "Vul de URLs van je social kanalen in en zet de actieve kanalen aan.",
-  },
-  {
-    href: "/tenant/settings/social-feed",
-    icon: Rss,
-    title: "Social feed",
-    description: "Bepaal welke onderdelen van de community-feed actief zijn.",
-  },
-  {
-    href: "/tenant/settings/betaalmogelijkheden",
-    icon: CreditCard,
-    title: "Betaalmogelijkheden",
-    description: "Beheer welke betaalmethoden leden kunnen kiezen voor contributie.",
+    title: "Toegang en veiligheid",
+    description: "Wie mag beheren, publiceren en gevoelige data bekijken.",
+    items: [
+      {
+        href: "/tenant/settings/roles",
+        icon: ShieldCheck,
+        title: "Rollen & permissies",
+        description: "Eigen rollen en permissies per onderdeel.",
+      },
+    ],
   },
 ];
 
 export default function TenantSettingsIndex() {
   return (
     <>
-      <PageHeading
+      <TenantAdminHero
+        eyebrow="Configuratie"
         title="Instellingen"
-        description="Pas e-mail, trainingen, thema's en SEO aan voor jouw club."
+        description="Alle tenant-instellingen logisch gegroepeerd. Begin bij merk en communicatie, daarna operatie, toegang en veiligheid."
       />
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {SECTIONS.map((s) => (
-          <li key={s.href}>
-            <Link
-              href={s.href}
-              className="flex items-start gap-3 rounded-2xl border p-4 transition-colors hover:bg-black/5"
-              style={{
-                backgroundColor: "var(--surface-main)",
-                borderColor: "var(--surface-border)",
-              }}
-            >
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                style={{ backgroundColor: "var(--surface-soft)" }}
-              >
-                <s.icon className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {s.title}
-                </p>
-                <p className="mt-0.5 text-xs" style={{ color: "var(--text-secondary)" }}>
-                  {s.description}
-                </p>
-              </div>
-              <ChevronRight className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
-            </Link>
-          </li>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {GROUPS.map((group) => (
+          <TenantAdminSurface key={group.title} className="p-4 sm:p-5">
+            <TenantAdminSectionHeader
+              title={group.title}
+              description={group.description}
+            />
+            <div className="mt-4 grid gap-2">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="nxt-focus-ring flex items-start gap-3 rounded-md border p-3 transition-colors hover:bg-black/5"
+                    style={{
+                      borderColor: "var(--shell-border)",
+                      backgroundColor: "var(--shell-panel-muted)",
+                    }}
+                  >
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md"
+                      style={{
+                        backgroundColor:
+                          "color-mix(in srgb, var(--tenant-accent, var(--accent)) 14%, #ffffff)",
+                        color: "var(--brand-navy)",
+                      }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                        {item.title}
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-5" style={{ color: "var(--text-secondary)" }}>
+                        {item.description}
+                      </span>
+                    </span>
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0" style={{ color: "var(--text-secondary)" }} />
+                  </Link>
+                );
+              })}
+            </div>
+          </TenantAdminSurface>
         ))}
-      </ul>
+      </div>
     </>
   );
 }

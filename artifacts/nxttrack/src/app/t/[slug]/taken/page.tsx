@@ -1,12 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { CheckSquare } from "lucide-react";
+import { CheckCircle2, CheckSquare, Flame, ListTodo } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { getUserTenantContext, isTrainer } from "@/lib/auth/user-role-rules";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
-import { PublicCard } from "@/components/public/public-card";
-import { PageHeader } from "@/components/public/page-header";
+import {
+  TrainerCommandHero,
+  TrainerEmptyState,
+} from "@/components/public/trainer-shell-components";
 import { listTrainerTasksForUser } from "@/lib/db/trainer-tasks";
 import { TrainerTaskList } from "./_task-list";
 
@@ -35,33 +37,33 @@ export default async function TakenPage({ params }: PageProps) {
   if (!isTrainer(ctx)) redirect(`/t/${slug}`);
 
   const tasks = await listTrainerTasksForUser(tenant.id, user.id);
+  const openTasks = tasks.filter((t) => t.status === "open");
+  const highTasks = openTasks.filter((t) => t.priority === "high");
+  const doneTasks = tasks.filter((t) => t.status === "done");
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Taken" active="taken">
-      <PageHeader
-        title="Mijn taken"
-        description="Taken die aan jou zijn toegewezen. Vink af zodra ze klaar zijn."
-      />
-      {tasks.length === 0 ? (
-        <PublicCard className="p-8">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: "var(--accent-tint)", color: "var(--brand-navy)" }}
-            >
-              <CheckSquare className="h-7 w-7" />
-            </div>
-            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-              Geen taken
-            </h2>
-            <p className="max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-              Wanneer een beheerder of jij een taak toevoegt verschijnt die hier.
-            </p>
-          </div>
-        </PublicCard>
-      ) : (
-        <TrainerTaskList tenantId={tenant.id} tasks={tasks} />
-      )}
+      <div className="space-y-4">
+        <TrainerCommandHero
+          title="Acties"
+          description="Taken die aan jou zijn toegewezen. Rustig afvinken, duidelijk prioriteren."
+          stats={[
+            { label: "Open", value: String(openTasks.length), icon: ListTodo },
+            { label: "Hoog", value: String(highTasks.length), icon: Flame },
+            { label: "Afgerond", value: String(doneTasks.length), icon: CheckCircle2 },
+          ]}
+        />
+
+        {tasks.length === 0 ? (
+          <TrainerEmptyState
+            icon={CheckSquare}
+            title="Geen taken"
+            body="Wanneer een beheerder of jij een taak toevoegt verschijnt die hier."
+          />
+        ) : (
+          <TrainerTaskList tenantId={tenant.id} tasks={tasks} />
+        )}
+      </div>
     </PublicTenantShell>
   );
 }

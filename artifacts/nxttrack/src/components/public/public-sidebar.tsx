@@ -26,6 +26,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Globe,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Tenant } from "@/types/database";
@@ -171,12 +173,12 @@ function buildRoleSections(
 
   if (showGroepen) {
     sections.push({
-      heading: "Trainer",
+      heading: "Lesvloer",
       items: [
-        { key: "agenda", label: "Mijn agenda", href: `/t/${slug}/agenda`, icon: CalendarDays },
-        { key: "lessen", label: "Mijn lessen", href: `/t/${slug}/schedule`, icon: CalendarDays },
-        { key: "leerlingen", label: "Mijn leerlingen", href: `/t/${slug}/leerlingen`, icon: Users },
-        { key: "taken", label: "Taken", href: `/t/${slug}/taken`, icon: CheckSquare },
+        { key: "agenda", label: "Vandaag & planning", href: `/t/${slug}/agenda`, icon: CalendarDays },
+        { key: "lessen", label: "Lesbeheer", href: `/t/${slug}/schedule`, icon: CalendarDays },
+        { key: "leerlingen", label: "Leerlingen", href: `/t/${slug}/leerlingen`, icon: Users },
+        { key: "taken", label: "Acties", href: `/t/${slug}/taken`, icon: CheckSquare },
         { key: "documenten", label: "Documenten", href: `/t/${slug}/documenten`, icon: FolderOpen },
       ],
     });
@@ -363,14 +365,14 @@ export function PublicSidebar({
 
   return (
     <aside
-      className="flex h-full w-full flex-col gap-3 border-r p-4"
+      className="nxt-public-sidebar flex h-full w-full flex-col gap-3 border-r p-4"
       style={{
         backgroundColor: "var(--sidebar-bg)",
         borderColor: "var(--shell-border)",
       }}
     >
       <div
-        className="nxt-shell-surface flex flex-col items-center gap-2 rounded-lg px-3 pb-4 pt-3 text-center"
+        className="nxt-public-sidebar-brand nxt-shell-surface flex flex-col items-center gap-2 rounded-lg px-3 pb-4 pt-3 text-center"
         style={{ boxShadow: "none" }}
       >
         <div
@@ -411,20 +413,50 @@ export function PublicSidebar({
             ? portalLabel
             : "Publieke pagina"}
         </p>
+        {hasRole && (
+          <div
+            className="mt-1 inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold uppercase"
+            style={{
+              backgroundColor:
+                shellMode === "role"
+                  ? "color-mix(in srgb, var(--tenant-accent) 16%, #ffffff)"
+                  : "var(--shell-panel-muted)",
+              borderColor: "var(--shell-border)",
+              color: "var(--brand-navy)",
+            }}
+          >
+            {showGroepen ? (
+              <ShieldCheck className="h-3.5 w-3.5" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            <span>{showGroepen ? "Trainer actief" : "Lid actief"}</span>
+          </div>
+        )}
       </div>
 
       {/* Sprint 81 — Role-mode top: pijl naar publieke menu. */}
       {hasRole && shellMode === "role" && (
-        <button
-          type="button"
-          onClick={() => switchMode("public")}
-          className="nxt-focus-ring mx-1 inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors hover:bg-white/60"
-          style={{ color: "var(--text-secondary)" }}
+        <div
+          className="rounded-md border p-2"
+          style={{
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
+          }}
         >
-          <ArrowLeft className="h-4 w-4" />
-          <Globe className="h-4 w-4" />
-          <span>Publieke pagina&apos;s</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => switchMode("public")}
+            className="nxt-focus-ring inline-flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-xs font-semibold transition-colors hover:bg-white/70"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <span className="inline-flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Publieke pagina&apos;s
+            </span>
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        </div>
       )}
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -517,7 +549,7 @@ export function PublicSidebar({
       )}
 
       <div
-        className="mt-2 flex flex-col gap-1 border-t pt-3"
+        className="nxt-public-sidebar-footer mt-2 flex flex-col gap-1 border-t pt-3"
         style={{ borderColor: "var(--surface-border)" }}
       >
         {isAuthenticated ? (
@@ -635,7 +667,7 @@ function SidebarLinkRow({
         href={item.href}
         onClick={onNavigate}
         aria-current={isActive ? "page" : undefined}
-        className={`nxt-focus-ring group relative inline-flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${
+        className={`nxt-public-sidebar-link nxt-focus-ring group relative inline-flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${
           nested ? "ml-4 pl-3 pr-3" : "px-3 py-2.5"
         }`}
         style={{

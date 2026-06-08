@@ -92,7 +92,7 @@ export function PublicHeroSlider({
   // ruimte zodat slides zonder CTA niet inkrimpen.
   return (
     <div
-      className="relative h-full w-full overflow-hidden rounded-[var(--radius-nxt-lg)] border"
+      className="nxt-public-hero-slider relative h-full w-full overflow-hidden rounded-[var(--radius-nxt-lg)] border"
       style={{
         backgroundColor: "var(--surface-main)",
         borderColor: "var(--surface-border)",
@@ -116,8 +116,8 @@ export function PublicHeroSlider({
         />
       )}
 
-      <div className="relative flex h-full flex-col justify-between gap-4 p-6 sm:p-8">
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div className="nxt-public-hero-content relative flex h-full flex-col justify-between gap-4 p-6 sm:p-8">
+        <div className="nxt-public-hero-copy flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
           {slide.eyebrow ? (
             <p
               className="inline-block w-fit rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
@@ -152,7 +152,7 @@ export function PublicHeroSlider({
           )}
 
           {/* Vaste CTA-regio — altijd evenveel ruimte, ook zonder knop. */}
-          <div className="mt-2 min-h-[44px]">
+          <div className="nxt-public-hero-cta mt-2 min-h-[44px]">
             {slide.ctaLabel && slide.ctaHref && safeHref(slide.ctaHref) && (
               <a
                 href={safeHref(slide.ctaHref) ?? "#"}
@@ -168,8 +168,8 @@ export function PublicHeroSlider({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
+        <div className="nxt-public-hero-controls flex shrink-0 items-center justify-between gap-3">
+          <div className="nxt-public-hero-dots flex items-center gap-1.5">
             {finalSlides.map((_, i) => (
               <button
                 key={i}
@@ -185,7 +185,7 @@ export function PublicHeroSlider({
             ))}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="nxt-public-hero-arrows flex items-center gap-1">
             <button
               type="button"
               onClick={goPrev}

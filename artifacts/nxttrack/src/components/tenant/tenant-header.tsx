@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ExternalLink, ShieldCheck } from "lucide-react";
 import { MobileNavTrigger } from "@/components/admin/mobile-nav-trigger";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { TenantSidebar } from "./tenant-sidebar";
@@ -14,6 +14,9 @@ export interface TenantHeaderProps {
   queryString?: string;
   tenantSlug?: string;
   tenantDomain?: string | null;
+  currentVersion?: string | null;
+  currentVersionUnseen?: boolean;
+  showIntake?: boolean;
 }
 
 export function TenantHeader({
@@ -24,14 +27,18 @@ export function TenantHeader({
   queryString = "",
   tenantSlug,
   tenantDomain,
+  currentVersion,
+  currentVersionUnseen,
+  showIntake,
 }: TenantHeaderProps) {
   const publicUrl = buildPublicTenantUrl(tenantSlug, tenantDomain);
   return (
     <header
-      className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:px-6"
+      className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:px-6 lg:px-8"
       style={{
-        borderColor: "var(--surface-border)",
-        backgroundColor: "var(--bg-app)",
+        borderColor: "var(--shell-border)",
+        backgroundColor: "rgba(255, 255, 255, 0.86)",
+        backdropFilter: "blur(16px)",
       }}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -40,14 +47,22 @@ export function TenantHeader({
             tenantName={tenantName}
             primaryColor={primaryColor}
             queryString={queryString}
+            currentVersion={currentVersion}
+            currentVersionUnseen={currentVersionUnseen}
+            showIntake={showIntake}
           />
         </MobileNavTrigger>
-        <h1
-          className="truncate text-base font-semibold"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {tenantName}
-        </h1>
+        <div className="min-w-0">
+          <p className="hidden text-[10px] font-bold uppercase tracking-[0.14em] sm:block" style={{ color: "var(--text-secondary)" }}>
+            Tenant backoffice
+          </p>
+          <h1
+            className="truncate text-base font-semibold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {tenantName}
+          </h1>
+        </div>
         {isPlatformAdmin && (
           <Link
             href="/platform"
@@ -62,6 +77,21 @@ export function TenantHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        {publicUrl ? (
+          <Link
+            href={publicUrl}
+            target="_blank"
+            className="nxt-focus-ring hidden items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold sm:inline-flex"
+            style={{
+              borderColor: "var(--shell-border)",
+              color: "var(--text-secondary)",
+              backgroundColor: "var(--shell-panel-bg)",
+            }}
+          >
+            Publieke site
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        ) : null}
         <NotificationCenter />
         <TenantProfileMenu email={email ?? null} publicUrl={publicUrl} />
       </div>

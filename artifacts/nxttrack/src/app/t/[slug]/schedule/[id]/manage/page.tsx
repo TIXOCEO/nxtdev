@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, MapPin, Users } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { trainerInSessionGroup } from "@/lib/auth/trainer-rules";
@@ -9,6 +9,10 @@ import {
   getAttendanceForSession,
 } from "@/lib/db/trainings";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
+import {
+  TrainerCommandHero,
+  TrainerStatusPill,
+} from "@/components/public/trainer-shell-components";
 import { TrainerManageClient } from "./_manage-client";
 
 interface PageProps {
@@ -42,33 +46,36 @@ export default async function TrainerManageSessionPage({ params }: PageProps) {
   if (!session) notFound();
 
   const attendance = await getAttendanceForSession(tenant.id, id);
+  const marked = attendance.filter((a) => !!a.attendance).length;
 
   return (
-    <PublicTenantShell tenant={tenant} pageTitle="Manage" active="agenda">
-      <div className="space-y-3 pb-32">
+    <PublicTenantShell tenant={tenant} pageTitle="Lesbeheer" active="agenda">
+      <div className="space-y-4 pb-32">
         <Link
           href={`/t/${slug}/schedule/${id}`}
-          className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+          className="nxt-focus-ring inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold"
           style={{ color: "var(--text-secondary)" }}
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Terug
+          <ArrowLeft className="h-3.5 w-3.5" /> Terug naar les
         </Link>
 
-        <header
-          className="rounded-2xl border p-3"
-          style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
-          }}
-        >
-          <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            {session.title}
-          </h1>
-          <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-secondary)" }}>
-            {fmt(session.starts_at)}
-            {session.location ? ` · ${session.location}` : ""}
-          </p>
-        </header>
+        <TrainerCommandHero
+          title={session.title}
+          eyebrow="Lesbeheer"
+          description="Tik aanwezigheid snel af, voeg waar nodig een notitie toe en open direct het leerlingdossier."
+          stats={[
+            { label: "Leerlingen", value: String(attendance.length), icon: Users },
+            { label: "Gemarkeerd", value: `${marked}/${attendance.length}`, icon: CheckCircle2 },
+            { label: "Start", value: fmt(session.starts_at), icon: Clock3 },
+          ]}
+          action={
+            session.location ? (
+              <TrainerStatusPill toneKey="neutral" icon={MapPin}>
+                {session.location}
+              </TrainerStatusPill>
+            ) : null
+          }
+        />
 
         <TrainerManageClient
           tenantId={tenant.id}
@@ -77,7 +84,7 @@ export default async function TrainerManageSessionPage({ params }: PageProps) {
           rows={attendance.map((a) => ({
             id: a.id,
             memberId: a.member_id,
-            memberName: a.member?.full_name ?? "—",
+            memberName: a.member?.full_name ?? "-",
             currentMark: a.attendance ?? null,
             currentRsvp: a.rsvp ?? null,
             currentNote: a.note ?? a.trainer_note ?? a.notes ?? "",
