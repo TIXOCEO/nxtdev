@@ -181,17 +181,21 @@ export function TenantSidebar({
 
   return (
     <aside
-      className="flex h-full w-full flex-col border-r md:w-[286px] md:shrink-0"
+      className="flex h-full w-full flex-col border-r md:w-[260px] md:shrink-0"
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.88)",
+        backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 88%, transparent)",
         borderColor: "var(--shell-border)",
         backdropFilter: "blur(18px)",
       }}
     >
       <div className="border-b p-4" style={{ borderColor: "var(--shell-border)" }}>
+        <a href="https://nxttrack.nl" target="_blank" rel="noopener noreferrer" className="mb-5 block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={NXTTRACK_LOGO} alt="NXTTRACK" className="h-6 w-auto" />
+        </a>
         <div className="flex items-center gap-3">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-sm"
             style={{ backgroundColor: swatch, borderColor: "var(--shell-border)" }}
           >
             <Building2 className="h-5 w-5" style={{ color: "var(--text-primary)" }} />
@@ -209,7 +213,7 @@ export function TenantSidebar({
           </div>
         </div>
         <div
-          className="mt-4 rounded-md border px-3 py-2 text-xs"
+          className="mt-4 rounded-2xl border px-3 py-2 text-xs"
           style={{
             backgroundColor: "var(--shell-panel-muted)",
             borderColor: "var(--shell-border)",
@@ -233,7 +237,7 @@ export function TenantSidebar({
                   onClick={() =>
                     setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
                   }
-                  className="nxt-focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors hover:bg-black/5"
+                  className="nxt-focus-ring flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors hover:bg-black/5"
                   style={{ color: "var(--text-secondary)" }}
                 >
                   <ChevronDown
@@ -258,15 +262,14 @@ export function TenantSidebar({
                         key={item.href}
                         href={`${item.href}${queryString}`}
                         className={cn(
-                          "nxt-focus-ring group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+                          "nxt-focus-ring group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
                           isActive ? "shadow-sm" : "hover:bg-black/5",
                         )}
                         style={
                           isActive
                             ? {
-                                backgroundColor:
-                                  "color-mix(in srgb, var(--tenant-accent, var(--accent)) 18%, #ffffff)",
-                                color: "var(--brand-navy)",
+                                backgroundColor: "rgba(11, 99, 255, 0.10)",
+                                color: "var(--shell-info)",
                               }
                             : { color: "var(--text-secondary)" }
                         }
@@ -274,7 +277,7 @@ export function TenantSidebar({
                         {isActive ? (
                           <span
                             className="absolute left-0 top-2 h-5 w-0.5 rounded-full"
-                            style={{ backgroundColor: "var(--brand-navy)" }}
+                            style={{ backgroundColor: "var(--shell-info)" }}
                           />
                         ) : null}
                         <Icon className="h-4 w-4 shrink-0" />
@@ -292,16 +295,7 @@ export function TenantSidebar({
         className="mt-auto flex flex-col gap-2 border-t px-4 py-4"
         style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
       >
-        <a
-          href="https://nxttrack.nl"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-[11px] transition-opacity hover:opacity-80"
-        >
-          <span>Powered by</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={NXTTRACK_LOGO} alt="NXTTRACK" className="h-4 w-auto" />
-        </a>
+        <span className="text-[11px]">Powered by NXTTRACK</span>
         {currentVersion ? (
           <Link
             href={`/tenant/releases/${currentVersion}${queryString}`}

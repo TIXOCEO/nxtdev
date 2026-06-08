@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CalendarPlus, ClipboardList } from "lucide-react";
+import { ArrowRight, Award, CalendarDays, CalendarPlus, CheckCircle2, ClipboardList, ShieldCheck, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { getPublicTenantHomeData } from "@/lib/db/public-tenant";
 import {
   getPublicHomepageData,
@@ -54,6 +55,7 @@ export default async function PublicHomePage({ params }: PageProps) {
             userId={user.id}
           />
         )}
+        {!user && <MarketingHero tenant={cms.tenant} />}
         <ModuleGrid
           tenant={cms.tenant}
           modules={cms.modules}
@@ -103,6 +105,7 @@ export default async function PublicHomePage({ params }: PageProps) {
           userId={user.id}
         />
       )}
+      {!user && <MarketingHero tenant={tenant} />}
       {/* Hero met accent-balk links (mockup-stijl) */}
       <div className="relative overflow-hidden rounded-[var(--radius-nxt-lg)]">
         <span
@@ -165,6 +168,122 @@ export default async function PublicHomePage({ params }: PageProps) {
   );
 }
 
+function MarketingHero({
+  tenant,
+}: {
+  tenant: {
+    name: string;
+    slug: string;
+    logo_url: string | null;
+    welcome_text: string | null;
+  };
+}) {
+  return (
+    <section className="nxt-shell-surface relative overflow-hidden rounded-[24px] p-5 sm:p-7 lg:p-8">
+      <div
+        aria-hidden
+        className="absolute -right-20 -top-20 h-72 w-72 rounded-full blur-3xl"
+        style={{ backgroundColor: "color-mix(in srgb, var(--tenant-accent) 34%, transparent)" }}
+      />
+      <div
+        aria-hidden
+        className="absolute bottom-0 right-8 hidden h-40 w-72 rounded-t-full lg:block"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in srgb, var(--shell-info) 18%, transparent), transparent)",
+        }}
+      />
+      <div className="relative grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-primary)" }}>
+            <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--shell-info)" }} />
+            Zwemschool platform
+          </div>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl" style={{ color: "var(--text-primary)" }}>
+            Welkom bij {tenant.name}
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7" style={{ color: "var(--text-secondary)" }}>
+            {tenant.welcome_text?.trim() ||
+              "Slim inschrijven, duidelijk plannen en stap voor stap groeien naar badges en diploma's."}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href={`/t/${tenant.slug}/inschrijven`} className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold">
+              Inschrijven
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href={`/t/${tenant.slug}/proefles`} className="nxt-focus-ring nxt-shell-soft-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold">
+              Proefles plannen
+              <CalendarPlus className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Slimme intake", icon: ClipboardList },
+              { label: "Mooie voortgang", icon: Award },
+              { label: "Veilig portaal", icon: ShieldCheck },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label} className="rounded-2xl border px-3 py-3 text-sm font-semibold" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-primary)" }}>
+                  <Icon className="mb-2 h-4 w-4" style={{ color: "var(--shell-info)" }} />
+                  {item.label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="nxt-shell-card p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}>
+                  {tenant.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={tenant.logo_url} alt={tenant.name} className="h-full w-full object-contain" />
+                  ) : (
+                    <Award className="h-7 w-7" style={{ color: "var(--shell-info)" }} />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Zwemreis preview</p>
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Van intake naar diploma</p>
+                </div>
+              </div>
+              <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ backgroundColor: "color-mix(in srgb, var(--shell-success) 12%, var(--shell-panel-strong))", color: "var(--shell-success)" }}>
+                Live
+              </span>
+            </div>
+            <div className="mt-5 rounded-2xl p-4" style={{ background: "linear-gradient(135deg, #062b66, #0b63ff)", color: "#ffffff" }}>
+              <p className="text-sm font-semibold opacity-85">Bijna klaar voor</p>
+              <p className="mt-1 text-2xl font-bold">Diploma A</p>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/25">
+                <span className="block h-full w-[78%] rounded-full bg-[#78c90f]" />
+              </div>
+              <p className="mt-2 text-xs opacity-85">Nog 2 onderdelen te gaan</p>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {[
+                { label: "Volgende les", value: "Wo 16:30", icon: CalendarDays },
+                { label: "Plaatsing", value: "Bevestigd", icon: CheckCircle2 },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="rounded-2xl border p-3" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
+                    <Icon className="h-4 w-4" style={{ color: "var(--shell-info)" }} />
+                    <p className="mt-2 text-[11px] font-semibold" style={{ color: "var(--text-secondary)" }}>{item.label}</p>
+                    <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{item.value}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CtaCard({
   icon: Icon,
   title,
@@ -172,7 +291,7 @@ function CtaCard({
   ctaLabel,
   href,
 }: {
-  icon: typeof CalendarPlus;
+  icon: LucideIcon;
   title: string;
   body: string;
   ctaLabel: string;

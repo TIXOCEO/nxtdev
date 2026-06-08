@@ -46,15 +46,16 @@
   --page-bg: #fbfcf9;
 
   /* UserShell V2 tokens. Enterprise surfaces with a controlled playful layer. */
-  --shell-frame-bg: #ffffff;
-  --shell-page-bg: #f7f9fc;
-  --shell-panel-bg: rgba(255, 255, 255, 0.92);
+  --shell-frame-bg: rgba(255, 255, 255, 0.92);
+  --shell-page-bg: #f5f8fd;
+  --shell-panel-bg: rgba(255, 255, 255, 0.82);
   --shell-panel-strong: #ffffff;
-  --shell-panel-muted: rgba(248, 250, 252, 0.82);
-  --shell-border: rgba(148, 163, 184, 0.24);
-  --shell-border-strong: rgba(30, 58, 95, 0.16);
-  --shell-shadow-soft: 0 12px 38px rgba(15, 23, 42, 0.08);
-  --shell-shadow-hover: 0 18px 54px rgba(15, 23, 42, 0.12);
+  --shell-panel-muted: rgba(248, 250, 252, 0.72);
+  --shell-border: rgba(148, 163, 184, 0.20);
+  --shell-border-strong: rgba(37, 99, 235, 0.22);
+  --shell-shadow-soft: 0 14px 44px rgba(15, 23, 42, 0.07), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
+  --shell-shadow-hover: 0 22px 70px rgba(15, 23, 42, 0.12), 0 1px 0 rgba(255, 255, 255, 0.96) inset;
+  --shell-shadow-card: 0 10px 30px rgba(15, 23, 42, 0.055), 0 1px 0 rgba(255, 255, 255, 0.92) inset;
   --shell-focus: color-mix(in srgb, var(--tenant-accent, var(--accent)) 54%, #1e3a5f);
   --shell-success: #16a34a;
   --shell-info: #2563eb;
@@ -94,6 +95,60 @@
   --sidebar-accent: 210 40% 96%;
   --sidebar-accent-foreground: 222 47% 11%;
   --sidebar-ring: 215 20% 65%;
+}
+
+.theme-dark {
+  --bg-viewport-start: #07111f;
+  --bg-viewport-end: #0b1524;
+  --bg-app: #0b1220;
+  --bg-nav: #0f172a;
+  --surface-main: #101827;
+  --surface-soft: #162033;
+  --surface-border: rgba(148, 163, 184, 0.18);
+  --text-primary: #eef4ff;
+  --text-secondary: #a8b3c7;
+  --brand-navy: #8fb7ff;
+  --nav-active-bg: rgba(37, 99, 235, 0.18);
+  --nav-hover-bg: rgba(148, 163, 184, 0.10);
+  --accent-tint: rgba(182, 216, 59, 0.14);
+  --shell-frame-bg: rgba(8, 13, 23, 0.94);
+  --shell-page-bg: #09111e;
+  --shell-panel-bg: rgba(15, 23, 42, 0.74);
+  --shell-panel-strong: rgba(15, 23, 42, 0.94);
+  --shell-panel-muted: rgba(30, 41, 59, 0.68);
+  --shell-border: rgba(148, 163, 184, 0.16);
+  --shell-border-strong: rgba(147, 197, 253, 0.26);
+  --shell-shadow-soft: 0 18px 52px rgba(0, 0, 0, 0.34), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --shell-shadow-hover: 0 24px 80px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  --shell-shadow-card: 0 12px 34px rgba(0, 0, 0, 0.30), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-auto {
+    --bg-viewport-start: #07111f;
+    --bg-viewport-end: #0b1524;
+    --bg-app: #0b1220;
+    --bg-nav: #0f172a;
+    --surface-main: #101827;
+    --surface-soft: #162033;
+    --surface-border: rgba(148, 163, 184, 0.18);
+    --text-primary: #eef4ff;
+    --text-secondary: #a8b3c7;
+    --brand-navy: #8fb7ff;
+    --nav-active-bg: rgba(37, 99, 235, 0.18);
+    --nav-hover-bg: rgba(148, 163, 184, 0.10);
+    --accent-tint: rgba(182, 216, 59, 0.14);
+    --shell-frame-bg: rgba(8, 13, 23, 0.94);
+    --shell-page-bg: #09111e;
+    --shell-panel-bg: rgba(15, 23, 42, 0.74);
+    --shell-panel-strong: rgba(15, 23, 42, 0.94);
+    --shell-panel-muted: rgba(30, 41, 59, 0.68);
+    --shell-border: rgba(148, 163, 184, 0.16);
+    --shell-border-strong: rgba(147, 197, 253, 0.26);
+    --shell-shadow-soft: 0 18px 52px rgba(0, 0, 0, 0.34), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+    --shell-shadow-hover: 0 24px 80px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.07) inset;
+    --shell-shadow-card: 0 12px 34px rgba(0, 0, 0, 0.30), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  }
 }
 
 /* ─── Tailwind v4 theme mapping ─────────────────────────── */
@@ -179,9 +234,11 @@ body {
 
 .nxt-shell-surface {
   border: 1px solid var(--shell-border);
-  background: var(--shell-panel-bg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 72%, transparent), var(--shell-panel-bg));
   box-shadow: var(--shell-shadow-soft);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .nxt-shell-hover {
@@ -195,7 +252,40 @@ body {
 .nxt-shell-hover:hover {
   border-color: var(--shell-border-strong);
   box-shadow: var(--shell-shadow-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+}
+
+.nxt-shell-card {
+  border: 1px solid var(--shell-border);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 84%, transparent), var(--shell-panel-bg));
+  box-shadow: var(--shell-shadow-card);
+}
+
+.nxt-shell-primary-button {
+  background: linear-gradient(135deg, #0b63ff, #0051dc);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 81, 220, 0.24);
+}
+
+.nxt-shell-soft-button {
+  border: 1px solid var(--shell-border);
+  background: color-mix(in srgb, var(--shell-panel-strong) 76%, transparent);
+  color: var(--text-primary);
+}
+
+.nxt-shell-progress {
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--shell-border) 58%, transparent);
+}
+
+.nxt-shell-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #78c90f, #0b63ff);
 }
 
 .nxt-focus-ring {
@@ -249,9 +339,11 @@ body {
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--shell-border);
-  border-radius: var(--radius-xl);
+  border-radius: 22px;
   background: var(--shell-frame-bg);
   box-shadow: var(--shadow-app);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .nxt-public-desktop-sidebar {
@@ -342,10 +434,11 @@ body {
 .nxt-public-bottom-tabs {
   display: flex;
   flex: 0 0 auto;
-  min-height: 64px;
+  min-height: 76px;
   align-items: stretch;
-  border-top: 1px solid var(--shell-border);
-  padding: 0 4px env(safe-area-inset-bottom, 0px);
+  border-top: 0;
+  padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  background: transparent;
 }
 
 .nxt-public-bottom-tab {
@@ -357,6 +450,37 @@ body {
   justify-content: center;
   gap: 2px;
   text-decoration: none;
+}
+
+@media (max-width: 767px) {
+  .nxt-public-shell-pad {
+    padding: 0;
+  }
+
+  .nxt-public-shell-frame {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .nxt-public-main {
+    padding: 18px 14px calc(env(safe-area-inset-bottom, 0px) + 96px);
+  }
+
+  .nxt-public-bottom-tabs {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 40;
+    min-height: 64px;
+    border: 1px solid var(--shell-border);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--shell-panel-strong) 88%, transparent);
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
 }
 
 .nxt-home-module-grid-mobile {
