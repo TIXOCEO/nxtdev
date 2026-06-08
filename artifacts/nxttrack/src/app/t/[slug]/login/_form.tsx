@@ -59,7 +59,7 @@ export function TenantLoginForm({ slug }: TenantLoginFormProps) {
         setErrorMessage(sync.error ?? "Profielsynchronisatie mislukt.");
         return;
       }
-      // Hard navigate i.p.v. router.push — stabieler bij wisselen van
+      // Hard navigate i.p.v. router.push: stabieler bij wisselen van
       // route-group en voorkomt het zeldzame "blijft hangen" probleem
       // wanneer router.push geen response triggert.
       window.location.assign(sync.destination ?? next);
@@ -94,10 +94,10 @@ export function TenantLoginForm({ slug }: TenantLoginFormProps) {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border py-2.5 pl-9 pr-4 text-sm outline-none"
+            className="nxt-focus-ring w-full rounded-md border py-3 pl-9 pr-4 text-sm outline-none"
             style={{
-              backgroundColor: "var(--surface-soft)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-muted)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
@@ -124,10 +124,10 @@ export function TenantLoginForm({ slug }: TenantLoginFormProps) {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border py-2.5 pl-9 pr-4 text-sm outline-none"
+            className="nxt-focus-ring w-full rounded-md border py-3 pl-9 pr-4 text-sm outline-none"
             style={{
-              backgroundColor: "var(--surface-soft)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-muted)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
@@ -147,13 +147,13 @@ export function TenantLoginForm({ slug }: TenantLoginFormProps) {
       <button
         type="submit"
         disabled={state === "loading" || !email.trim() || !password}
-        className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+        className="nxt-focus-ring flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-semibold transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
         style={{
-          backgroundColor: "var(--tenant-accent)",
-          color: "var(--text-primary)",
+          backgroundColor: "var(--brand-navy)",
+          color: "#ffffff",
         }}
       >
-        {state === "loading" ? "Bezig…" : (
+        {state === "loading" ? "Bezig..." : (
           <>
             Inloggen
             <ArrowRight className="h-4 w-4" />

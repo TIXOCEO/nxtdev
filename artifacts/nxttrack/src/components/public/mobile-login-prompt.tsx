@@ -41,11 +41,11 @@ export function MobileLoginPrompt({ slug, tenantName }: MobileLoginPromptProps) 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 md:hidden">
       <div
-        className="relative mx-auto flex max-w-md flex-col gap-2 rounded-2xl border p-4 shadow-lg"
+        className="relative mx-auto flex max-w-md flex-col gap-2 rounded-lg border p-4 shadow-lg"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-          boxShadow: "0 4px 24px var(--shadow-color)",
+          backgroundColor: "var(--shell-panel-bg)",
+          borderColor: "var(--shell-border)",
+          boxShadow: "var(--shell-shadow-soft)",
         }}
         role="dialog"
         aria-label="Inloggen aanmoedigen"
@@ -63,13 +63,13 @@ export function MobileLoginPrompt({ slug, tenantName }: MobileLoginPromptProps) 
           Welkom bij {tenantName}
         </p>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          Log in om je trainingen, meldingen en profiel te zien — of blijf rondkijken.
+          Log in om je trainingen, meldingen en profiel te zien, of blijf rondkijken.
         </p>
         <div className="flex items-center justify-end gap-2 pt-1">
           <button
             type="button"
             onClick={dismiss}
-            className="rounded-lg px-3 py-2 text-xs font-semibold"
+            className="nxt-focus-ring rounded-md px-3 py-2 text-xs font-semibold"
             style={{ color: "var(--text-secondary)" }}
           >
             Niet nu
@@ -77,8 +77,8 @@ export function MobileLoginPrompt({ slug, tenantName }: MobileLoginPromptProps) 
           <Link
             href={`/t/${slug}/login`}
             onClick={dismiss}
-            className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold"
-            style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+            className="nxt-focus-ring inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs font-semibold"
+            style={{ backgroundColor: "var(--brand-navy)", color: "#ffffff" }}
           >
             <LogIn className="h-3.5 w-3.5" /> Inloggen
           </Link>

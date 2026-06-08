@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { CalendarClock, CheckCircle2 } from "lucide-react";
 import { setTrainerTaskStatus } from "@/lib/actions/tenant/trainer-tasks";
 import type { TrainerTask } from "@/lib/db/trainer-tasks";
-import { PublicCard } from "@/components/public/public-card";
+import {
+  TrainerStatusPill,
+  TrainerSurface,
+} from "@/components/public/trainer-shell-components";
 
 interface Props {
   tenantId: string;
@@ -40,10 +44,10 @@ function groupTasks(tasks: TrainerTask[]) {
   return buckets;
 }
 
-const PRIORITY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  high:   { bg: "#fee2e2", text: "#b91c1c", label: "Hoog" },
-  normal: { bg: "#fef3c7", text: "#92400e", label: "Normaal" },
-  low:    { bg: "#e0e7ff", text: "#3730a3", label: "Laag" },
+const PRIORITY_TONE: Record<string, { tone: "danger" | "warning" | "info"; label: string }> = {
+  high: { tone: "danger", label: "Hoog" },
+  normal: { tone: "warning", label: "Normaal" },
+  low: { tone: "info", label: "Laag" },
 };
 
 export function TrainerTaskList({ tenantId, tasks: initial }: Props) {
@@ -82,14 +86,14 @@ export function TrainerTaskList({ tenantId, tasks: initial }: Props) {
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
               {heading} <span className="opacity-60">({list.length})</span>
             </h3>
-            <PublicCard className="divide-y" >
+            <TrainerSurface className="divide-y overflow-hidden">
               {list.map((t) => {
-                const p = PRIORITY_COLORS[t.priority] ?? PRIORITY_COLORS.normal;
+                const p = PRIORITY_TONE[t.priority] ?? PRIORITY_TONE.normal;
                 const isDone = t.status === "done" || t.status === "cancelled";
                 return (
                   <label
                     key={t.id}
-                    className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-opacity hover:bg-black/[0.02]"
+                    className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-black/[0.02]"
                     style={{ borderColor: "var(--surface-border)", opacity: isDone ? 0.55 : 1 }}
                   >
                     <input
@@ -108,14 +112,17 @@ export function TrainerTaskList({ tenantId, tasks: initial }: Props) {
                         >
                           {t.title}
                         </span>
-                        <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                          style={{ backgroundColor: p.bg, color: p.text }}
-                        >
+                        <TrainerStatusPill toneKey={p.tone}>
                           {p.label}
-                        </span>
+                        </TrainerStatusPill>
+                        {isDone && (
+                          <TrainerStatusPill toneKey="success" icon={CheckCircle2}>
+                            Klaar
+                          </TrainerStatusPill>
+                        )}
                         {t.due_date && (
-                          <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                          <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                            <CalendarClock className="h-3.5 w-3.5" />
                             {new Date(t.due_date).toLocaleDateString("nl-NL", { day: "2-digit", month: "short" })}
                           </span>
                         )}
@@ -129,7 +136,7 @@ export function TrainerTaskList({ tenantId, tasks: initial }: Props) {
                   </label>
                 );
               })}
-            </PublicCard>
+            </TrainerSurface>
           </div>
         ),
       )}
