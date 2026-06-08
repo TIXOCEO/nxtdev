@@ -9,11 +9,9 @@ export interface PublicCardProps {
 export function PublicCard({ children, className, as: Tag = "div" }: PublicCardProps) {
   return (
     <Tag
-      className={`rounded-[var(--radius-nxt-lg)] border ${className ?? ""}`}
+      className={`nxt-shell-card ${className ?? ""}`}
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
-        boxShadow: "var(--shadow-app)",
+        borderColor: "var(--shell-border)",
       }}
     >
       {children}

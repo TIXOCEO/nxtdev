@@ -206,7 +206,7 @@ export async function PublicTenantShell({
               active={
                 Array.isArray(active)
                   ? ((active.find((k) =>
-                      ["home", "nieuws", "agenda", "profile", "notifications", "messages"].includes(k),
+                      ["home", "lessen", "voortgang", "diplomas", "nieuws", "agenda", "profile", "notifications", "messages"].includes(k),
                     ) ?? active[0]) as PublicNavKey)
                   : active
               }

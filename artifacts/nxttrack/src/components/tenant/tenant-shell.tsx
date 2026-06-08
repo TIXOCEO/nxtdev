@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import type { CSSProperties } from "react";
+import Link from "next/link";
+import { Bell, CalendarDays, LayoutDashboard, Plus, Settings } from "lucide-react";
 import { TenantSidebar } from "./tenant-sidebar";
 import { TenantHeader } from "./tenant-header";
 
@@ -81,6 +83,45 @@ export function TenantShell({
           >
             <div className="mx-auto w-full max-w-7xl space-y-5">{children}</div>
           </main>
+          <nav
+            className="fixed bottom-[max(10px,env(safe-area-inset-bottom))] left-4 right-4 z-40 flex items-center justify-around rounded-[24px] border px-2 py-2 shadow-app backdrop-blur md:hidden"
+            style={{
+              borderColor: "var(--shell-border)",
+              backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 88%, transparent)",
+            }}
+            aria-label="Tenant beheer navigatie"
+          >
+            {[
+              { href: "/tenant", label: "Dashboard", icon: LayoutDashboard },
+              { href: "/tenant/trainings", label: "Agenda", icon: CalendarDays },
+              { href: "/tenant/taken", label: "Actie", icon: Plus, primary: true },
+              { href: "/tenant/notifications", label: "Meldingen", icon: Bell },
+              { href: "/tenant/settings", label: "Meer", icon: Settings },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="nxt-focus-ring flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1 text-[10px] font-semibold"
+                  style={{ color: item.primary ? "var(--shell-info)" : "var(--text-secondary)" }}
+                >
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-2xl"
+                    style={{
+                      backgroundColor: item.primary
+                        ? "var(--shell-info)"
+                        : "transparent",
+                      color: item.primary ? "#ffffff" : "currentColor",
+                    }}
+                  >
+                    <Icon className="h-[18px] w-[18px]" />
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </div>
     </div>

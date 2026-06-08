@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Home, LogIn } from "lucide-react";
+import { ChevronDown, LogIn, Search } from "lucide-react";
 import type { Tenant } from "@/types/database";
 import { PublicMobileNav } from "./public-mobile-nav";
 import type { PublicNavKey } from "./public-sidebar";
@@ -75,9 +75,9 @@ export async function PublicHeader({
 
   return (
     <header
-      className="nxt-public-header flex h-16 shrink-0 items-center gap-3 border-b px-3 backdrop-blur-md sm:px-5"
+      className="nxt-public-header flex h-[68px] shrink-0 items-center gap-3 border-b px-3 backdrop-blur-md sm:px-5"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--page-bg) 88%, #ffffff)",
+        backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 86%, transparent)",
         borderColor: "var(--shell-border)",
       }}
     >
@@ -92,36 +92,31 @@ export async function PublicHeader({
         customPages={customPages}
         customActivePath={customActivePath}
       />
-      <nav
-        aria-label="Breadcrumb"
-        className="nxt-public-breadcrumb min-w-0 flex-1"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        <ol className="nxt-public-breadcrumb-list flex items-center gap-2 text-sm font-medium">
-          <li className="flex items-center gap-2">
-            <Link
-              href={`/t/${slug}`}
-              aria-label="Home"
-              className="nxt-focus-ring inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors hover:bg-white/60"
-              style={{ borderColor: "var(--shell-border)" }}
-            >
-              <Home className="h-4 w-4 shrink-0" />
-            </Link>
-          </li>
-          <li aria-hidden="true">
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
-          </li>
-          <li className="min-w-0">
-            <span
-              className="truncate text-base font-semibold"
-              style={{ color: "var(--text-primary)" }}
-              aria-current="page"
-            >
-              {pageTitle}
-            </span>
-          </li>
-        </ol>
-      </nav>
+      <div className="min-w-0 flex-1">
+        <p className="hidden text-[11px] font-semibold sm:block" style={{ color: "var(--text-secondary)" }}>
+          {tenant.name}
+        </p>
+        <h1 className="truncate text-base font-bold tracking-tight sm:text-lg" style={{ color: "var(--text-primary)" }}>
+          {pageTitle}
+        </h1>
+      </div>
+      {isAuthenticated ? (
+        <button
+          type="button"
+          className="nxt-focus-ring hidden min-w-[220px] items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-xs font-semibold md:inline-flex"
+          style={{
+            borderColor: "var(--shell-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            color: "var(--text-primary)",
+          }}
+        >
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--shell-info)" }} />
+            <span className="truncate">Zoek lessen, berichten...</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0" style={{ color: "var(--text-secondary)" }} />
+        </button>
+      ) : null}
       <div className="flex items-center gap-1">
         {isAuthenticated && user ? (
           <>
@@ -142,13 +137,9 @@ export async function PublicHeader({
           <Link
             href={`/t/${slug}/login`}
             aria-label="Inloggen"
-            className="nxt-focus-ring inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/70"
-            style={{ color: "var(--text-primary)" }}
+            className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition-transform hover:-translate-y-0.5"
           >
-            <LogIn
-              className="h-4 w-4"
-              style={{ color: "var(--tenant-accent)" }}
-            />
+            <LogIn className="h-4 w-4" />
             <span className="hidden sm:inline">Inloggen</span>
           </Link>
         )}

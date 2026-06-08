@@ -39,10 +39,11 @@ export function TenantProfileMenu({ email, publicUrl }: TenantProfileMenuProps) 
         <button
           type="button"
           aria-label="Mijn account"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold transition-opacity hover:opacity-80"
+          className="nxt-focus-ring inline-flex h-10 w-10 items-center justify-center rounded-2xl border text-[11px] font-bold shadow-sm transition-transform hover:-translate-y-0.5"
           style={{
-            backgroundColor: "var(--accent)",
-            color: "var(--text-primary)",
+            borderColor: "var(--shell-border)",
+            backgroundColor: "color-mix(in srgb, var(--tenant-accent, var(--accent)) 18%, var(--shell-panel-strong))",
+            color: "var(--shell-info)",
           }}
         >
           {initials}
