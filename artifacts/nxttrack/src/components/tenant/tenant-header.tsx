@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, ShieldCheck } from "lucide-react";
+import { ExternalLink, Search, ShieldCheck, Zap } from "lucide-react";
 import { MobileNavTrigger } from "@/components/admin/mobile-nav-trigger";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { TenantSidebar } from "./tenant-sidebar";
@@ -37,7 +37,7 @@ export function TenantHeader({
       className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:px-6 lg:px-8"
       style={{
         borderColor: "var(--shell-border)",
-        backgroundColor: "rgba(255, 255, 255, 0.86)",
+        backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 86%, transparent)",
         backdropFilter: "blur(16px)",
       }}
     >
@@ -76,12 +76,24 @@ export function TenantHeader({
         )}
       </div>
 
+      <div className="hidden min-w-[260px] max-w-md flex-1 items-center gap-2 rounded-xl border px-3 py-2 text-sm lg:flex" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-secondary)" }}>
+        <Search className="h-4 w-4" />
+        <span>Zoek leden, groepen, lessen...</span>
+      </div>
+
       <div className="flex items-center gap-2">
+        <Link
+          href="/tenant/taken"
+          className="nxt-focus-ring nxt-shell-primary-button hidden items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold sm:inline-flex"
+        >
+          <Zap className="h-3.5 w-3.5" />
+          Snelle actie
+        </Link>
         {publicUrl ? (
           <Link
             href={publicUrl}
             target="_blank"
-            className="nxt-focus-ring hidden items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold sm:inline-flex"
+            className="nxt-focus-ring hidden items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold sm:inline-flex"
             style={{
               borderColor: "var(--shell-border)",
               color: "var(--text-secondary)",

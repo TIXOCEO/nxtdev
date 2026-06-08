@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, CalendarDays, MessageSquare, Bell, UserRound } from "lucide-react";
+import { Home, CalendarDays, MessageSquare, UserRound, TrendingUp, Award } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { PublicNavKey } from "./public-sidebar";
 
@@ -30,14 +30,14 @@ export function PublicBottomTabBar({
   slug,
   active,
   isAuthenticated,
-  unreadCount = 0,
   messagesUnread = 0,
 }: PublicBottomTabBarProps) {
   const tabs: TabDef[] = [
     { key: "home", label: "Home", href: `/t/${slug}`, icon: Home },
-    { key: "agenda", label: "Agenda", href: `/t/${slug}/schedule`, icon: CalendarDays },
   ];
   if (isAuthenticated) {
+    tabs.push({ key: "lessen", label: "Lessen", href: `/t/${slug}/lessen`, icon: CalendarDays });
+    tabs.push({ key: "voortgang", label: "Voortgang", href: `/t/${slug}/voortgang`, icon: TrendingUp });
     tabs.push({
       key: "messages",
       label: "Berichten",
@@ -46,34 +46,28 @@ export function PublicBottomTabBar({
       badge: messagesUnread > 0 ? messagesUnread : undefined,
     });
     tabs.push({
-      key: "notifications",
-      label: "Meldingen",
-      href: `/t/${slug}/notifications`,
-      icon: Bell,
-      badge: unreadCount > 0 ? unreadCount : undefined,
-    });
-    tabs.push({
       key: "profile",
       label: "Profiel",
       href: `/t/${slug}/profile`,
       icon: UserRound,
     });
   } else {
+    tabs.push({ key: "agenda", label: "Agenda", href: `/t/${slug}/schedule`, icon: CalendarDays });
     tabs.push({
       key: "inschrijven",
       label: "Inschrijven",
       href: `/t/${slug}/inschrijven`,
-      icon: UserRound,
+      icon: Award,
     });
+    tabs.push({ key: "login", label: "Login", href: `/t/${slug}/login`, icon: UserRound });
   }
 
   return (
     <nav
-      className="nxt-public-bottom-tabs flex h-16 shrink-0 items-stretch border-t px-1 md:hidden"
+      className="nxt-public-bottom-tabs flex shrink-0 items-stretch md:hidden"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--bg-nav) 92%, #ffffff)",
+        backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 88%, transparent)",
         borderColor: "var(--shell-border)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="Hoofdnavigatie"
     >
@@ -84,31 +78,24 @@ export function PublicBottomTabBar({
           <Link
             key={tab.key}
             href={tab.href}
-            className="nxt-public-bottom-tab nxt-focus-ring relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[10px] font-medium transition-colors"
+            className="nxt-public-bottom-tab nxt-focus-ring relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-[10px] font-semibold transition-colors"
             style={{
-              color: isActive ? "var(--brand-navy)" : "var(--text-secondary)",
-              backgroundColor: isActive
-                ? "color-mix(in srgb, var(--tenant-accent) 14%, transparent)"
-                : "transparent",
+              color: isActive ? "var(--shell-info)" : "var(--text-secondary)",
+              backgroundColor: "transparent",
             }}
           >
-            {isActive && (
-              <span
-                aria-hidden
-                className="absolute inset-x-4 top-1 h-[3px] rounded-full"
-                style={{ backgroundColor: "var(--nav-active-bar)" }}
-              />
-            )}
             <span
-              className="relative flex h-7 w-7 items-center justify-center rounded-md"
+              className="relative flex h-8 w-8 items-center justify-center rounded-2xl"
               style={{
-                backgroundColor: isActive ? "#ffffff" : "transparent",
+                backgroundColor: isActive
+                  ? "color-mix(in srgb, var(--shell-info) 12%, var(--shell-panel-strong))"
+                  : "transparent",
               }}
             >
               <Icon
-                className="h-5 w-5"
+                className="h-[18px] w-[18px]"
                 style={{
-                  color: isActive ? "var(--nav-active-icon)" : "currentColor",
+                  color: isActive ? "var(--shell-info)" : "currentColor",
                 }}
               />
               {tab.badge !== undefined && (

@@ -26,7 +26,7 @@ export function TenantAdminSurface({
   return (
     <section
       className={cn(
-        "nxt-shell-enter nxt-shell-surface rounded-lg",
+        "nxt-shell-enter nxt-shell-surface rounded-[20px]",
         interactive && "nxt-shell-hover",
         className,
       )}
@@ -51,11 +51,11 @@ export function TenantAdminHero({
 }) {
   return (
     <TenantAdminSurface className="overflow-hidden p-0">
-      <div className="relative p-5 sm:p-6">
+      <div className="relative p-5 sm:p-6 lg:p-7">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-1"
-          style={{ backgroundColor: "var(--tenant-accent, var(--accent))" }}
+          className="absolute -right-24 -top-24 h-64 w-64 rounded-full blur-3xl"
+          style={{ backgroundColor: "color-mix(in srgb, var(--tenant-accent, var(--accent)) 28%, transparent)" }}
         />
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
           <div className="max-w-3xl">
@@ -66,7 +66,7 @@ export function TenantAdminHero({
               {eyebrow}
             </p>
             <h1
-              className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl"
+              className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl"
               style={{ color: "var(--text-primary)" }}
             >
               {title}
@@ -110,17 +110,17 @@ export function TenantAdminMetric({
             {label}
           </p>
           <p
-            className="mt-2 text-3xl font-semibold tabular-nums"
+            className="mt-2 text-3xl font-bold tabular-nums"
             style={{ color: "var(--text-primary)" }}
           >
             {value}
           </p>
         </div>
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-sm"
           style={{
             borderColor: "var(--shell-border)",
-            backgroundColor: "color-mix(in srgb, var(--tenant-accent, var(--accent)) 12%, #ffffff)",
+            backgroundColor: "color-mix(in srgb, var(--tenant-accent, var(--accent)) 12%, var(--shell-panel-strong))",
             color: TONE_COLOR[tone],
           }}
         >
@@ -148,7 +148,7 @@ export function TenantAdminSectionHeader({
   return (
     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
       <div>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+        <h2 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
           {title}
         </h2>
         {description ? (
@@ -174,8 +174,7 @@ export function TenantAdminActionLink({
   return (
     <Link
       href={href}
-      className="nxt-focus-ring inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold"
-      style={{ backgroundColor: "var(--brand-navy)", color: "#ffffff" }}
+      className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
     >
       {children}
       <Icon className="h-4 w-4" />
@@ -199,10 +198,10 @@ export function TenantAdminListItem({
   const content = (
     <div className="flex items-start gap-3 p-4">
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
         style={{
           backgroundColor: "var(--shell-panel-muted)",
-          color: "var(--brand-navy)",
+          color: "var(--shell-info)",
         }}
       >
         <Icon className="h-4 w-4" />
@@ -226,7 +225,7 @@ export function TenantAdminListItem({
 
   if (!href) return content;
   return (
-    <Link href={href} className="nxt-focus-ring block rounded-md">
+    <Link href={href} className="nxt-focus-ring block rounded-2xl transition-colors hover:bg-black/5">
       {content}
     </Link>
   );
@@ -247,7 +246,7 @@ export function TenantAdminBars({
               className="w-full max-w-5 rounded-t-md"
               style={{
                 height: `${Math.max(5, (point.registrations / max) * 100)}%`,
-                backgroundColor: "var(--tenant-accent, var(--accent))",
+                background: "linear-gradient(180deg, var(--shell-info), color-mix(in srgb, var(--shell-info) 50%, transparent))",
               }}
               title={`${point.registrations} aanmeldingen`}
             />
@@ -255,7 +254,7 @@ export function TenantAdminBars({
               className="w-full max-w-5 rounded-t-md"
               style={{
                 height: `${Math.max(5, (point.members / max) * 100)}%`,
-                backgroundColor: "var(--brand-navy)",
+                background: "linear-gradient(180deg, var(--tenant-accent, var(--accent)), color-mix(in srgb, var(--tenant-accent, var(--accent)) 42%, transparent))",
               }}
               title={`${point.members} leden`}
             />

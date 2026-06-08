@@ -42,11 +42,11 @@ export function TrainerCommandHero({
 }) {
   return (
     <UserSurface className="overflow-hidden p-0">
-      <div className="relative p-5 sm:p-6">
+      <div className="relative p-5 sm:p-6 lg:p-7">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-1"
-          style={{ backgroundColor: "var(--tenant-accent)" }}
+          className="absolute -right-20 -top-24 h-56 w-56 rounded-full blur-3xl"
+          style={{ backgroundColor: "color-mix(in srgb, var(--tenant-accent) 34%, transparent)" }}
         />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <UserSectionHeader
@@ -58,23 +58,20 @@ export function TrainerCommandHero({
           {action}
         </div>
         {stats && stats.length > 0 && (
-          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {stats.map((stat) => {
               const Icon = stat.icon;
               return (
                 <div
                   key={stat.label}
-                  className="rounded-md border px-3 py-2"
+                  className="rounded-2xl border px-4 py-3 shadow-sm"
                   style={{
                     backgroundColor: "var(--shell-panel-muted)",
                     borderColor: "var(--shell-border)",
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon
-                      className="h-4 w-4 shrink-0"
-                      style={{ color: "var(--brand-navy)" }}
-                    />
+                    <Icon className="h-4 w-4 shrink-0" style={{ color: "var(--shell-info)" }} />
                     <p
                       className="truncate text-xs font-semibold uppercase"
                       style={{ color: "var(--text-secondary)" }}
@@ -83,7 +80,7 @@ export function TrainerCommandHero({
                     </p>
                   </div>
                   <p
-                    className="mt-1 text-xl font-semibold"
+                    className="mt-1 text-2xl font-bold tabular-nums"
                     style={{ color: "var(--text-primary)" }}
                   >
                     {stat.value}
@@ -114,11 +111,11 @@ export function TrainerListItem({
   const content = (
     <div className="flex min-w-0 items-start gap-3 p-4">
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-sm"
         style={{
           borderColor: "var(--shell-border)",
-          backgroundColor: "color-mix(in srgb, var(--tenant-accent) 14%, #ffffff)",
-          color: "var(--brand-navy)",
+          backgroundColor: "color-mix(in srgb, var(--tenant-accent) 14%, var(--shell-panel-strong))",
+          color: "var(--shell-info)",
         }}
       >
         <Icon className="h-5 w-5" />
@@ -164,7 +161,7 @@ export function TrainerListItem({
   return (
     <Link
       href={href}
-      className={cn("block rounded-lg", "nxt-focus-ring")}
+      className={cn("block rounded-[18px]", "nxt-focus-ring")}
     >
       <UserSurface className="overflow-hidden" interactive>
         {content}
@@ -183,15 +180,12 @@ export function TrainerProgressBar({
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   return (
     <div className="flex min-w-[160px] items-center gap-2">
-      <div
-        className="h-2 flex-1 overflow-hidden rounded-full"
-        style={{ backgroundColor: "var(--shell-panel-muted)" }}
-      >
+      <div className="nxt-shell-progress h-2 flex-1">
         <div
           className="h-full rounded-full"
           style={{
             width: `${pct}%`,
-            backgroundColor: "var(--tenant-accent)",
+            background: "linear-gradient(90deg, var(--tenant-accent), var(--shell-info))",
           }}
         />
       </div>
