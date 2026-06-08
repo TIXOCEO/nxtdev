@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CircleDashed } from "lucide-react";
@@ -18,13 +18,15 @@ export function TenantAdminSurface({
   children,
   className,
   interactive = false,
+  ...props
 }: {
   children: ReactNode;
   className?: string;
   interactive?: boolean;
-}) {
+} & HTMLAttributes<HTMLElement>) {
   return (
     <section
+      {...props}
       className={cn(
         "nxt-shell-enter nxt-shell-surface rounded-[20px]",
         interactive && "nxt-shell-hover",
@@ -296,7 +298,7 @@ export function TenantAdminSegmentChart({
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {data.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 rounded-md px-3 py-2" style={{ backgroundColor: "var(--shell-panel-muted)" }}>
+          <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2" style={{ backgroundColor: "var(--shell-panel-muted)" }}>
             <span className="flex min-w-0 items-center gap-2 text-sm" style={{ color: "var(--text-primary)" }}>
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: TONE_COLOR[item.tone] }} />
               <span className="truncate">{item.label}</span>
