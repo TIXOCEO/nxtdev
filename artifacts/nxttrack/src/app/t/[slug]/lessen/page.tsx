@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   UserEmptyState,
   UserMetricCard,
+  UserReferenceHero,
   UserSectionHeader,
   UserStatusPill,
   UserSurface,
@@ -103,10 +104,11 @@ export default async function LessenPage({ params }: PageProps) {
     const d = new Date(s.starts_at);
     const cancelled = s.status === "cancelled";
     return (
-      <div key={s.id} className="flex items-start gap-3 px-4 py-3">
+      <UserSurface key={s.id} className="p-4" interactive>
+        <div className="flex items-start gap-3">
         <div
-          className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border text-center"
-          style={{ backgroundColor: "var(--accent-tint)", borderColor: "var(--shell-border)", color: "var(--brand-navy)" }}
+          className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border text-center shadow-sm"
+          style={{ backgroundColor: "color-mix(in srgb, var(--shell-info) 10%, var(--shell-panel-strong))", borderColor: "var(--shell-border)", color: "var(--shell-info)" }}
         >
           <span className="text-[10px] font-semibold uppercase">
             {d.toLocaleDateString("nl-NL", { month: "short" })}
@@ -139,18 +141,42 @@ export default async function LessenPage({ params }: PageProps) {
         ) : (
           <UserStatusPill toneKey="accent">Gepland</UserStatusPill>
         )}
-      </div>
+        </div>
+      </UserSurface>
     );
   }
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Mijn lessen" active="lessen">
-      <UserSectionHeader
+      <UserReferenceHero
         eyebrow="Agenda"
         title="Mijn lessen"
-        description="Aankomende en recente trainingen voor jou en je kinderen."
-        icon={CalendarDays}
-      />
+        description="Aankomende en recente lessen voor jou en je kinderen, rustig gegroepeerd per moment."
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <UserMetricCard
+            label="Aankomend"
+            value={`${upcoming.length}`}
+            helper="Geplande lessen"
+            icon={CalendarCheck}
+            toneKey={upcoming.length > 0 ? "accent" : "neutral"}
+          />
+          <UserMetricCard
+            label="Recent"
+            value={`${past.length}`}
+            helper="Afgelopen 30 dagen"
+            icon={CalendarDays}
+            toneKey="neutral"
+          />
+          <UserMetricCard
+            label="Leerlingen"
+            value={`${memberIds.length}`}
+            helper="In dit overzicht"
+            icon={Users}
+            toneKey="info"
+          />
+        </div>
+      </UserReferenceHero>
       {sessions.length === 0 ? (
         <UserEmptyState
           icon={CalendarDays}
@@ -159,48 +185,16 @@ export default async function LessenPage({ params }: PageProps) {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <UserMetricCard
-              label="Aankomend"
-              value={`${upcoming.length}`}
-              helper="Geplande lessen"
-              icon={CalendarCheck}
-              toneKey={upcoming.length > 0 ? "accent" : "neutral"}
-            />
-            <UserMetricCard
-              label="Recent"
-              value={`${past.length}`}
-              helper="Afgelopen 30 dagen"
-              icon={CalendarDays}
-              toneKey="neutral"
-            />
-            <UserMetricCard
-              label="Leerlingen"
-              value={`${memberIds.length}`}
-              helper="In dit overzicht"
-              icon={Users}
-              toneKey="info"
-            />
-          </div>
-
           {upcoming.length > 0 && (
             <div className="flex flex-col gap-2">
               <UserSectionHeader eyebrow="Timeline" title="Aankomend" icon={CalendarCheck} />
-              <UserSurface>
-                <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
-                  {upcoming.map(row)}
-                </div>
-              </UserSurface>
+              <div className="grid gap-3 lg:grid-cols-2">{upcoming.map(row)}</div>
             </div>
           )}
           {past.length > 0 && (
             <div className="flex flex-col gap-2">
               <UserSectionHeader eyebrow="Historie" title="Recent" icon={CalendarDays} />
-              <UserSurface>
-                <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
-                  {past.slice(0, 10).map(row)}
-                </div>
-              </UserSurface>
+              <div className="grid gap-3 lg:grid-cols-2">{past.slice(0, 10).map(row)}</div>
             </div>
           )}
         </div>

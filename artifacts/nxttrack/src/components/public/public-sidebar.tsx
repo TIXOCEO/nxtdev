@@ -26,8 +26,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Globe,
-  ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Tenant } from "@/types/database";
@@ -259,6 +257,8 @@ function initialsFor(name: string): string {
 
 type ShellMode = "role" | "public";
 
+const NXTTRACK_LOGO = "https://dgwebservices.nl/logonxttrack.svg";
+
 export function PublicSidebar({
   tenant,
   active,
@@ -367,78 +367,76 @@ export function PublicSidebar({
     <aside
       className="nxt-public-sidebar flex h-full w-full flex-col gap-3 border-r p-4"
       style={{
-        backgroundColor: "var(--sidebar-bg)",
+        backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 88%, transparent)",
         borderColor: "var(--shell-border)",
+        backdropFilter: "blur(18px)",
       }}
     >
-      <div
-        className="nxt-public-sidebar-brand nxt-shell-surface flex flex-col items-center gap-2 rounded-lg px-3 pb-4 pt-3 text-center"
-        style={{ boxShadow: "none" }}
-      >
-        <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border shadow-sm"
-          style={{
-            borderColor: "var(--shell-border)",
-            backgroundColor: "var(--surface-main)",
-          }}
-        >
-          {showLogo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={tenant.logo_url!}
-              alt={tenant.name}
-              className="h-full w-full object-contain"
-              onError={() => setLogoFailed(true)}
-            />
-          ) : (
-            <span
-              className="text-lg font-bold"
-              style={{ color: "var(--tenant-accent)" }}
-            >
-              {initials}
-            </span>
-          )}
-        </div>
-        <p
-          className="line-clamp-2 text-sm font-bold tracking-tight"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {tenant.name}
-        </p>
-        <p
-          className="-mt-1 text-[11px]"
-          style={{ color: "var(--text-secondary)", opacity: 0.75 }}
-        >
-          {hasRole && shellMode === "role"
-            ? portalLabel
-            : "Publieke pagina"}
-        </p>
-        {hasRole && (
+      <a href="https://nxttrack.nl" target="_blank" rel="noopener noreferrer" className="block px-2 py-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={NXTTRACK_LOGO} alt="NXTTRACK" className="h-6 w-auto" />
+      </a>
+
+      <div className="nxt-shell-card p-3">
+        <div className="flex items-center gap-3">
           <div
-            className="mt-1 inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold uppercase"
+            className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border shadow-sm"
             style={{
-              backgroundColor:
-                shellMode === "role"
-                  ? "color-mix(in srgb, var(--tenant-accent) 16%, #ffffff)"
-                  : "var(--shell-panel-muted)",
               borderColor: "var(--shell-border)",
-              color: "var(--brand-navy)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
           >
-            {showGroepen ? (
-              <ShieldCheck className="h-3.5 w-3.5" />
+            {showLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={tenant.logo_url!}
+                alt={tenant.name}
+                className="h-full w-full object-contain"
+                onError={() => setLogoFailed(true)}
+              />
             ) : (
-              <Sparkles className="h-3.5 w-3.5" />
+              <span className="text-sm font-bold" style={{ color: "var(--tenant-accent)" }}>
+                {initials}
+              </span>
             )}
-            <span>{showGroepen ? "Trainer actief" : "Lid actief"}</span>
           </div>
-        )}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+              {tenant.name}
+            </p>
+            <p className="truncate text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              {hasRole && shellMode === "role" ? portalLabel : "Publieke pagina"}
+            </p>
+          </div>
+        </div>
+        {hasRole ? (
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-2xl p-1" style={{ backgroundColor: "var(--shell-panel-muted)" }}>
+            {[
+              { mode: "role" as const, label: showGroepen ? "Trainer" : "Portaal" },
+              { mode: "public" as const, label: "Publiek" },
+            ].map((item) => (
+              <button
+                key={item.mode}
+                type="button"
+                onClick={() => switchMode(item.mode)}
+                className="nxt-focus-ring rounded-xl px-2 py-1.5 text-[11px] font-bold transition-colors"
+                style={{
+                  backgroundColor: shellMode === item.mode ? "var(--shell-panel-strong)" : "transparent",
+                  color: shellMode === item.mode ? "var(--shell-info)" : "var(--text-secondary)",
+                  boxShadow: shellMode === item.mode ? "var(--shell-shadow-card)" : "none",
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {/* Sprint 81 — Role-mode top: pijl naar publieke menu. */}
       {hasRole && shellMode === "role" && (
         <div
-          className="rounded-md border p-2"
+          className="rounded-2xl border p-2"
           style={{
             backgroundColor: "var(--shell-panel-muted)",
             borderColor: "var(--shell-border)",
@@ -447,7 +445,7 @@ export function PublicSidebar({
           <button
             type="button"
             onClick={() => switchMode("public")}
-            className="nxt-focus-ring inline-flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-xs font-semibold transition-colors hover:bg-white/70"
+            className="nxt-focus-ring inline-flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-xs font-semibold transition-colors hover:bg-white/70"
             style={{ color: "var(--text-primary)" }}
           >
             <span className="inline-flex items-center gap-2">
@@ -502,9 +500,8 @@ export function PublicSidebar({
                 }}
               className="nxt-focus-ring inline-flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-white/70"
                 style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--tenant-accent) 18%, transparent)",
-                  color: "var(--text-primary)",
+                  backgroundColor: "rgba(11, 99, 255, 0.10)",
+                  color: "var(--shell-info)",
                 }}
               >
                 <span>{portalLabel}</span>
@@ -556,7 +553,7 @@ export function PublicSidebar({
           <form action={onLogout}>
             <button
               type="submit"
-              className="nxt-focus-ring group inline-flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/60"
+              className="nxt-focus-ring group inline-flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/60"
               style={{ color: "#b91c1c" }}
             >
               <LogOut className="h-4 w-4" />
@@ -567,7 +564,7 @@ export function PublicSidebar({
           <Link
             href={`/t/${tenant.slug}/login`}
             onClick={onNavigate}
-            className="nxt-focus-ring group inline-flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-white/60"
+            className="nxt-focus-ring group inline-flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-white/60"
             style={{
               backgroundColor:
                 active === "login"
@@ -667,12 +664,12 @@ function SidebarLinkRow({
         href={item.href}
         onClick={onNavigate}
         aria-current={isActive ? "page" : undefined}
-        className={`nxt-public-sidebar-link nxt-focus-ring group relative inline-flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${
+        className={`nxt-public-sidebar-link nxt-focus-ring group relative inline-flex items-center gap-3 rounded-xl py-2 text-sm font-semibold transition-colors ${
           nested ? "ml-4 pl-3 pr-3" : "px-3 py-2.5"
         }`}
         style={{
-          backgroundColor: isActive ? "var(--nav-active-bg)" : "transparent",
-          color: isActive ? "var(--brand-navy)" : "var(--text-secondary)",
+          backgroundColor: isActive ? "rgba(11, 99, 255, 0.10)" : "transparent",
+          color: isActive ? "var(--shell-info)" : "var(--text-secondary)",
           fontSize: nested ? "0.8125rem" : "0.875rem",
         }}
         onMouseEnter={(e) => {
@@ -687,13 +684,13 @@ function SidebarLinkRow({
           <span
             aria-hidden
             className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full"
-            style={{ backgroundColor: "var(--nav-active-bar)" }}
+            style={{ backgroundColor: "var(--shell-info)" }}
           />
         )}
         <Icon
           className={nested ? "h-3.5 w-3.5" : "h-4 w-4"}
           style={{
-            color: isActive ? "var(--nav-active-icon)" : "currentColor",
+            color: isActive ? "var(--shell-info)" : "currentColor",
           }}
         />
         <span className="flex-1 truncate">{item.label}</span>

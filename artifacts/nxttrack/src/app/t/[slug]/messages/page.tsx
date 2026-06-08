@@ -6,7 +6,9 @@ import { getUser } from "@/lib/auth/get-user";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
 import { getMyMember, listConversationsForMember } from "@/lib/db/messages";
 import {
+  UserActionLink,
   UserEmptyState,
+  UserReferenceHero,
   UserSectionHeader,
   UserStatusPill,
   UserSurface,
@@ -32,21 +34,22 @@ export default async function MessagesInboxPage({ params }: Props) {
 
   return (
     <PublicTenantShell tenant={tenant} active="messages" pageTitle="Berichten">
-      <UserSectionHeader
+      <UserReferenceHero
         eyebrow="Inbox"
         title="Berichten"
-        description="Gesprekken met de academie, trainers en beheerders."
-        icon={MessageSquare}
+        description="Gesprekken met de academie, trainers en beheerders op een rustige plek."
         action={
-          <Link
-            href={`/t/${slug}/messages/new`}
-            className="nxt-focus-ring inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold"
-            style={{ backgroundColor: "var(--brand-navy)", color: "#ffffff" }}
-          >
-            <Plus className="h-4 w-4" />
+          <UserActionLink href={`/t/${slug}/messages/new`} icon={Plus}>
             Nieuw bericht
-          </Link>
+          </UserActionLink>
         }
+      />
+
+      <UserSectionHeader
+        eyebrow="Inbox"
+        title="Gesprekken"
+        description={`${rows.length} gesprek${rows.length === 1 ? "" : "ken"} in je inbox.`}
+        icon={MessageSquare}
       />
 
       {rows.length === 0 ? (
@@ -56,25 +59,24 @@ export default async function MessagesInboxPage({ params }: Props) {
           body="Start een nieuw gesprek met de knop hierboven."
         />
       ) : (
-        <UserSurface>
-          <ul className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
+        <div className="grid gap-3 lg:grid-cols-2">
             {rows.map((r) => {
               const others = r.participants
                 .filter((p) => p.member_id !== me.id)
                 .map((p) => p.full_name ?? "Onbekend")
                 .join(", ");
               return (
-                <li key={r.conversation.id}>
+                <UserSurface key={r.conversation.id} interactive>
                   <Link
                     href={`/t/${slug}/messages/${r.conversation.id}`}
-                    className="nxt-focus-ring flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/70"
+                    className="nxt-focus-ring flex items-center gap-3 p-4 transition-colors hover:bg-white/50"
                   >
                     <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-sm"
                       style={{
                         borderColor: "var(--shell-border)",
-                        backgroundColor: "color-mix(in srgb, var(--tenant-accent) 14%, #ffffff)",
-                        color: "var(--brand-navy)",
+                        backgroundColor: "color-mix(in srgb, var(--shell-info) 10%, var(--shell-panel-strong))",
+                        color: "var(--shell-info)",
                       }}
                     >
                       <MessageSquare className="h-5 w-5" />
@@ -103,11 +105,10 @@ export default async function MessagesInboxPage({ params }: Props) {
                       )}
                     </div>
                   </Link>
-                </li>
+                </UserSurface>
               );
             })}
-          </ul>
-        </UserSurface>
+        </div>
       )}
     </PublicTenantShell>
   );

@@ -11,6 +11,7 @@ import {
   UserEmptyState,
   UserJourneyTrack,
   UserMetricCard,
+  UserReferenceHero,
   UserSectionHeader,
   UserStatusPill,
   UserSurface,
@@ -124,12 +125,35 @@ export default async function VoortgangPage({ params }: PageProps) {
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Voortgang" active="voortgang">
-      <UserSectionHeader
+      <UserReferenceHero
         eyebrow="Mijn zwemreis"
         title="Voortgang"
-        description="Een positief overzicht van recente skillmomenten, mijlpalen en de volgende stap."
-        icon={TrendingUp}
-      />
+        description="Een positief overzicht van recente skillmomenten, mijlpalen en wat er nog nodig is voor de volgende stap."
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <UserMetricCard
+            label="Skillmomenten"
+            value={`${entries.length}`}
+            helper="Recente beoordelingen"
+            icon={Sparkles}
+            toneKey="accent"
+          />
+          <UserMetricCard
+            label="Sterk of beheerst"
+            value={`${strongCount}`}
+            helper="Positieve mijlpalen"
+            icon={CheckCircle2}
+            toneKey={strongCount > 0 ? "success" : "neutral"}
+          />
+          <UserMetricCard
+            label="Beheerst"
+            value={`${masteredCount}`}
+            helper="Klaar om vast te houden"
+            icon={Award}
+            toneKey={masteredCount > 0 ? "success" : "neutral"}
+          />
+        </div>
+      </UserReferenceHero>
       {entries.length === 0 ? (
         <UserEmptyState
           icon={TrendingUp}
@@ -138,30 +162,6 @@ export default async function VoortgangPage({ params }: PageProps) {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <UserMetricCard
-              label="Skillmomenten"
-              value={`${entries.length}`}
-              helper="Recente beoordelingen"
-              icon={Sparkles}
-              toneKey="accent"
-            />
-            <UserMetricCard
-              label="Sterk of beheerst"
-              value={`${strongCount}`}
-              helper="Positieve mijlpalen"
-              icon={CheckCircle2}
-              toneKey={strongCount > 0 ? "success" : "neutral"}
-            />
-            <UserMetricCard
-              label="Beheerst"
-              value={`${masteredCount}`}
-              helper="Klaar om vast te houden"
-              icon={Award}
-              toneKey={masteredCount > 0 ? "success" : "neutral"}
-            />
-          </div>
-
           <UserSurface className="p-5">
             <UserSectionHeader
               eyebrow="Zwemreis"
@@ -208,11 +208,12 @@ export default async function VoortgangPage({ params }: PageProps) {
                 description={`${list.length} recente skillmomenten`}
                 icon={Sparkles}
               />
-              <UserSurface>
-                <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
+              <div className="grid gap-3 lg:grid-cols-2">
                   {list.slice(0, 12).map((e, i) => {
+                    const score = LEVEL_SCORE[e.skill_level] ?? 0;
                     return (
-                      <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <UserSurface key={i} className="p-4" interactive>
+                      <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                             {e.session_title}
@@ -221,22 +222,26 @@ export default async function VoortgangPage({ params }: PageProps) {
                             {new Date(e.starts_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
                         </div>
+                          <div className="nxt-shell-progress mt-3 h-1.5">
+                            <span style={{ width: `${Math.max(8, (score / 4) * 100)}%` }} />
+                          </div>
+                        </div>
                         <UserStatusPill
-                          toneKey={
-                            e.skill_level === "mastered" || e.skill_level === "good"
-                              ? "success"
-                              : e.skill_level === "almost"
-                                ? "warning"
-                                : "neutral"
-                          }
-                        >
-                          {LEVEL_LABEL[e.skill_level] ?? e.skill_level}
-                        </UserStatusPill>
+                            toneKey={
+                              e.skill_level === "mastered" || e.skill_level === "good"
+                                ? "success"
+                                : e.skill_level === "almost"
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                          >
+                            {LEVEL_LABEL[e.skill_level] ?? e.skill_level}
+                          </UserStatusPill>
                       </div>
+                      </UserSurface>
                     );
                   })}
-                </div>
-              </UserSurface>
+              </div>
             </div>
           ))}
         </div>

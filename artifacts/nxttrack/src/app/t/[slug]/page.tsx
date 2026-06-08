@@ -175,7 +175,7 @@ function MarketingHero({
     name: string;
     slug: string;
     logo_url: string | null;
-    welcome_text: string | null;
+    welcome_text?: string | null;
   };
 }) {
   return (

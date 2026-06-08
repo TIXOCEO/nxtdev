@@ -149,11 +149,7 @@ export function TrainerManageClient({
               type="button"
               onClick={markAllPresent}
               disabled={bulkPending || pending}
-              className="nxt-focus-ring inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold disabled:opacity-50"
-              style={{
-                backgroundColor: "var(--brand-navy)",
-                color: "#ffffff",
-              }}
+              className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
             >
               Alles aanwezig
             </button>
@@ -194,13 +190,13 @@ export function TrainerManageClient({
                       type="button"
                       onClick={() => quickMark(row, m.value)}
                       disabled={pending || bulkPending}
-                      className="nxt-focus-ring min-h-10 rounded-md border px-2 py-2 text-xs font-semibold disabled:opacity-50"
+                      className="nxt-focus-ring min-h-10 rounded-xl border px-2 py-2 text-xs font-semibold disabled:opacity-50"
                       style={{
                         borderColor: active
                           ? "color-mix(in srgb, var(--tenant-accent) 54%, transparent)"
                           : "var(--shell-border)",
                         backgroundColor: active
-                          ? "color-mix(in srgb, var(--tenant-accent) 18%, #ffffff)"
+                          ? "color-mix(in srgb, var(--shell-info) 10%, var(--shell-panel-strong))"
                           : "var(--shell-panel-muted)",
                         color: "var(--text-primary)",
                       }}
@@ -214,7 +210,7 @@ export function TrainerManageClient({
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Link
                   href={`/t/${tenantSlug}/members/${row.memberId}?from=session:${sessionId}`}
-                  className="nxt-focus-ring inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold"
+                  className="nxt-focus-ring inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold"
                   style={{
                     borderColor: "var(--shell-border)",
                     color: "var(--text-primary)",
@@ -225,7 +221,7 @@ export function TrainerManageClient({
                 <button
                   type="button"
                   onClick={() => setOpenMemberId(row.memberId)}
-                  className="nxt-focus-ring inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold"
+                  className="nxt-focus-ring inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold"
                   style={{
                     borderColor: "var(--shell-border)",
                     color: "var(--text-primary)",
@@ -297,7 +293,7 @@ function DetailSheet({
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
       <div
-        className="w-full max-w-lg rounded-t-lg border-t p-4 shadow-2xl sm:rounded-lg sm:border"
+        className="w-full max-w-lg rounded-t-[24px] border-t p-4 shadow-2xl sm:rounded-[24px] sm:border"
         style={{
           backgroundColor: "var(--shell-panel-strong)",
           borderColor: "var(--shell-border)",
@@ -315,7 +311,7 @@ function DetailSheet({
           <button
             type="button"
             onClick={onClose}
-            className="nxt-focus-ring rounded-md p-2"
+            className="nxt-focus-ring rounded-xl p-2"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
@@ -330,13 +326,13 @@ function DetailSheet({
                 key={m.value}
                 type="button"
                 onClick={() => setMark(m.value)}
-                className="nxt-focus-ring min-h-11 rounded-md border px-2 py-2 text-xs font-semibold"
+                className="nxt-focus-ring min-h-11 rounded-xl border px-2 py-2 text-xs font-semibold"
                 style={{
                   borderColor: active
                     ? "color-mix(in srgb, var(--tenant-accent) 54%, transparent)"
                     : "var(--shell-border)",
                   backgroundColor: active
-                    ? "color-mix(in srgb, var(--tenant-accent) 18%, #ffffff)"
+                    ? "color-mix(in srgb, var(--shell-info) 10%, var(--shell-panel-strong))"
                     : "var(--shell-panel-muted)",
                   color: "var(--text-primary)",
                 }}
@@ -355,7 +351,7 @@ function DetailSheet({
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="mt-1 h-10 w-full rounded-md border bg-transparent px-3 text-sm"
+              className="mt-1 h-10 w-full rounded-xl border bg-transparent px-3 text-sm"
               style={{
                 borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
@@ -379,7 +375,7 @@ function DetailSheet({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={4}
-            className="mt-1 w-full rounded-md border bg-transparent p-3 text-sm"
+            className="mt-1 w-full rounded-xl border bg-transparent p-3 text-sm"
             style={{
               borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
@@ -389,12 +385,12 @@ function DetailSheet({
             <button
               type="button"
               onClick={() => setVis("private")}
-              className="nxt-focus-ring rounded-md border px-2 py-2 font-semibold"
+              className="nxt-focus-ring rounded-xl border px-2 py-2 font-semibold"
               style={{
                 borderColor: "var(--shell-border)",
                 backgroundColor:
                   vis === "private"
-                    ? "color-mix(in srgb, var(--tenant-accent) 18%, #ffffff)"
+                    ? "color-mix(in srgb, var(--shell-info) 10%, var(--shell-panel-strong))"
                     : "transparent",
                 color: "var(--text-primary)",
               }}
@@ -404,12 +400,12 @@ function DetailSheet({
             <button
               type="button"
               onClick={() => setVis("member")}
-              className="nxt-focus-ring rounded-md border px-2 py-2 font-semibold"
+              className="nxt-focus-ring rounded-xl border px-2 py-2 font-semibold"
               style={{
                 borderColor: "var(--shell-border)",
                 backgroundColor:
                   vis === "member"
-                    ? "color-mix(in srgb, var(--tenant-accent) 18%, #ffffff)"
+                    ? "color-mix(in srgb, var(--shell-info) 10%, var(--shell-panel-strong))"
                     : "transparent",
                 color: "var(--text-primary)",
               }}
@@ -422,7 +418,7 @@ function DetailSheet({
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link
             href={`/t/${tenantSlug}/members/${row.memberId}?from=session:${sessionId}`}
-            className="nxt-focus-ring rounded-md border px-3 py-2 text-center text-xs font-semibold"
+            className="nxt-focus-ring rounded-xl border px-3 py-2 text-center text-xs font-semibold"
             style={{
               borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
@@ -434,11 +430,7 @@ function DetailSheet({
             type="button"
             onClick={save}
             disabled={pending}
-            className="nxt-focus-ring inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold disabled:opacity-50"
-            style={{
-              backgroundColor: "var(--brand-navy)",
-              color: "#ffffff",
-            }}
+            className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
           >
             <Save className="h-3.5 w-3.5" /> Opslaan
           </button>

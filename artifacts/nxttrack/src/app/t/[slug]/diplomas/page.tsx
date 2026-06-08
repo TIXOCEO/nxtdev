@@ -10,6 +10,7 @@ import {
   UserBadgeTile,
   UserEmptyState,
   UserMetricCard,
+  UserReferenceHero,
   UserSectionHeader,
   UserStatusPill,
   UserSurface,
@@ -50,12 +51,35 @@ export default async function DiplomasPage({ params }: PageProps) {
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Diploma's" active="diplomas">
-      <UserSectionHeader
+      <UserReferenceHero
         eyebrow="Diploma vault"
         title="Diploma's"
-        description="Behaalde diploma's en certificaten op een veilige plek."
-        icon={Award}
-      />
+        description="Behaalde diploma's, certificaten en downloads op een veilige plek."
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <UserMetricCard
+            label="Behaald"
+            value={`${diplomas.length}`}
+            helper="Diploma's in de kluis"
+            icon={Award}
+            toneKey={diplomas.length > 0 ? "success" : "neutral"}
+          />
+          <UserMetricCard
+            label="Downloads"
+            value={`${downloadable}`}
+            helper="Met certificaatlink"
+            icon={Download}
+            toneKey={downloadable > 0 ? "accent" : "neutral"}
+          />
+          <UserMetricCard
+            label="Leerlingen"
+            value={`${memberIds.length}`}
+            helper="In dit account"
+            icon={Users}
+            toneKey="info"
+          />
+        </div>
+      </UserReferenceHero>
       {diplomas.length === 0 ? (
         <UserEmptyState
           icon={Award}
@@ -65,42 +89,18 @@ export default async function DiplomasPage({ params }: PageProps) {
       ) : (
         <div className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <UserMetricCard
-              label="Behaald"
-              value={`${diplomas.length}`}
-              helper="Diploma's in de kluis"
-              icon={Award}
-              toneKey="success"
-            />
-            <UserMetricCard
-              label="Downloads"
-              value={`${downloadable}`}
-              helper="Met certificaatlink"
-              icon={Download}
-              toneKey={downloadable > 0 ? "accent" : "neutral"}
-            />
-            <UserMetricCard
-              label="Leerlingen"
-              value={`${memberIds.length}`}
-              helper="In dit account"
-              icon={Users}
-              toneKey="info"
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
             <UserBadgeTile title="Diploma behaald" subtitle="Trots moment opgeslagen" unlocked />
             <UserBadgeTile title="Download klaar" subtitle="Open certificaat als link" unlocked={downloadable > 0} />
             <UserBadgeTile title="Volgende reis" subtitle="Nieuwe mijlpalen volgen vanzelf" unlocked={diplomas.length > 0} />
           </div>
 
-          <UserSurface>
-            <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
+          <div className="grid gap-3 lg:grid-cols-2">
               {diplomas.map((d) => (
-                <div key={d.id} className="flex items-start gap-3 px-4 py-4">
+                <UserSurface key={d.id} className="p-4" interactive>
+                <div className="flex items-start gap-3">
                   <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border"
-                    style={{ backgroundColor: "var(--accent-tint)", borderColor: "var(--shell-border)", color: "var(--brand-navy)" }}
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm"
+                    style={{ backgroundColor: "color-mix(in srgb, var(--shell-success) 10%, var(--shell-panel-strong))", borderColor: "var(--shell-border)", color: "var(--shell-success)" }}
                   >
                     <Award className="h-6 w-6" />
                   </div>
@@ -130,8 +130,8 @@ export default async function DiplomasPage({ params }: PageProps) {
                         href={d.certificate_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="nxt-focus-ring inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold"
-                        style={{ borderColor: "var(--shell-border)", color: "var(--brand-navy)" }}
+                        className="nxt-focus-ring inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-semibold"
+                        style={{ borderColor: "var(--shell-border)", color: "var(--shell-info)" }}
                       >
                         <Download className="h-3.5 w-3.5" />
                         Download
@@ -139,9 +139,9 @@ export default async function DiplomasPage({ params }: PageProps) {
                     )}
                   </div>
                 </div>
+                </UserSurface>
               ))}
-            </div>
-          </UserSurface>
+          </div>
         </div>
       )}
     </PublicTenantShell>
