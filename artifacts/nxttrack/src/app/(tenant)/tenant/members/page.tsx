@@ -6,8 +6,9 @@ import {
   ArrowUp,
   ArrowDown,
   Download,
+  Layers,
+  UserCheck,
 } from "lucide-react";
-import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
@@ -28,6 +29,11 @@ import {
   MembersFilterSheet,
   ActiveFiltersStrip,
 } from "./_filter-sheet";
+import {
+  TenantAdminHero,
+  TenantAdminMetric,
+  TenantAdminSurface,
+} from "@/components/tenant/tenant-backoffice-components";
 
 export const dynamic = "force-dynamic";
 
@@ -259,10 +265,10 @@ export default async function TenantMembersPage({
 
   return (
     <>
-      <PageHeading
+      <TenantAdminHero
         title={terminology.member_plural}
         description={terminology.members_page_description}
-        actions={
+        action={
           <div className="flex items-center gap-2">
             <MembersFilterSheet
               groups={allGroups.map((g) => ({ id: g.id, name: g.name }))}
@@ -271,12 +277,7 @@ export default async function TenantMembersPage({
             />
             <a
               href={buildExportHref()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors"
-              style={{
-                borderColor: "var(--surface-border)",
-                backgroundColor: "var(--surface-soft)",
-                color: "var(--text-primary)",
-              }}
+              className="nxt-focus-ring nxt-shell-soft-button inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition-colors"
             >
               <Download className="h-3.5 w-3.5" /> Exporteer CSV
             </a>
@@ -286,13 +287,13 @@ export default async function TenantMembersPage({
                   ? "/tenant/members"
                   : "/tenant/members?status=archived"
               }
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors"
+              className="nxt-focus-ring inline-flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 backgroundColor: showArchived
-                  ? "var(--accent)"
-                  : "transparent",
-                color: "var(--text-primary)",
+                  ? "color-mix(in srgb, var(--shell-info) 12%, var(--shell-panel-strong))"
+                  : "var(--shell-panel-strong)",
+                color: showArchived ? "var(--shell-info)" : "var(--text-primary)",
               }}
             >
               {showArchived ? (
@@ -314,16 +315,45 @@ export default async function TenantMembersPage({
             ) : null}
           </div>
         }
-      />
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <TenantAdminMetric
+            label="Resultaten"
+            value={totalCount}
+            hint={showArchived ? "In archief" : "Actieve selectie"}
+            icon={Users}
+            tone="info"
+          />
+          <TenantAdminMetric
+            label="Deze pagina"
+            value={members.length}
+            hint={`${fromIdx}-${toIdx} zichtbaar`}
+            icon={UserCheck}
+            tone="success"
+          />
+          <TenantAdminMetric
+            label="Groepen"
+            value={allGroups.length}
+            hint="Beschikbaar voor filters"
+            icon={Layers}
+          />
+          <TenantAdminMetric
+            label="Plannen"
+            value={activePlans.length}
+            hint="Actieve abonnementen"
+            icon={Archive}
+            tone="warning"
+          />
+        </div>
+      </TenantAdminHero>
 
       <ActiveFiltersStrip
         groups={allGroups.map((g) => ({ id: g.id, name: g.name }))}
         plans={activePlans}
       />
 
-      <div
-        className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm"
-        style={{ color: "var(--text-secondary)" }}
+      <TenantAdminSurface
+        className="mb-3 flex flex-wrap items-center justify-between gap-2 p-3 text-sm"
         aria-live="polite"
       >
         <span>
@@ -340,18 +370,22 @@ export default async function TenantMembersPage({
             <Link
               key={s}
               href={buildHref({ size: String(s), page: null })}
-              className="rounded-lg border px-2 py-0.5 text-xs"
+              className="nxt-focus-ring rounded-xl border px-2.5 py-1 text-xs font-bold"
               style={{
-                borderColor: "var(--surface-border)",
-                backgroundColor: pageSize === s ? "var(--accent)" : "transparent",
-                color: "var(--text-primary)",
+                borderColor: pageSize === s
+                  ? "color-mix(in srgb, var(--shell-info) 38%, transparent)"
+                  : "var(--shell-border)",
+                backgroundColor: pageSize === s
+                  ? "color-mix(in srgb, var(--shell-info) 12%, var(--shell-panel-strong))"
+                  : "var(--shell-panel-strong)",
+                color: pageSize === s ? "var(--shell-info)" : "var(--text-primary)",
               }}
             >
               {s}
             </Link>
           ))}
         </div>
-      </div>
+      </TenantAdminSurface>
 
       {members.length === 0 ? (
         <EmptyState
@@ -366,7 +400,7 @@ export default async function TenantMembersPage({
       ) : (
         <>
           {/* Mobile: cards */}
-          <ul className="space-y-3 md:hidden">
+          <ul className="grid gap-3 md:hidden">
             {members.map((m) => (
               <li key={m.id}>
                 <MemberCard
@@ -397,18 +431,12 @@ export default async function TenantMembersPage({
           </ul>
 
           {/* Desktop: table */}
-          <div
-            className="hidden overflow-hidden rounded-2xl border md:block"
-            style={{
-              backgroundColor: "var(--surface-main)",
-              borderColor: "var(--surface-border)",
-            }}
-          >
+          <TenantAdminSurface className="hidden overflow-hidden md:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead
                   style={{
-                    backgroundColor: "var(--surface-soft)",
+                    backgroundColor: "var(--shell-panel-muted)",
                     color: "var(--text-secondary)",
                   }}
                 >
@@ -450,7 +478,7 @@ export default async function TenantMembersPage({
                 </thead>
                 <tbody
                   className="divide-y"
-                  style={{ borderColor: "var(--surface-border)" }}
+                  style={{ borderColor: "var(--shell-border)" }}
                 >
                   {members.map((m) => (
                     <tr key={m.id} style={{ color: "var(--text-primary)" }}>
@@ -505,8 +533,8 @@ export default async function TenantMembersPage({
                       <td className="px-5 py-3 text-right">
                         <a
                           href={`/tenant/members/${m.id}`}
-                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-black/5"
-                          style={{ color: "var(--text-secondary)" }}
+                          className="nxt-focus-ring inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition-colors"
+                          style={{ borderColor: "var(--shell-border)", color: "var(--shell-info)" }}
                         >
                           Bekijk
                         </a>
@@ -516,7 +544,7 @@ export default async function TenantMembersPage({
                 </tbody>
               </table>
             </div>
-          </div>
+          </TenantAdminSurface>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -554,9 +582,9 @@ function PaginationLink({ href, label }: { href: string | null; label: string })
   if (!href) {
     return (
       <span
-        className="rounded-lg border px-3 py-1 text-xs opacity-50"
+        className="rounded-xl border px-3 py-1.5 text-xs font-semibold opacity-50"
         style={{
-          borderColor: "var(--surface-border)",
+          borderColor: "var(--shell-border)",
           color: "var(--text-secondary)",
         }}
       >
@@ -567,10 +595,11 @@ function PaginationLink({ href, label }: { href: string | null; label: string })
   return (
     <Link
       href={href}
-      className="rounded-lg border px-3 py-1 text-xs font-medium transition-colors hover:bg-black/5"
+      className="nxt-focus-ring rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors"
       style={{
-        borderColor: "var(--surface-border)",
-        color: "var(--text-primary)",
+        borderColor: "var(--shell-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        color: "var(--shell-info)",
       }}
     >
       {label}
