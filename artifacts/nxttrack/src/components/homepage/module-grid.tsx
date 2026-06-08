@@ -67,9 +67,9 @@ export async function ModuleGrid({
   // dezelfde vaste hoogte-mapping als de echte mobiele view.
   if (mobile) {
     return (
-      <div className="grid grid-cols-1 gap-4">
+      <div className="nxt-home-module-grid-mobile grid grid-cols-1 gap-4">
         {rendered.map((r) => (
-          <div key={r.id} style={{ height: rowsToHeightMobile(r.h) }}>
+          <div key={r.id} className="nxt-home-module-cell" style={{ height: rowsToHeightMobile(r.h) }}>
             {r.node}
           </div>
         ))}
@@ -84,16 +84,16 @@ export async function ModuleGrid({
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 md:hidden">
+      <div className="nxt-home-module-grid-mobile grid grid-cols-1 gap-4 md:hidden">
         {mobileVisible.map((r) => (
-          <div key={`m-${r.id}`} style={{ height: rowsToHeightMobile(r.h) }}>
+          <div key={`m-${r.id}`} className="nxt-home-module-cell" style={{ height: rowsToHeightMobile(r.h) }}>
             {r.node}
           </div>
         ))}
       </div>
 
       <div
-        className="hidden grid-cols-2 gap-4 md:grid"
+        className="nxt-home-module-grid-desktop hidden grid-cols-2 gap-4 md:grid"
         style={{
           gridAutoRows: `${ROW_HEIGHT_DESKTOP}px`,
           rowGap: `${GRID_GAP_PX}px`,
@@ -103,6 +103,7 @@ export async function ModuleGrid({
         {rendered.map((r) => (
           <div
             key={`d-${r.id}`}
+            className="nxt-home-module-cell"
             style={{
               gridColumn: `${r.x + 1} / span ${r.w}`,
               gridRow: `${r.y + 1} / span ${r.h}`,

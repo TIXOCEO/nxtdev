@@ -75,7 +75,7 @@ export async function PublicHeader({
 
   return (
     <header
-      className="flex h-16 shrink-0 items-center gap-3 border-b px-3 backdrop-blur-md sm:px-5"
+      className="nxt-public-header flex h-16 shrink-0 items-center gap-3 border-b px-3 backdrop-blur-md sm:px-5"
       style={{
         backgroundColor: "color-mix(in srgb, var(--page-bg) 88%, #ffffff)",
         borderColor: "var(--shell-border)",
@@ -94,10 +94,10 @@ export async function PublicHeader({
       />
       <nav
         aria-label="Breadcrumb"
-        className="min-w-0 flex-1"
+        className="nxt-public-breadcrumb min-w-0 flex-1"
         style={{ color: "var(--text-secondary)" }}
       >
-        <ol className="flex items-center gap-2 text-sm font-medium">
+        <ol className="nxt-public-breadcrumb-list flex items-center gap-2 text-sm font-medium">
           <li className="flex items-center gap-2">
             <Link
               href={`/t/${slug}`}

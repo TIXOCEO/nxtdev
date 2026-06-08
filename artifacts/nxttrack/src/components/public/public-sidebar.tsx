@@ -365,14 +365,14 @@ export function PublicSidebar({
 
   return (
     <aside
-      className="flex h-full w-full flex-col gap-3 border-r p-4"
+      className="nxt-public-sidebar flex h-full w-full flex-col gap-3 border-r p-4"
       style={{
         backgroundColor: "var(--sidebar-bg)",
         borderColor: "var(--shell-border)",
       }}
     >
       <div
-        className="nxt-shell-surface flex flex-col items-center gap-2 rounded-lg px-3 pb-4 pt-3 text-center"
+        className="nxt-public-sidebar-brand nxt-shell-surface flex flex-col items-center gap-2 rounded-lg px-3 pb-4 pt-3 text-center"
         style={{ boxShadow: "none" }}
       >
         <div
@@ -549,7 +549,7 @@ export function PublicSidebar({
       )}
 
       <div
-        className="mt-2 flex flex-col gap-1 border-t pt-3"
+        className="nxt-public-sidebar-footer mt-2 flex flex-col gap-1 border-t pt-3"
         style={{ borderColor: "var(--surface-border)" }}
       >
         {isAuthenticated ? (
@@ -667,7 +667,7 @@ function SidebarLinkRow({
         href={item.href}
         onClick={onNavigate}
         aria-current={isActive ? "page" : undefined}
-        className={`nxt-focus-ring group relative inline-flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${
+        className={`nxt-public-sidebar-link nxt-focus-ring group relative inline-flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${
           nested ? "ml-4 pl-3 pr-3" : "px-3 py-2.5"
         }`}
         style={{

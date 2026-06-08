@@ -69,7 +69,7 @@ export function PublicBottomTabBar({
 
   return (
     <nav
-      className="flex h-16 shrink-0 items-stretch border-t px-1 md:hidden"
+      className="nxt-public-bottom-tabs flex h-16 shrink-0 items-stretch border-t px-1 md:hidden"
       style={{
         backgroundColor: "color-mix(in srgb, var(--bg-nav) 92%, #ffffff)",
         borderColor: "var(--shell-border)",
@@ -84,7 +84,7 @@ export function PublicBottomTabBar({
           <Link
             key={tab.key}
             href={tab.href}
-            className="nxt-focus-ring relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[10px] font-medium transition-colors"
+            className="nxt-public-bottom-tab nxt-focus-ring relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[10px] font-medium transition-colors"
             style={{
               color: isActive ? "var(--brand-navy)" : "var(--text-secondary)",
               backgroundColor: isActive

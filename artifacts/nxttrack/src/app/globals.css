@@ -222,3 +222,243 @@ body {
     linear-gradient(var(--shell-border-strong), var(--shell-border-strong))
     padding-box;
 }
+
+/* Public shell resilience layer.
+   These semantic selectors keep the tenant homepage usable if Tailwind utility
+   generation or responsive utilities fail in a deployed preview. */
+.nxt-public-shell-root {
+  position: fixed;
+  inset: 0;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.nxt-public-shell-pad {
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+}
+
+.nxt-public-shell-frame {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--radius-xl);
+  background: var(--shell-frame-bg);
+  box-shadow: var(--shadow-app);
+}
+
+.nxt-public-desktop-sidebar {
+  display: none;
+}
+
+.nxt-public-shell-content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.nxt-public-header {
+  display: flex;
+  min-height: 64px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--shell-border);
+  padding: 0 12px;
+}
+
+.nxt-public-breadcrumb {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.nxt-public-breadcrumb-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nxt-public-main {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px 16px calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+
+.nxt-public-main-inner {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.nxt-public-main-inner > * + * {
+  margin-top: 24px;
+}
+
+.nxt-public-sidebar {
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  border-right: 1px solid var(--shell-border);
+  padding: 16px;
+}
+
+.nxt-public-sidebar-brand img {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.nxt-public-sidebar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.nxt-public-sidebar-footer {
+  margin-top: auto;
+}
+
+.nxt-public-bottom-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 64px;
+  align-items: stretch;
+  border-top: 1px solid var(--shell-border);
+  padding: 0 4px env(safe-area-inset-bottom, 0px);
+}
+
+.nxt-public-bottom-tab {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-decoration: none;
+}
+
+.nxt-home-module-grid-mobile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.nxt-home-module-grid-desktop {
+  display: none;
+}
+
+.nxt-home-module-cell {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.nxt-public-hero-slider {
+  position: relative;
+  height: 100%;
+  min-height: 240px;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-main);
+}
+
+.nxt-public-hero-content {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  min-height: 240px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+}
+
+.nxt-public-hero-copy {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.nxt-public-hero-copy h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 6vw, 2.25rem);
+  line-height: 1.08;
+}
+
+.nxt-public-hero-copy p {
+  margin: 0;
+}
+
+.nxt-public-hero-cta {
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+.nxt-public-hero-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nxt-public-hero-dots,
+.nxt-public-hero-arrows {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (min-width: 768px) {
+  .nxt-public-desktop-sidebar {
+    display: flex;
+    width: 264px;
+    flex: 0 0 264px;
+  }
+
+  .nxt-public-bottom-tabs {
+    display: none;
+  }
+
+  .nxt-public-main {
+    padding: 24px 32px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  }
+
+  .nxt-home-module-grid-mobile {
+    display: none;
+  }
+
+  .nxt-home-module-grid-desktop {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}

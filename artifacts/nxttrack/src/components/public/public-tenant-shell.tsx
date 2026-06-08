@@ -133,26 +133,26 @@ export async function PublicTenantShell({
     mode === "dark" ? "theme-dark" : mode === "light" ? "theme-light" : "theme-auto";
 
   return (
-    <div className={`fixed inset-0 ${themeClass}`} style={wrapperStyle}>
+    <div className={`nxt-public-shell-root fixed inset-0 ${themeClass}`} style={wrapperStyle}>
       <ThemeStyleInjector light={lightTheme.tokens} dark={darkTheme.tokens} />
       <ServiceWorkerRegister />
       {!user && <MobileLoginPrompt slug={tenant.slug} tenantName={tenant.name} />}
       <div
-        className="flex h-full w-full overflow-hidden"
+        className="nxt-public-shell-pad flex h-full w-full overflow-hidden"
         style={{
           padding:
             "max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left))",
         }}
       >
         <div
-          className="flex h-full w-full overflow-hidden rounded-[var(--radius-nxt-xl)] border"
+          className="nxt-public-shell-frame flex h-full w-full overflow-hidden rounded-[var(--radius-nxt-xl)] border"
           style={{
             backgroundColor: "var(--shell-frame-bg)",
             borderColor: "var(--shell-border)",
             boxShadow: "var(--shadow-app)",
           }}
         >
-          <div className="hidden md:flex md:w-[264px] md:shrink-0">
+          <div className="nxt-public-desktop-sidebar hidden md:flex md:w-[264px] md:shrink-0">
             <PublicSidebar
               tenant={tenant}
               active={active}
@@ -167,7 +167,7 @@ export async function PublicTenantShell({
               socialBar={<SocialBar tenantId={tenant.id} />}
             />
           </div>
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="nxt-public-shell-content flex min-w-0 flex-1 flex-col">
             <PublicHeader
               tenant={tenant}
               pageTitle={pageTitle}
@@ -182,14 +182,14 @@ export async function PublicTenantShell({
               customActivePath={customActivePath}
             />
             <main
-              className="nxt-scrollbar flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8"
+              className="nxt-public-main nxt-scrollbar flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8"
               style={{
                 background:
                   "linear-gradient(180deg, var(--shell-page-bg), var(--page-bg))",
                 paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)",
               }}
             >
-              <div className="mx-auto w-full max-w-7xl space-y-6">
+              <div className="nxt-public-main-inner mx-auto w-full max-w-7xl space-y-6">
                 {user && (
                   <WhatsNewBanner
                     slug={tenant.slug}
