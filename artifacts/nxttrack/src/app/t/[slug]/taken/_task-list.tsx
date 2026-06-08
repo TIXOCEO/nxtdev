@@ -86,23 +86,20 @@ export function TrainerTaskList({ tenantId, tasks: initial }: Props) {
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
               {heading} <span className="opacity-60">({list.length})</span>
             </h3>
-            <TrainerSurface className="divide-y overflow-hidden">
+            <div className="grid gap-3 md:grid-cols-2">
               {list.map((t) => {
                 const p = PRIORITY_TONE[t.priority] ?? PRIORITY_TONE.normal;
                 const isDone = t.status === "done" || t.status === "cancelled";
                 return (
-                  <label
-                    key={t.id}
-                    className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-black/[0.02]"
-                    style={{ borderColor: "var(--surface-border)", opacity: isDone ? 0.55 : 1 }}
-                  >
+                  <TrainerSurface key={t.id} className="p-4" interactive>
+                    <label className="flex h-full cursor-pointer items-start gap-3" style={{ opacity: isDone ? 0.58 : 1 }}>
                     <input
                       type="checkbox"
                       checked={isDone}
                       onChange={() => toggle(t)}
                       disabled={pending}
-                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded"
-                      style={{ accentColor: "var(--brand-navy)" }}
+                      className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded"
+                      style={{ accentColor: "var(--shell-info)" }}
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -133,10 +130,11 @@ export function TrainerTaskList({ tenantId, tasks: initial }: Props) {
                         </p>
                       )}
                     </div>
-                  </label>
+                    </label>
+                  </TrainerSurface>
                 );
               })}
-            </TrainerSurface>
+            </div>
           </div>
         ),
       )}
