@@ -1,13 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { CalendarDays } from "lucide-react";
+import { CalendarCheck, CalendarDays, Clock, MapPin, Users } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { getUserTenantContext, isParent, isAthlete } from "@/lib/auth/user-role-rules";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
-import { PublicCard } from "@/components/public/public-card";
-import { PageHeader } from "@/components/public/page-header";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  UserEmptyState,
+  UserMetricCard,
+  UserSectionHeader,
+  UserStatusPill,
+  UserSurface,
+} from "@/components/public/user-shell-components";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -52,7 +57,6 @@ export default async function LessenPage({ params }: PageProps) {
   }> = [];
 
   if (memberIds.length > 0) {
-    // group_members → groups → training_sessions
     const { data: gms } = await admin
       .from("group_members")
       .select("member_id, group_id")
@@ -101,8 +105,8 @@ export default async function LessenPage({ params }: PageProps) {
     return (
       <div key={s.id} className="flex items-start gap-3 px-4 py-3">
         <div
-          className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl text-center"
-          style={{ backgroundColor: "var(--accent-tint)", color: "var(--brand-navy)" }}
+          className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border text-center"
+          style={{ backgroundColor: "var(--accent-tint)", borderColor: "var(--shell-border)", color: "var(--brand-navy)" }}
         >
           <span className="text-[10px] font-semibold uppercase">
             {d.toLocaleDateString("nl-NL", { month: "short" })}
@@ -116,19 +120,24 @@ export default async function LessenPage({ params }: PageProps) {
           >
             {s.title}
           </p>
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            {d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}
-            {s.location ? ` · ${s.location}` : ""}
-            {` · ${s.member_name}`}
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs" style={{ color: "var(--text-secondary)" }}>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              {d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+            {s.location && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {s.location}
+              </span>
+            )}
+            <span>{s.member_name}</span>
           </p>
         </div>
-        {cancelled && (
-          <span
-            className="inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-            style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }}
-          >
-            Geannuleerd
-          </span>
+        {cancelled ? (
+          <UserStatusPill toneKey="danger">Geannuleerd</UserStatusPill>
+        ) : (
+          <UserStatusPill toneKey="accent">Gepland</UserStatusPill>
         )}
       </div>
     );
@@ -136,51 +145,62 @@ export default async function LessenPage({ params }: PageProps) {
 
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Mijn lessen" active="lessen">
-      <PageHeader
+      <UserSectionHeader
+        eyebrow="Agenda"
         title="Mijn lessen"
         description="Aankomende en recente trainingen voor jou en je kinderen."
+        icon={CalendarDays}
       />
       {sessions.length === 0 ? (
-        <PublicCard className="p-8">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: "var(--accent-tint)", color: "var(--brand-navy)" }}
-            >
-              <CalendarDays className="h-7 w-7" />
-            </div>
-            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-              Geen lessen gepland
-            </h2>
-            <p className="max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-              Zodra er een groep is toegewezen en sessies gepland zijn verschijnen ze hier.
-            </p>
-          </div>
-        </PublicCard>
+        <UserEmptyState
+          icon={CalendarDays}
+          title="Geen lessen gepland"
+          body="Zodra er een groep is toegewezen en sessies gepland zijn verschijnen ze hier."
+        />
       ) : (
         <div className="flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <UserMetricCard
+              label="Aankomend"
+              value={`${upcoming.length}`}
+              helper="Geplande lessen"
+              icon={CalendarCheck}
+              toneKey={upcoming.length > 0 ? "accent" : "neutral"}
+            />
+            <UserMetricCard
+              label="Recent"
+              value={`${past.length}`}
+              helper="Afgelopen 30 dagen"
+              icon={CalendarDays}
+              toneKey="neutral"
+            />
+            <UserMetricCard
+              label="Leerlingen"
+              value={`${memberIds.length}`}
+              helper="In dit overzicht"
+              icon={Users}
+              toneKey="info"
+            />
+          </div>
+
           {upcoming.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                Aankomend
-              </h3>
-              <PublicCard>
-                <div className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+              <UserSectionHeader eyebrow="Timeline" title="Aankomend" icon={CalendarCheck} />
+              <UserSurface>
+                <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
                   {upcoming.map(row)}
                 </div>
-              </PublicCard>
+              </UserSurface>
             </div>
           )}
           {past.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                Recent
-              </h3>
-              <PublicCard>
-                <div className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+              <UserSectionHeader eyebrow="Historie" title="Recent" icon={CalendarDays} />
+              <UserSurface>
+                <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
                   {past.slice(0, 10).map(row)}
                 </div>
-              </PublicCard>
+              </UserSurface>
             </div>
           )}
         </div>

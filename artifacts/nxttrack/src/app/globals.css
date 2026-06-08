@@ -36,12 +36,30 @@
   --nav-active-icon: var(--brand-navy);
   --nav-hover-bg: #eef2f8;
   --accent-tint: #eef5d8;
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, #ffffff);
+  --accent-strong: color-mix(in srgb, var(--accent) 72%, #0f172a);
 
   /* Sprint 78b — Sidebar/page-bg afgeleid van tenant-accent.
      Wordt op de shell-wrapper overschreven met color-mix() zodra
      --tenant-accent bekend is. Hier alleen een veilige neutrale default. */
   --sidebar-bg: #f4f8eb;
   --page-bg: #fbfcf9;
+
+  /* UserShell V2 tokens. Enterprise surfaces with a controlled playful layer. */
+  --shell-frame-bg: #ffffff;
+  --shell-page-bg: #f7f9fc;
+  --shell-panel-bg: rgba(255, 255, 255, 0.92);
+  --shell-panel-strong: #ffffff;
+  --shell-panel-muted: rgba(248, 250, 252, 0.82);
+  --shell-border: rgba(148, 163, 184, 0.24);
+  --shell-border-strong: rgba(30, 58, 95, 0.16);
+  --shell-shadow-soft: 0 12px 38px rgba(15, 23, 42, 0.08);
+  --shell-shadow-hover: 0 18px 54px rgba(15, 23, 42, 0.12);
+  --shell-focus: color-mix(in srgb, var(--tenant-accent, var(--accent)) 54%, #1e3a5f);
+  --shell-success: #16a34a;
+  --shell-info: #2563eb;
+  --shell-warning: #d97706;
+  --shell-danger: #dc2626;
 
   --radius-xl: 28px;
   --radius-lg: 18px;
@@ -133,4 +151,74 @@ html,
 body {
   height: 100%;
   overflow: hidden;
+}
+
+@keyframes nxt-shell-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nxt-progress-sheen {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(110%);
+  }
+}
+
+.nxt-shell-enter {
+  animation: nxt-shell-rise 180ms ease-out both;
+}
+
+.nxt-shell-surface {
+  border: 1px solid var(--shell-border);
+  background: var(--shell-panel-bg);
+  box-shadow: var(--shell-shadow-soft);
+  backdrop-filter: blur(14px);
+}
+
+.nxt-shell-hover {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.nxt-shell-hover:hover {
+  border-color: var(--shell-border-strong);
+  box-shadow: var(--shell-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.nxt-focus-ring {
+  outline: none;
+}
+
+.nxt-focus-ring:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--shell-focus) 28%, transparent);
+}
+
+.nxt-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand-navy) 28%, transparent) transparent;
+}
+
+.nxt-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.nxt-scrollbar::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--shell-border-strong), var(--shell-border-strong))
+    padding-box;
 }

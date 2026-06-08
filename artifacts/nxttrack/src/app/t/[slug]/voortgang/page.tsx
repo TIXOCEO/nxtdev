@@ -1,13 +1,20 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { TrendingUp } from "lucide-react";
+import { Award, CheckCircle2, Sparkles, Target, TrendingUp } from "lucide-react";
 import { getActiveTenantBySlug } from "@/lib/db/public-tenant";
 import { getUser } from "@/lib/auth/get-user";
 import { getUserTenantContext, isParent, isAthlete } from "@/lib/auth/user-role-rules";
 import { PublicTenantShell } from "@/components/public/public-tenant-shell";
-import { PublicCard } from "@/components/public/public-card";
-import { PageHeader } from "@/components/public/page-header";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  UserBadgeTile,
+  UserEmptyState,
+  UserJourneyTrack,
+  UserMetricCard,
+  UserSectionHeader,
+  UserStatusPill,
+  UserSurface,
+} from "@/components/public/user-shell-components";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -29,12 +36,12 @@ const LEVEL_LABEL: Record<string, string> = {
   good: "Goed",
   mastered: "Beheerst",
 };
-const LEVEL_TONE: Record<string, { bg: string; text: string }> = {
-  none:     { bg: "#f3f4f6", text: "#6b7280" },
-  practice: { bg: "#fef3c7", text: "#92400e" },
-  almost:   { bg: "#fed7aa", text: "#9a3412" },
-  good:     { bg: "#d1fae5", text: "#065f46" },
-  mastered: { bg: "#dcfce7", text: "#14532d" },
+const LEVEL_SCORE: Record<string, number> = {
+  none: 0,
+  practice: 1,
+  almost: 2,
+  good: 3,
+  mastered: 4,
 };
 
 interface ProgressEntry {
@@ -108,42 +115,104 @@ export default async function VoortgangPage({ params }: PageProps) {
     byMember.set(e.member_id, list);
   }
 
+  const masteredCount = entries.filter((e) => e.skill_level === "mastered").length;
+  const strongCount = entries.filter((e) => ["good", "mastered"].includes(e.skill_level)).length;
+  const bestScore = entries.reduce(
+    (score, e) => Math.max(score, LEVEL_SCORE[e.skill_level] ?? 0),
+    0,
+  );
+
   return (
     <PublicTenantShell tenant={tenant} pageTitle="Voortgang" active="voortgang">
-      <PageHeader
+      <UserSectionHeader
+        eyebrow="Mijn zwemreis"
         title="Voortgang"
-        description="Beoordelingen van skills uit recente trainingen."
+        description="Een positief overzicht van recente skillmomenten, mijlpalen en de volgende stap."
+        icon={TrendingUp}
       />
       {entries.length === 0 ? (
-        <PublicCard className="p-8">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: "var(--accent-tint)", color: "var(--brand-navy)" }}
-            >
-              <TrendingUp className="h-7 w-7" />
-            </div>
-            <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-              Nog geen voortgang
-            </h2>
-            <p className="max-w-md text-sm" style={{ color: "var(--text-secondary)" }}>
-              Zodra een trainer een skill beoordeelt verschijnt die hier per lid.
-            </p>
-          </div>
-        </PublicCard>
+        <UserEmptyState
+          icon={TrendingUp}
+          title="Nog geen voortgang"
+          body="Zodra een trainer een skill beoordeelt verschijnt die hier per lid."
+        />
       ) : (
         <div className="flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <UserMetricCard
+              label="Skillmomenten"
+              value={`${entries.length}`}
+              helper="Recente beoordelingen"
+              icon={Sparkles}
+              toneKey="accent"
+            />
+            <UserMetricCard
+              label="Sterk of beheerst"
+              value={`${strongCount}`}
+              helper="Positieve mijlpalen"
+              icon={CheckCircle2}
+              toneKey={strongCount > 0 ? "success" : "neutral"}
+            />
+            <UserMetricCard
+              label="Beheerst"
+              value={`${masteredCount}`}
+              helper="Klaar om vast te houden"
+              icon={Award}
+              toneKey={masteredCount > 0 ? "success" : "neutral"}
+            />
+          </div>
+
+          <UserSurface className="p-5">
+            <UserSectionHeader
+              eyebrow="Zwemreis"
+              title="Waar staan we nu?"
+              description="De status is gebaseerd op de meest recente skillmomenten."
+              icon={Target}
+            />
+            <div className="mt-4">
+              <UserJourneyTrack
+                steps={[
+                  { label: "Start", state: bestScore >= 1 ? "done" : "current" },
+                  { label: "Oefenen", state: bestScore >= 2 ? "done" : bestScore === 1 ? "current" : "locked" },
+                  { label: "Bijna", state: bestScore >= 3 ? "done" : bestScore === 2 ? "current" : "locked" },
+                  { label: "Goed", state: bestScore >= 4 ? "done" : bestScore === 3 ? "current" : "locked" },
+                  { label: "Beheerst", state: bestScore >= 4 ? "current" : "locked" },
+                ]}
+              />
+            </div>
+          </UserSurface>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <UserBadgeTile
+              title="Eerste splash"
+              subtitle="Eerste beoordeling ontvangen"
+              unlocked={entries.length > 0}
+            />
+            <UserBadgeTile
+              title="Goed bezig"
+              subtitle="Een skill staat op goed of hoger"
+              unlocked={strongCount > 0}
+            />
+            <UserBadgeTile
+              title="Beheerst"
+              subtitle="Een skill is volledig beheerst"
+              unlocked={masteredCount > 0}
+            />
+          </div>
+
           {Array.from(byMember.entries()).map(([memberId, list]) => (
             <div key={memberId} className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                {memberNames.get(memberId)}
-              </h3>
-              <PublicCard>
-                <div className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+              <UserSectionHeader
+                eyebrow="Leerling"
+                title={memberNames.get(memberId) ?? "Lid"}
+                description={`${list.length} recente skillmomenten`}
+                icon={Sparkles}
+              />
+              <UserSurface>
+                <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
                   {list.slice(0, 12).map((e, i) => {
-                    const tone = LEVEL_TONE[e.skill_level] ?? LEVEL_TONE.none;
                     return (
-                      <div key={i} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                      <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                             {e.session_title}
@@ -152,17 +221,22 @@ export default async function VoortgangPage({ params }: PageProps) {
                             {new Date(e.starts_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
                         </div>
-                        <span
-                          className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[10px] font-semibold"
-                          style={{ backgroundColor: tone.bg, color: tone.text }}
+                        <UserStatusPill
+                          toneKey={
+                            e.skill_level === "mastered" || e.skill_level === "good"
+                              ? "success"
+                              : e.skill_level === "almost"
+                                ? "warning"
+                                : "neutral"
+                          }
                         >
                           {LEVEL_LABEL[e.skill_level] ?? e.skill_level}
-                        </span>
+                        </UserStatusPill>
                       </div>
                     );
                   })}
                 </div>
-              </PublicCard>
+              </UserSurface>
             </div>
           ))}
         </div>

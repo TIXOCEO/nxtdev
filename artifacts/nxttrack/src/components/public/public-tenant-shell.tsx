@@ -123,8 +123,10 @@ export async function PublicTenantShell({
     "--tenant-accent": accent,
     "--sidebar-bg": `color-mix(in srgb, ${accent} 12%, var(--surface-main))`,
     "--page-bg": `color-mix(in srgb, ${accent} 4%, var(--surface-main))`,
+    "--shell-page-bg": `color-mix(in srgb, ${accent} 5%, #f8fafc)`,
+    "--shell-panel-bg": `color-mix(in srgb, ${accent} 3%, rgba(255,255,255,0.94))`,
     background:
-      "linear-gradient(180deg, var(--bg-viewport-start) 0%, var(--bg-viewport-end) 100%)",
+      "radial-gradient(circle at 16% 8%, color-mix(in srgb, var(--tenant-accent) 16%, transparent), transparent 30%), linear-gradient(180deg, var(--bg-viewport-start) 0%, var(--bg-viewport-end) 100%)",
   } as CSSProperties;
 
   const themeClass =
@@ -139,18 +141,18 @@ export async function PublicTenantShell({
         className="flex h-full w-full overflow-hidden"
         style={{
           padding:
-            "max(1vmin, env(safe-area-inset-top)) max(1vmin, env(safe-area-inset-right)) max(1vmin, env(safe-area-inset-bottom)) max(1vmin, env(safe-area-inset-left))",
+            "max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left))",
         }}
       >
         <div
           className="flex h-full w-full overflow-hidden rounded-[var(--radius-nxt-xl)] border"
           style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-frame-bg)",
+            borderColor: "var(--shell-border)",
             boxShadow: "var(--shadow-app)",
           }}
         >
-          <div className="hidden md:flex md:w-[240px] md:shrink-0">
+          <div className="hidden md:flex md:w-[264px] md:shrink-0">
             <PublicSidebar
               tenant={tenant}
               active={active}
@@ -180,13 +182,14 @@ export async function PublicTenantShell({
               customActivePath={customActivePath}
             />
             <main
-              className="flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6"
+              className="nxt-scrollbar flex-1 overflow-y-auto px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8"
               style={{
-                backgroundColor: "var(--page-bg)",
+                background:
+                  "linear-gradient(180deg, var(--shell-page-bg), var(--page-bg))",
                 paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)",
               }}
             >
-              <div className="mx-auto w-full max-w-5xl space-y-6">
+              <div className="mx-auto w-full max-w-7xl space-y-6">
                 {user && (
                   <WhatsNewBanner
                     slug={tenant.slug}

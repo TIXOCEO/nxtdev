@@ -69,10 +69,10 @@ export function PublicBottomTabBar({
 
   return (
     <nav
-      className="flex h-14 shrink-0 items-stretch border-t md:hidden"
+      className="flex h-16 shrink-0 items-stretch border-t px-1 md:hidden"
       style={{
-        backgroundColor: "var(--bg-nav)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "color-mix(in srgb, var(--bg-nav) 92%, #ffffff)",
+        borderColor: "var(--shell-border)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
       aria-label="Hoofdnavigatie"
@@ -84,19 +84,27 @@ export function PublicBottomTabBar({
           <Link
             key={tab.key}
             href={tab.href}
-            className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors"
+            className="nxt-focus-ring relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md text-[10px] font-medium transition-colors"
             style={{
               color: isActive ? "var(--brand-navy)" : "var(--text-secondary)",
+              backgroundColor: isActive
+                ? "color-mix(in srgb, var(--tenant-accent) 14%, transparent)"
+                : "transparent",
             }}
           >
             {isActive && (
               <span
                 aria-hidden
-                className="absolute inset-x-3 top-0 h-[3px] rounded-b-full"
+                className="absolute inset-x-4 top-1 h-[3px] rounded-full"
                 style={{ backgroundColor: "var(--nav-active-bar)" }}
               />
             )}
-            <span className="relative">
+            <span
+              className="relative flex h-7 w-7 items-center justify-center rounded-md"
+              style={{
+                backgroundColor: isActive ? "#ffffff" : "transparent",
+              }}
+            >
               <Icon
                 className="h-5 w-5"
                 style={{

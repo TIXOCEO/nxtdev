@@ -25,6 +25,7 @@ import { WelcomeCard } from "@/components/public/welcome-card";
 import { LocationCard } from "@/components/public/location-card";
 import { TrainersCard } from "@/components/public/trainers-card";
 import { getUser } from "@/lib/auth/get-user";
+import { UserHomeDashboard } from "@/components/public/user-home-dashboard";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -47,6 +48,12 @@ export default async function PublicHomePage({ params }: PageProps) {
         pageTitle={`Welkom bij ${cms.tenant.name}`}
         active="home"
       >
+        {user && (
+          <UserHomeDashboard
+            tenant={cms.tenant}
+            userId={user.id}
+          />
+        )}
         <ModuleGrid
           tenant={cms.tenant}
           modules={cms.modules}
@@ -90,6 +97,12 @@ export default async function PublicHomePage({ params }: PageProps) {
       pageTitle={`Welkom bij ${tenant.name}`}
       active="home"
     >
+      {user && (
+        <UserHomeDashboard
+          tenant={tenant}
+          userId={user.id}
+        />
+      )}
       {/* Hero met accent-balk links (mockup-stijl) */}
       <div className="relative overflow-hidden rounded-[var(--radius-nxt-lg)]">
         <span
