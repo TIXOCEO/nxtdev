@@ -49,7 +49,28 @@ const RESERVED_SUBDOMAINS = new Set<string>([
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
-// ── DB-backed host→slug cache (TTL 60s, met negative-cache 30s) ──────────
+const STATIC_PATH_PREFIXES = [
+  "/_next/",
+  "/api/",
+];
+
+const PUBLIC_ASSET_PATHS = new Set([
+  "/favicon.ico",
+  "/favicon.svg",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/sw.js",
+  "/offline.html",
+  "/manifest.webmanifest",
+  "/opengraph.jpg",
+]);
+
+function shouldBypassTenantMiddleware(pathname: string): boolean {
+  if (PUBLIC_ASSET_PATHS.has(pathname)) return true;
+  return STATIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+// ── DB-backed host→slug cache (TTL 60s, met negative-cache 30s) ─────────
 interface DbCacheEntry {
   slug: string | null;
   expires: number;
@@ -187,6 +208,10 @@ export async function middleware(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").toLowerCase().split(":")[0];
   const url = req.nextUrl;
 
+  if (shouldBypassTenantMiddleware(url.pathname)) {
+    return NextResponse.next({ request: req });
+  }
+
   const slug = await resolveSlug(host);
 
   // Sprint 74 — Publieke slot-offer-route is bewust tenant-agnostisch
@@ -230,6 +255,6 @@ export const config = {
   // doen dat niet betrouwbaar in path-to-regexp. We voegen `/` los toe.
   matcher: [
     "/",
-    "/((?!_next/|api/|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)",
+    "/((?!_next/|api/|favicon\\.ico|favicon\\.svg|robots\\.txt|sitemap\\.xml|sw\\.js|offline\\.html|manifest\\.webmanifest|opengraph\\.jpg).*)",
   ],
 };
