@@ -86,12 +86,7 @@ export default async function TenantDashboardPage() {
             </TenantAdminActionLink>
             <Link
               href="/tenant/news/new"
-              className="nxt-focus-ring inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold"
-              style={{
-                borderColor: "var(--shell-border)",
-                backgroundColor: "var(--shell-panel-bg)",
-                color: "var(--text-primary)",
-              }}
+              className="nxt-focus-ring nxt-shell-soft-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
             >
               <Plus className="h-4 w-4" />
               Bericht maken
@@ -189,7 +184,7 @@ export default async function TenantDashboardPage() {
               />
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
+            <div className="grid gap-2 p-3">
               {overview.upcomingSessions.map((session) => (
                 <TenantAdminListItem
                   key={session.id}
@@ -224,7 +219,7 @@ export default async function TenantDashboardPage() {
               />
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
+            <div className="grid gap-2 p-3">
               {regs.map((registration) => (
                 <TenantAdminListItem
                   key={registration.id}
@@ -261,8 +256,7 @@ export default async function TenantDashboardPage() {
                 action={
                   <Link
                     href="/tenant/news/new"
-                    className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold"
-                    style={{ backgroundColor: "var(--brand-navy)", color: "#ffffff" }}
+                    className="nxt-shell-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Nieuw bericht
@@ -271,7 +265,7 @@ export default async function TenantDashboardPage() {
               />
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
+            <div className="grid gap-2 p-3">
               {news.map((post) => (
                 <TenantAdminListItem
                   key={post.id}

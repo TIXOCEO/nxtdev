@@ -5,10 +5,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Layers,
   Search,
+  UserCheck,
   UsersRound,
 } from "lucide-react";
-import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
@@ -20,6 +21,11 @@ import {
 import { getTenantTerminology } from "@/lib/terminology/resolver";
 import { NewGroupDialog } from "./_new-group-dialog";
 import { AddMemberPopover } from "./_add-member-popover";
+import {
+  TenantAdminHero,
+  TenantAdminMetric,
+  TenantAdminSurface,
+} from "@/components/tenant/tenant-backoffice-components";
 
 export const dynamic = "force-dynamic";
 
@@ -132,17 +138,48 @@ export default async function TenantGroupsPage({
 
   return (
     <>
-      <PageHeading
+      <TenantAdminHero
         title={terminology.group_plural}
         description={terminology.groups_page_description}
-        actions={<NewGroupDialog tenantId={result.tenant.id} />}
-      />
-
-      <form
-        action="/tenant/groups"
-        method="get"
-        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        action={<NewGroupDialog tenantId={result.tenant.id} />}
       >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <TenantAdminMetric
+            label="Groepen"
+            value={total}
+            hint="Totaal binnen selectie"
+            icon={UsersRound}
+            tone="info"
+          />
+          <TenantAdminMetric
+            label="Deze pagina"
+            value={rows.length}
+            hint={`${fromIdx}-${toIdx} zichtbaar`}
+            icon={Layers}
+            tone="success"
+          />
+          <TenantAdminMetric
+            label="Sorteer op"
+            value={sortBy === "member_count" ? "Leden" : sortBy === "trainer_count" ? "Trainers" : sortBy === "updated_at" ? "Wijziging" : "Naam"}
+            hint={sortOrder === "desc" ? "Aflopend" : "Oplopend"}
+            icon={UserCheck}
+          />
+          <TenantAdminMetric
+            label="Pagina"
+            value={`${page}/${totalPages}`}
+            hint={`${pageSize} per pagina`}
+            icon={Search}
+            tone="warning"
+          />
+        </div>
+      </TenantAdminHero>
+
+      <TenantAdminSurface className="p-3">
+        <form
+          action="/tenant/groups"
+          method="get"
+          className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        >
         <div className="relative max-w-md flex-1">
           <Search
             className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
@@ -153,11 +190,11 @@ export default async function TenantGroupsPage({
             name="q"
             defaultValue={search}
             placeholder="Zoek op naam of omschrijving…"
-            className="h-9 w-full rounded-xl border bg-transparent pl-7 pr-3 text-sm outline-none"
+            className="h-10 w-full rounded-xl border pl-8 pr-3 text-sm outline-none"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
           />
           <input type="hidden" name="sort" value={sortBy} />
@@ -174,18 +211,23 @@ export default async function TenantGroupsPage({
             <Link
               key={s}
               href={buildHref({ size: String(s), page: null })}
-              className="rounded-lg border px-2 py-0.5 text-xs"
+              className="nxt-focus-ring rounded-xl border px-2.5 py-1 text-xs font-bold"
               style={{
-                borderColor: "var(--surface-border)",
-                backgroundColor: pageSize === s ? "var(--accent)" : "transparent",
-                color: "var(--text-primary)",
+                borderColor: pageSize === s
+                  ? "color-mix(in srgb, var(--shell-info) 38%, transparent)"
+                  : "var(--shell-border)",
+                backgroundColor: pageSize === s
+                  ? "color-mix(in srgb, var(--shell-info) 12%, var(--shell-panel-strong))"
+                  : "var(--shell-panel-strong)",
+                color: pageSize === s ? "var(--shell-info)" : "var(--text-primary)",
               }}
             >
               {s}
             </Link>
           ))}
         </div>
-      </form>
+        </form>
+      </TenantAdminSurface>
 
       <div
         className="mt-3 text-xs"
@@ -208,18 +250,12 @@ export default async function TenantGroupsPage({
           }
         />
       ) : (
-        <div
-          className="mt-3 hidden overflow-hidden rounded-2xl border md:block"
-          style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
-          }}
-        >
+        <TenantAdminSurface className="mt-3 hidden overflow-hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead
                 style={{
-                  backgroundColor: "var(--surface-soft)",
+                  backgroundColor: "var(--shell-panel-muted)",
                   color: "var(--text-secondary)",
                 }}
               >
@@ -263,7 +299,7 @@ export default async function TenantGroupsPage({
               </thead>
               <tbody
                 className="divide-y"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 {rows.map((g) => {
                   const isFull =
@@ -320,10 +356,10 @@ export default async function TenantGroupsPage({
                           />
                           <Link
                             href={`/tenant/groups/${g.id}`}
-                            className="inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs font-medium"
+                            className="nxt-focus-ring inline-flex h-8 items-center gap-1 rounded-xl border px-2.5 text-xs font-bold"
                             style={{
-                              borderColor: "var(--surface-border)",
-                              color: "var(--text-primary)",
+                              borderColor: "var(--shell-border)",
+                              color: "var(--shell-info)",
                             }}
                           >
                             <ExternalLink className="h-3 w-3" /> Bekijk
@@ -336,12 +372,12 @@ export default async function TenantGroupsPage({
               </tbody>
             </table>
           </div>
-        </div>
+        </TenantAdminSurface>
       )}
 
       {/* Mobile: cards */}
       {rows.length > 0 && (
-        <ul className="mt-3 space-y-3 md:hidden">
+        <ul className="mt-3 grid gap-3 md:hidden">
           {rows.map((g) => {
             const isFull =
               (g.max_members != null && g.member_count >= g.max_members) ||
@@ -355,11 +391,7 @@ export default async function TenantGroupsPage({
             return (
               <li
                 key={g.id}
-                className="rounded-2xl border p-4"
-                style={{
-                  backgroundColor: "var(--surface-main)",
-                  borderColor: "var(--surface-border)",
-                }}
+                className="nxt-shell-card p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -382,7 +414,7 @@ export default async function TenantGroupsPage({
                     <span
                       className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
                       style={{
-                        backgroundColor: "var(--surface-soft)",
+                        backgroundColor: "var(--shell-panel-muted)",
                         color: "var(--text-secondary)",
                       }}
                     >
@@ -393,7 +425,7 @@ export default async function TenantGroupsPage({
                       <span
                         className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
                         style={{
-                          backgroundColor: "var(--surface-soft)",
+                          backgroundColor: "var(--shell-panel-muted)",
                           color: "var(--text-secondary)",
                         }}
                       >
@@ -413,10 +445,10 @@ export default async function TenantGroupsPage({
                   />
                   <Link
                     href={`/tenant/groups/${g.id}`}
-                    className="inline-flex h-9 items-center gap-1 rounded-xl border px-3 text-xs font-semibold"
+                    className="nxt-focus-ring inline-flex h-9 items-center gap-1 rounded-xl border px-3 text-xs font-bold"
                     style={{
-                      borderColor: "var(--surface-border)",
-                      color: "var(--text-primary)",
+                      borderColor: "var(--shell-border)",
+                      color: "var(--shell-info)",
                     }}
                   >
                     <ExternalLink className="h-3 w-3" /> Bekijk
@@ -436,10 +468,11 @@ export default async function TenantGroupsPage({
           <Link
             aria-disabled={page <= 1}
             href={page > 1 ? buildHref({ page: String(page - 1) }) : "#"}
-            className="inline-flex h-8 items-center gap-1 rounded-lg border px-2"
+            className="nxt-focus-ring inline-flex h-9 items-center gap-1 rounded-xl border px-3 font-bold"
             style={{
-              borderColor: "var(--surface-border)",
-              color: "var(--text-primary)",
+              borderColor: "var(--shell-border)",
+              backgroundColor: "var(--shell-panel-strong)",
+              color: "var(--shell-info)",
               opacity: page <= 1 ? 0.4 : 1,
               pointerEvents: page <= 1 ? "none" : "auto",
             }}
@@ -454,10 +487,11 @@ export default async function TenantGroupsPage({
             href={
               page < totalPages ? buildHref({ page: String(page + 1) }) : "#"
             }
-            className="inline-flex h-8 items-center gap-1 rounded-lg border px-2"
+            className="nxt-focus-ring inline-flex h-9 items-center gap-1 rounded-xl border px-3 font-bold"
             style={{
-              borderColor: "var(--surface-border)",
-              color: "var(--text-primary)",
+              borderColor: "var(--shell-border)",
+              backgroundColor: "var(--shell-panel-strong)",
+              color: "var(--shell-info)",
               opacity: page >= totalPages ? 0.4 : 1,
               pointerEvents: page >= totalPages ? "none" : "auto",
             }}
