@@ -213,7 +213,7 @@ function MarketingHero({
   ];
 
   return (
-    <section className="nxt-shell-surface relative overflow-hidden rounded-[28px] p-0">
+    <section className="nxt-marketing-hero nxt-shell-surface relative overflow-hidden rounded-[28px] p-0">
       <div
         aria-hidden
         className="absolute inset-x-0 top-0 h-32"
@@ -229,7 +229,7 @@ function MarketingHero({
           background: "color-mix(in srgb, var(--tenant-accent) 28%, transparent)",
         }}
       />
-      <div className="relative grid min-h-[560px] gap-8 p-5 sm:p-7 lg:grid-cols-[0.88fr_1.12fr] lg:items-stretch lg:p-8">
+      <div className="nxt-marketing-hero-grid relative grid min-h-[560px] gap-8 p-5 sm:p-7 lg:grid-cols-[0.88fr_1.12fr] lg:items-stretch lg:p-8">
         <div className="flex flex-col justify-between gap-8 py-1">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-primary)" }}>
@@ -254,7 +254,7 @@ function MarketingHero({
               </Link>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          <div className="nxt-marketing-trust-grid grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             {trustItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -269,7 +269,7 @@ function MarketingHero({
           </div>
         </div>
 
-        <div className="relative grid min-h-[500px] items-end lg:grid-cols-[minmax(0,1fr)_245px] lg:gap-5">
+        <div className="nxt-marketing-preview relative grid min-h-[500px] items-end lg:grid-cols-[minmax(0,1fr)_245px] lg:gap-5">
           <div className="nxt-shell-card relative overflow-hidden p-4 sm:p-5 lg:mb-8">
             <div
               aria-hidden
@@ -446,7 +446,7 @@ function MarketingHero({
           </div>
         </div>
       </div>
-      <div className="relative grid gap-3 border-t px-5 py-4 sm:grid-cols-3 sm:px-7 lg:px-8" style={{ borderColor: "var(--shell-border)", backgroundColor: "color-mix(in srgb, #062b66 92%, var(--shell-panel-strong))", color: "#ffffff" }}>
+      <div className="nxt-marketing-proof-strip relative grid gap-3 border-t px-5 py-4 sm:grid-cols-3 sm:px-7 lg:px-8" style={{ borderColor: "var(--shell-border)", backgroundColor: "color-mix(in srgb, #062b66 92%, var(--shell-panel-strong))", color: "#ffffff" }}>
         {[
           { title: "Veilig", body: "Persoonlijk portaal voor ieder gezin." },
           { title: "Duidelijk", body: "Lessen, badges en voortgang op een plek." },
