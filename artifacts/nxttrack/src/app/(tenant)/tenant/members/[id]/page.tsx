@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
-import { PageHeading } from "@/components/ui/page-heading";
+import {
+  ArrowLeft,
+  AlertTriangle,
+  BadgeCheck,
+  CreditCard,
+  History,
+  Layers,
+} from "lucide-react";
 import { TabShell, type TabShellTab } from "@/components/ui/tab-shell";
+import {
+  TenantAdminHero,
+  TenantAdminMetric,
+  TenantAdminSurface,
+} from "@/components/tenant/tenant-backoffice-components";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getMemberWithRelations, getMembersByTenant } from "@/lib/db/members";
@@ -199,10 +210,11 @@ export default async function MemberDetailPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <PageHeading
+      <TenantAdminHero
+        eyebrow="Leden & groepen"
         title={data.member.full_name}
         description="Leddetails, koppelingen, abonnement en betalingen."
-        actions={
+        action={
           canArchive ? (
             <ArchiveButton
               tenantId={result.tenant.id}
@@ -211,14 +223,44 @@ export default async function MemberDetailPage({ params }: PageProps) {
             />
           ) : null
         }
-      />
+      >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <TenantAdminMetric
+            label="Rollen"
+            value={roleNames.length}
+            hint={roleNames.length > 0 ? roleNames.join(", ") : "Nog geen rol"}
+            icon={BadgeCheck}
+            tone="info"
+          />
+          <TenantAdminMetric
+            label="Groepen"
+            value={data.groups.length}
+            hint={data.groups.length === 1 ? "1 gekoppelde groep" : "Gekoppelde groepen"}
+            icon={Layers}
+            tone="success"
+          />
+          <TenantAdminMetric
+            label="Financieel"
+            value={canViewFinancial ? data.payments.length : "-"}
+            hint={canViewFinancial ? "Betalingsregels zichtbaar" : "Geen rechten"}
+            icon={CreditCard}
+            tone="warning"
+          />
+          <TenantAdminMetric
+            label="Logboek"
+            value={auditRows.length}
+            hint={`${emailLogs.length} e-mail logs`}
+            icon={History}
+          />
+        </div>
+      </TenantAdminHero>
 
       {archived && (
-        <div
-          className="flex items-start gap-2 rounded-2xl border p-3 text-sm"
+        <TenantAdminSurface
+          className="flex items-start gap-3 p-4 text-sm"
           style={{
-            backgroundColor: "color-mix(in oklab, #facc15 20%, var(--surface-main))",
-            borderColor: "color-mix(in oklab, #ca8a04 50%, var(--surface-border))",
+            backgroundColor: "color-mix(in srgb, var(--shell-warning) 14%, var(--shell-panel-strong))",
+            borderColor: "color-mix(in srgb, var(--shell-warning) 36%, var(--shell-border))",
             color: "var(--text-primary)",
           }}
         >
@@ -231,7 +273,7 @@ export default async function MemberDetailPage({ params }: PageProps) {
               betaalmethoden.
             </p>
           </div>
-        </div>
+        </TenantAdminSurface>
       )}
 
       <TabShell tabs={tabs} defaultKey="overview" />

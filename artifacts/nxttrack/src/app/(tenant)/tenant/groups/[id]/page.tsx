@@ -5,10 +5,16 @@ import {
   ArrowLeft,
   ArrowUp,
   Download,
+  Layers,
   Users,
+  UsersRound,
 } from "lucide-react";
-import { PageHeading } from "@/components/ui/page-heading";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  TenantAdminHero,
+  TenantAdminMetric,
+  TenantAdminSurface,
+} from "@/components/tenant/tenant-backoffice-components";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getGroupDetail } from "@/lib/db/groups";
@@ -162,12 +168,13 @@ export default async function GroupDetailPage({
         <ArrowLeft className="h-3.5 w-3.5" /> Terug naar groepen
       </Link>
 
-      <PageHeading
+      <TenantAdminHero
+        eyebrow="Leden & groepen"
         title={detail.group.name}
         description={
           detail.group.description ?? "Beheer atleten en trainers in deze groep."
         }
-        actions={
+        action={
           <div className="flex items-center gap-2">
             <span
               className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -198,10 +205,8 @@ export default async function GroupDetailPage({
             </span>
             <a
               href={`/tenant/groups/${id}/export`}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold"
+              className="nxt-focus-ring nxt-shell-soft-button inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold"
               style={{
-                borderColor: "var(--surface-border)",
-                backgroundColor: "var(--surface-soft)",
                 color: "var(--text-primary)",
               }}
             >
@@ -209,12 +214,39 @@ export default async function GroupDetailPage({
             </a>
           </div>
         }
-      />
-
-      <div
-        className="mt-3 mb-4 rounded-xl border px-3 py-2"
-        style={{ backgroundColor: "var(--surface-soft)", borderColor: "var(--surface-border)" }}
       >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <TenantAdminMetric
+            label="Leden"
+            value={memberCount}
+            hint={max != null ? `${Math.max(0, max - memberCount)} plekken vrij` : "Geen maximum"}
+            icon={UsersRound}
+            tone={isFull ? "danger" : nearFull ? "warning" : "success"}
+          />
+          <TenantAdminMetric
+            label="Atleten"
+            value={detail.athletes.length}
+            hint={TAB_LABELS.athletes}
+            icon={Users}
+            tone="info"
+          />
+          <TenantAdminMetric
+            label="Trainers"
+            value={detail.trainers.length}
+            hint={terminology.instructor_plural}
+            icon={Layers}
+          />
+          <TenantAdminMetric
+            label="Resultaten"
+            value={total}
+            hint={`${page}/${totalPages} pagina`}
+            icon={Download}
+            tone="warning"
+          />
+        </div>
+      </TenantAdminHero>
+
+      <TenantAdminSurface className="p-4">
         <MinInstructorsField
           tenantId={result.tenant.id}
           scope={{ kind: "group", groupId: id }}
@@ -239,16 +271,10 @@ export default async function GroupDetailPage({
             helpText="gebruikt voor plaatsingssuggesties (leeg = geen match-score)"
           />
         </div>
-      </div>
+      </TenantAdminSurface>
 
       {/* Add member bar + CSV import */}
-      <section
-        className="rounded-2xl border p-4"
-        style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-        }}
-      >
+      <TenantAdminSurface className="p-4">
         <div className="flex flex-wrap items-center gap-3">
           <AddMemberPopover
             tenantId={result.tenant.id}
@@ -266,7 +292,7 @@ export default async function GroupDetailPage({
           />
           <div
             className="hidden h-6 w-px sm:block"
-            style={{ backgroundColor: "var(--surface-border)" }}
+            style={{ backgroundColor: "var(--shell-border)" }}
           />
           <div className="min-w-0 flex-1">
             <p
@@ -278,47 +304,49 @@ export default async function GroupDetailPage({
             <CsvImport tenantId={result.tenant.id} groupId={id} />
           </div>
         </div>
-      </section>
+      </TenantAdminSurface>
 
       {/* Tabs */}
-      <div className="mt-2 flex flex-wrap items-center gap-1 border-b" style={{ borderColor: "var(--surface-border)" }}>
-        {TAB_KEYS.map((k) => {
-          const count =
-            k === "athletes"
-              ? detail.athletes.length
-              : k === "trainers"
-                ? detail.trainers.length
-                : detail.staff.length + detail.others.length;
-          const active = tab === k;
-          return (
-            <Link
-              key={k}
-              href={buildHref({ tab: k, page: null })}
-              className="-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium"
-              style={{
-                borderColor: active ? "var(--accent)" : "transparent",
-                color: active ? "var(--text-primary)" : "var(--text-secondary)",
-              }}
-            >
-              {TAB_LABELS[k]}
-              <span
-                className="rounded-full px-1.5 text-[11px]"
+      <TenantAdminSurface className="p-2">
+        <div className="flex flex-wrap items-center gap-1">
+          {TAB_KEYS.map((k) => {
+            const count =
+              k === "athletes"
+                ? detail.athletes.length
+                : k === "trainers"
+                  ? detail.trainers.length
+                  : detail.staff.length + detail.others.length;
+            const active = tab === k;
+            return (
+              <Link
+                key={k}
+                href={buildHref({ tab: k, page: null })}
+                className="-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium"
                 style={{
-                  backgroundColor: "var(--surface-soft)",
-                  color: "var(--text-secondary)",
+                  borderColor: active ? "var(--accent)" : "transparent",
+                  color: active ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
               >
-                {count}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+                {TAB_LABELS[k]}
+                <span
+                  className="rounded-full px-1.5 text-[11px]"
+                  style={{
+                    backgroundColor: "var(--shell-panel-muted)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  {count}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </TenantAdminSurface>
 
       <form
         action={`/tenant/groups/${id}`}
         method="get"
-        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        className="nxt-shell-surface flex flex-col gap-2 rounded-[20px] p-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <input type="hidden" name="tab" value={tab} />
         <input type="hidden" name="sort" value={sortBy} />
@@ -333,9 +361,9 @@ export default async function GroupDetailPage({
           placeholder="Filter op naam…"
           className="h-9 w-full max-w-md rounded-xl border bg-transparent px-3 text-sm outline-none"
           style={{
-            borderColor: "var(--surface-border)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-primary)",
-            backgroundColor: "var(--surface-main)",
+            backgroundColor: "var(--shell-panel-strong)",
           }}
         />
         <div className="flex items-center gap-1 text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -346,9 +374,13 @@ export default async function GroupDetailPage({
               href={buildHref({ size: String(s), page: null })}
               className="rounded-lg border px-2 py-0.5"
               style={{
-                borderColor: "var(--surface-border)",
-                backgroundColor: pageSize === s ? "var(--accent)" : "transparent",
-                color: "var(--text-primary)",
+                borderColor: pageSize === s
+                  ? "color-mix(in srgb, var(--shell-info) 38%, transparent)"
+                  : "var(--shell-border)",
+                backgroundColor: pageSize === s
+                  ? "color-mix(in srgb, var(--shell-info) 12%, var(--shell-panel-strong))"
+                  : "var(--shell-panel-strong)",
+                color: pageSize === s ? "var(--shell-info)" : "var(--text-primary)",
               }}
             >
               {s}
@@ -372,13 +404,7 @@ export default async function GroupDetailPage({
           }
         />
       ) : (
-        <div
-          className="overflow-hidden rounded-2xl border"
-          style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
-          }}
-        >
+        <TenantAdminSurface className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead
@@ -406,7 +432,7 @@ export default async function GroupDetailPage({
                   <th className="px-4 py-3 text-right">Acties</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+              <tbody className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
                 {visibleRows.map((m) => (
                   <GroupMemberRow
                     key={m.id}
@@ -422,7 +448,7 @@ export default async function GroupDetailPage({
               </tbody>
             </table>
           </div>
-        </div>
+        </TenantAdminSurface>
       )}
 
       {totalPages > 1 && (
@@ -434,7 +460,7 @@ export default async function GroupDetailPage({
             href={page > 1 ? buildHref({ page: String(page - 1) }) : "#"}
             className="inline-flex h-8 items-center gap-1 rounded-lg border px-2"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
               opacity: page <= 1 ? 0.4 : 1,
               pointerEvents: page <= 1 ? "none" : "auto",
@@ -451,7 +477,7 @@ export default async function GroupDetailPage({
             }
             className="inline-flex h-8 items-center gap-1 rounded-lg border px-2"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
               opacity: page >= totalPages ? 0.4 : 1,
               pointerEvents: page >= totalPages ? "none" : "auto",

@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ClipboardList } from "lucide-react";
-import { PageHeading } from "@/components/ui/page-heading";
+import {
+  ArrowLeft,
+  CalendarClock,
+  ClipboardList,
+  MapPin,
+  UsersRound,
+} from "lucide-react";
 import { readActiveTenantCookie } from "@/lib/auth/active-tenant-cookie";
 import { getActiveTenant } from "@/lib/auth/get-active-tenant";
 import { getTrainingSessionDetail } from "@/lib/db/trainings";
@@ -11,6 +16,11 @@ import { TrainingStatusActions } from "./_status-actions";
 import { ReminderButton } from "./_reminder-button";
 import { SessionInstructorsBlock } from "./_instructors-block";
 import { MinInstructorsField } from "@/components/tenant/min-instructors-field";
+import {
+  TenantAdminHero,
+  TenantAdminMetric,
+  TenantAdminSurface,
+} from "@/components/tenant/tenant-backoffice-components";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -97,29 +107,53 @@ export default async function TrainingDetailPage({ params }: PageProps) {
         <ArrowLeft className="h-3.5 w-3.5" /> Terug naar trainingen
       </Link>
 
-      <PageHeading
+      <TenantAdminHero
+        eyebrow="Planning"
         title={detail.session.title}
-        description={`${fmt(detail.session.starts_at)} — ${fmt(detail.session.ends_at)}`}
-        actions={
+        description={`${fmt(detail.session.starts_at)} - ${fmt(detail.session.ends_at)}`}
+        action={
           <div className="flex items-center gap-2">
             <Link
               href={`/tenant/trainings/${id}/attendance`}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
-              style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+              className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold"
             >
               <ClipboardList className="h-4 w-4" /> Aanwezigheid
             </Link>
           </div>
         }
-      />
-
-      <div
-        className="rounded-2xl border p-4 sm:p-6"
-        style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-        }}
       >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <TenantAdminMetric
+            label="Aanwezig"
+            value={counts.attending}
+            hint={`${counts.noResponse} geen reactie`}
+            icon={UsersRound}
+            tone="success"
+          />
+          <TenantAdminMetric
+            label="Afwezig"
+            value={counts.notAttending}
+            hint={`${counts.maybe} misschien`}
+            icon={ClipboardList}
+            tone="warning"
+          />
+          <TenantAdminMetric
+            label="Status"
+            value={STATUS_LABEL[detail.session.status] ?? detail.session.status}
+            hint={detail.group?.name ?? "Geen groep"}
+            icon={CalendarClock}
+            tone={detail.session.status === "cancelled" ? "danger" : "info"}
+          />
+          <TenantAdminMetric
+            label="Locatie"
+            value={detail.session.location ?? "-"}
+            hint={terminology.instructor_plural}
+            icon={MapPin}
+          />
+        </div>
+      </TenantAdminHero>
+
+      <TenantAdminSurface className="p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <span style={{ color: "var(--text-secondary)" }}>
             Groep: <strong style={{ color: "var(--text-primary)" }}>{detail.group?.name ?? "—"}</strong>
@@ -146,7 +180,7 @@ export default async function TrainingDetailPage({ params }: PageProps) {
           />
           <ReminderButton tenantId={result.tenant.id} sessionId={id} />
         </div>
-      </div>
+      </TenantAdminSurface>
 
       <SessionInstructorsBlock
         tenantId={result.tenant.id}
@@ -157,10 +191,7 @@ export default async function TrainingDetailPage({ params }: PageProps) {
         labels={{ singular: terminology.instructor_singular, plural: terminology.instructor_plural }}
       />
 
-      <div
-        className="rounded-xl border px-3 py-2"
-        style={{ backgroundColor: "var(--surface-soft)", borderColor: "var(--surface-border)" }}
-      >
+      <TenantAdminSurface className="p-4">
         <MinInstructorsField
           tenantId={result.tenant.id}
           scope={{ kind: "session", sessionId: id }}
@@ -168,15 +199,9 @@ export default async function TrainingDetailPage({ params }: PageProps) {
           label={`Minimum aantal ${terminology.instructor_plural.toLowerCase()} voor deze sessie`}
           helpText="leeg = gebruik groep-default"
         />
-      </div>
+      </TenantAdminSurface>
 
-      <section
-        className="rounded-2xl border p-4 sm:p-6"
-        style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
-        }}
-      >
+      <TenantAdminSurface className="p-4 sm:p-6">
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Reacties ({detail.attendance.length})
         </h2>
@@ -185,7 +210,7 @@ export default async function TrainingDetailPage({ params }: PageProps) {
           {counts.noResponse} geen reactie
         </p>
         {detail.attendance.length > 0 && (
-          <ul className="mt-3 divide-y" style={{ borderColor: "var(--surface-border)" }}>
+          <ul className="mt-3 divide-y" style={{ borderColor: "var(--shell-border)" }}>
             {detail.attendance.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
@@ -202,7 +227,7 @@ export default async function TrainingDetailPage({ params }: PageProps) {
             ))}
           </ul>
         )}
-      </section>
+      </TenantAdminSurface>
     </>
   );
 }
