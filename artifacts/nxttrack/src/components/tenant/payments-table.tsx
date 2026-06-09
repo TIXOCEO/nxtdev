@@ -257,8 +257,7 @@ export function PaymentsTable({
           <button
             type="button"
             onClick={() => openCreate()}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold"
-            style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}
+            className="nxt-focus-ring nxt-shell-primary-button inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold"
           >
             <Plus className="h-3.5 w-3.5" /> Voeg betaling toe
           </button>
@@ -268,8 +267,7 @@ export function PaymentsTable({
       {(creating || editing) && (
         <form
           onSubmit={submit}
-          className="rounded-xl border p-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          className="nxt-shell-surface rounded-[20px] p-4"
         >
           <div className="mb-2 flex items-center justify-between">
             <p
@@ -423,11 +421,11 @@ export function PaymentsTable({
         </p>
       ) : (
         <div
-          className="overflow-x-auto rounded-xl border"
-          style={{ borderColor: "var(--surface-border)" }}
+          className="overflow-x-auto rounded-[20px] border shadow-sm"
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}
         >
           <table className="w-full text-sm">
-            <thead style={{ backgroundColor: "var(--surface-soft)" }}>
+            <thead style={{ backgroundColor: "var(--shell-panel-muted)" }}>
               <tr className="text-left text-[11px] uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                 <Th>Vervaldatum</Th>
                 <Th>Periode</Th>
@@ -448,7 +446,7 @@ export function PaymentsTable({
                   ? pmLookup.get(p.paid_via_payment_method_id)
                   : null;
                 return (
-                  <tr key={p.id} className="border-t" style={{ borderColor: "var(--surface-border)" }}>
+                  <tr key={p.id} className="border-t transition-colors hover:bg-black/[0.02]" style={{ borderColor: "var(--shell-border)" }}>
                     <Td>{fmtDate(p.due_date)}</Td>
                     <Td>{p.period ? PERIOD_LABEL[p.period] ?? p.period : "—"}</Td>
                     <Td>{fmtPrice(p.amount_expected ?? p.amount)}</Td>

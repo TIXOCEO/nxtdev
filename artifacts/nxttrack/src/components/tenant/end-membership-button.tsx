@@ -46,23 +46,24 @@ export function EndMembershipButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-7 items-center gap-1 rounded-lg border px-2 text-[11px]"
+        className="nxt-focus-ring inline-flex h-8 items-center gap-1 rounded-xl border px-2.5 text-[11px] font-bold"
         style={{
-          borderColor: "var(--surface-border)",
-          color: "#b91c1c",
+          borderColor: "var(--shell-border)",
+          backgroundColor: "color-mix(in srgb, var(--shell-danger) 8%, var(--shell-panel-muted))",
+          color: "var(--shell-danger)",
         }}
       >
-        <CalendarOff className="h-3 w-3" /> Beëindig
+        <CalendarOff className="h-3 w-3" /> Stopzetten
       </button>
 
       {open && (
-        <div className="mt-2 rounded-xl border p-3" style={{ borderColor: "var(--surface-border)" }}>
+        <div className="nxt-shell-surface mt-3 rounded-[20px] p-4">
           <div className="mb-2 flex items-center justify-between">
             <p
-              className="text-xs font-semibold uppercase tracking-wide"
+              className="text-xs font-black uppercase tracking-[0.12em]"
               style={{ color: "var(--text-secondary)" }}
             >
-              Abonnement beëindigen
+              Abonnement stopzetten
             </p>
             <button
               type="button"
@@ -81,6 +82,7 @@ export function EndMembershipButton({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="mt-1 block h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
+                style={{ borderColor: "var(--shell-border)" }}
                 required
               />
             </label>
@@ -90,7 +92,8 @@ export function EndMembershipButton({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className="mt-1 block h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
-                placeholder="Bijv. 'Verhuisd'"
+                style={{ borderColor: "var(--shell-border)" }}
+                placeholder="Bijv. verhuisd"
               />
             </label>
           </div>
@@ -100,10 +103,10 @@ export function EndMembershipButton({
               type="button"
               onClick={submit}
               disabled={pending}
-              className="inline-flex h-9 items-center rounded-xl px-3 text-xs font-semibold"
-              style={{ backgroundColor: "#dc2626", color: "white" }}
+              className="inline-flex h-9 items-center rounded-xl px-3 text-xs font-bold disabled:opacity-50"
+              style={{ backgroundColor: "var(--shell-danger)", color: "white" }}
             >
-              {pending ? "Bezig…" : "Beëindig"}
+              {pending ? "Bezig..." : "Stopzetten"}
             </button>
           </div>
         </div>
