@@ -75,9 +75,9 @@ export function NewGroupDialog({
   const inputCls =
     "h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   return (
@@ -112,13 +112,13 @@ export function NewGroupDialog({
       <DialogContent
         className="max-w-md rounded-2xl border p-0 sm:max-w-md"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
           color: "var(--text-primary)",
         }}
       >
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <DialogHeader className="border-b p-5" style={{ borderColor: "var(--surface-border)" }}>
+          <DialogHeader className="border-b p-5" style={{ borderColor: "var(--shell-border)" }}>
             <DialogTitle className="text-base font-semibold">
               Nieuwe groep
             </DialogTitle>
@@ -241,14 +241,14 @@ export function NewGroupDialog({
 
           <DialogFooter
             className="flex flex-row items-center justify-end gap-2 border-t p-4"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           >
             <DialogClose asChild>
               <button
                 type="button"
                 className="inline-flex h-10 items-center rounded-xl border px-3 text-sm font-medium"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               >

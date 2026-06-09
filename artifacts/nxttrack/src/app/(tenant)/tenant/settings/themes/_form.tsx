@@ -52,8 +52,8 @@ export function TenantThemesForm({ tenantId, themes: initial }: Props) {
         <div
           className="rounded-xl border px-3 py-2 text-xs"
           style={{
-            backgroundColor: "var(--surface-soft)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-secondary)",
           }}
         >
@@ -83,8 +83,8 @@ function Group({
       <section
         className="rounded-2xl border p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -100,8 +100,8 @@ function Group({
     <section
       className="rounded-2xl border p-4"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -116,13 +116,13 @@ function Group({
             <li
               key={t.id}
               className="flex items-center gap-3 rounded-xl border p-3"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <div
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-xs font-bold"
                 style={{
                   backgroundColor: bg,
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: text,
                 }}
               >

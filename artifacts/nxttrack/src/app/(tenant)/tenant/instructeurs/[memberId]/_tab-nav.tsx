@@ -20,7 +20,7 @@ export function InstructorDetailTabs({
   return (
     <nav
       className="mb-4 flex gap-1 border-b"
-      style={{ borderColor: "var(--surface-border)" }}
+      style={{ borderColor: "var(--shell-border)" }}
       aria-label="Instructeur secties"
     >
       {ORDER.map((tab) => {

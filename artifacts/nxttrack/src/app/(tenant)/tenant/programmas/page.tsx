@@ -88,8 +88,8 @@ export default async function TenantProgramsPage() {
                 key={p.id}
                 className="overflow-hidden rounded-2xl border"
                 style={{
-                  backgroundColor: "var(--surface-main)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-strong)",
+                  borderColor: "var(--shell-border)",
                 }}
               >
                 {capColor && (

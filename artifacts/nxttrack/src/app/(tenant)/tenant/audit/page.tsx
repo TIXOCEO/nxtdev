@@ -238,8 +238,8 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
       <div
         className="rounded-2xl border px-4 py-3 text-xs"
         style={{
-          backgroundColor: "var(--surface-soft)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-muted)",
+          borderColor: "var(--shell-border)",
           color: "var(--text-secondary)",
         }}
       >
@@ -258,8 +258,8 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
         method="get"
         className="flex flex-wrap items-end gap-3 rounded-2xl border p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <div className="flex flex-col gap-1">
@@ -276,7 +276,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
             defaultValue={action}
             className="h-9 min-w-[14rem] rounded-md border bg-transparent px-2 text-sm"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           >
@@ -305,7 +305,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
             placeholder="bv. naam@club.nl"
             className="h-9 min-w-[14rem] rounded-md border bg-transparent px-2 text-sm"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
@@ -327,7 +327,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
             placeholder="zoek op naam"
             className="h-9 min-w-[14rem] rounded-md border bg-transparent px-2 text-sm"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
@@ -348,7 +348,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
             defaultValue={from}
             className="h-9 rounded-md border bg-transparent px-2 text-sm"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
@@ -369,7 +369,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
             defaultValue={to}
             className="h-9 rounded-md border bg-transparent px-2 text-sm"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
@@ -408,7 +408,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
             }`}
             className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           >
@@ -432,15 +432,15 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
         <div
           className="overflow-hidden rounded-2xl border"
           style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-strong)",
+            borderColor: "var(--shell-border)",
           }}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead
                 style={{
-                  backgroundColor: "var(--surface-soft)",
+                  backgroundColor: "var(--shell-panel-muted)",
                   color: "var(--text-secondary)",
                 }}
               >
@@ -454,7 +454,7 @@ export default async function TenantAuditPage({ searchParams }: PageProps) {
               </thead>
               <tbody
                 className="divide-y"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 {rows.map((r) => (
                   <tr key={r.id} style={{ color: "var(--text-primary)" }}>

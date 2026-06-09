@@ -54,7 +54,7 @@ function Field({
 const inputClass =
   "w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:ring-2";
 const inputStyle = {
-  borderColor: "var(--surface-border)",
+  borderColor: "var(--shell-border)",
   color: "var(--text-primary)",
 } as const;
 
@@ -249,14 +249,14 @@ function ImageUploadField({
             src={value}
             alt=""
             className="h-16 w-24 rounded-lg border object-cover"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           />
         ) : (
           <div
             className="flex h-16 w-24 items-center justify-center rounded-lg border"
             style={{
-              borderColor: "var(--surface-border)",
-              backgroundColor: "var(--surface-soft)",
+              borderColor: "var(--shell-border)",
+              backgroundColor: "var(--shell-panel-muted)",
               color: "var(--text-secondary)",
             }}
           >
@@ -270,7 +270,7 @@ function ImageUploadField({
             onClick={() => inputRef.current?.click()}
             className="inline-flex items-center gap-1.5 self-start rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           >
@@ -358,7 +358,7 @@ function HeroSliderEditor({
           <div
             key={i}
             className="rounded-lg border p-3"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           >
             <p
               className="mb-2 text-[10px] font-semibold uppercase tracking-wider"
@@ -448,7 +448,7 @@ function HeroSliderEditor({
           type="button"
           onClick={addSlide}
           className="rounded-lg border px-3 py-1.5 text-xs font-semibold"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         >
           + Slide toevoegen
         </button>
@@ -854,7 +854,7 @@ function ImageSliderEditor({
           <div
             key={i}
             className="rounded-lg border p-3"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           >
             <div className="mb-2 flex items-center justify-between">
               <p
@@ -919,7 +919,7 @@ function ImageSliderEditor({
           type="button"
           onClick={add}
           className="rounded-lg border px-3 py-1.5 text-xs font-semibold"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         >
           + Afbeelding toevoegen
         </button>

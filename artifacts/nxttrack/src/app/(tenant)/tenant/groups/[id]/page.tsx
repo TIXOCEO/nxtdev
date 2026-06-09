@@ -183,7 +183,7 @@ export default async function GroupDetailPage({
                   ? "rgba(220, 38, 38, 0.12)"
                   : nearFull
                     ? "rgba(234, 179, 8, 0.18)"
-                    : "var(--surface-soft)",
+                    : "var(--shell-panel-muted)",
                 color: isFull
                   ? "rgb(185, 28, 28)"
                   : nearFull
@@ -409,7 +409,7 @@ export default async function GroupDetailPage({
             <table className="w-full text-sm">
               <thead
                 style={{
-                  backgroundColor: "var(--surface-soft)",
+                  backgroundColor: "var(--shell-panel-muted)",
                   color: "var(--text-secondary)",
                 }}
               >

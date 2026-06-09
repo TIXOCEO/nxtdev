@@ -148,9 +148,9 @@ export function AdminMemberEditForm({
             maxLength={2000}
             className="mt-1 block w-full rounded-xl border bg-transparent px-3 py-2 text-sm outline-none"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-soft)",
+              backgroundColor: "var(--shell-panel-muted)",
             }}
           />
         </label>
@@ -179,7 +179,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   return (
     <section
       className="rounded-2xl border p-4"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <h3 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         {title}
@@ -208,9 +208,9 @@ function Text(props: {
         onChange={(e) => props.onChange(e.target.value)}
         className="mt-1 block h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
         style={{
-          borderColor: "var(--surface-border)",
+          borderColor: "var(--shell-border)",
           color: "var(--text-primary)",
-          backgroundColor: "var(--surface-soft)",
+          backgroundColor: "var(--shell-panel-muted)",
         }}
       />
     </label>
@@ -231,9 +231,9 @@ function Select(props: {
         onChange={(e) => props.onChange(e.target.value)}
         className="mt-1 block h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
         style={{
-          borderColor: "var(--surface-border)",
+          borderColor: "var(--shell-border)",
           color: "var(--text-primary)",
-          backgroundColor: "var(--surface-soft)",
+          backgroundColor: "var(--shell-panel-muted)",
         }}
       >
         {props.options.map((o) => (

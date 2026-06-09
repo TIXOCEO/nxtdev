@@ -86,7 +86,7 @@ export function InviteRowActions({
           type="button"
           onClick={copyCode}
           className="inline-flex h-7 items-center gap-1 rounded-md border bg-transparent px-2 text-[11px]"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
         >
           <Copy className="h-3 w-3" /> Code
         </button>
@@ -94,7 +94,7 @@ export function InviteRowActions({
           type="button"
           onClick={copyLink}
           className="inline-flex h-7 items-center gap-1 rounded-md border bg-transparent px-2 text-[11px]"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
         >
           <Copy className="h-3 w-3" /> Link
         </button>
@@ -115,7 +115,7 @@ export function InviteRowActions({
             onClick={doRevoke}
             disabled={pending}
             className="inline-flex h-7 items-center gap-1 rounded-md border bg-transparent px-2 text-[11px] disabled:opacity-50"
-            style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+            style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
           >
             <X className="h-3 w-3" /> Intrekken
           </button>

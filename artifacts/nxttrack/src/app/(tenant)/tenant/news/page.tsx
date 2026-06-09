@@ -64,7 +64,7 @@ export default async function TenantNewsListPage() {
               <li
                 key={p.id}
                 className="rounded-2xl border p-4"
-                style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+                style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
               >
                 <Link href={`/tenant/news/${p.id}`} className="block">
                   <div className="flex items-start justify-between gap-3">
@@ -97,11 +97,11 @@ export default async function TenantNewsListPage() {
           {/* Desktop: table */}
           <div
             className="hidden overflow-hidden rounded-2xl border md:block"
-            style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+            style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
           >
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead style={{ backgroundColor: "var(--surface-soft)", color: "var(--text-secondary)" }}>
+                <thead style={{ backgroundColor: "var(--shell-panel-muted)", color: "var(--text-secondary)" }}>
                   <tr className="text-left text-xs font-semibold uppercase tracking-wide">
                     <th className="px-5 py-3">Title</th>
                     <th className="px-5 py-3">Category</th>
@@ -111,7 +111,7 @@ export default async function TenantNewsListPage() {
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+                <tbody className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
                   {posts.map((p) => (
                     <tr key={p.id} style={{ color: "var(--text-primary)" }}>
                       <td className="px-5 py-3">

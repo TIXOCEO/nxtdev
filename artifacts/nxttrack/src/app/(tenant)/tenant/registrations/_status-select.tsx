@@ -81,9 +81,9 @@ export function RegistrationStatusSelect({
       }}
       className="h-8 rounded-lg border bg-transparent px-2 text-xs outline-none disabled:opacity-50"
       style={{
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
         color: "var(--text-primary)",
-        backgroundColor: "var(--surface-main)",
+        backgroundColor: "var(--shell-panel-strong)",
       }}
       aria-label="Status aanpassen"
     >

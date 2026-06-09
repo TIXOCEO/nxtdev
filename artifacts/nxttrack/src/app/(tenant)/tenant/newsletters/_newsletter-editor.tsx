@@ -32,9 +32,9 @@ export interface NewsletterEditorProps {
 const inputCls =
   "w-full rounded-xl border bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50";
 const inputStyle = {
-  borderColor: "var(--surface-border)",
+  borderColor: "var(--shell-border)",
   color: "var(--text-primary)",
-  backgroundColor: "var(--surface-main)",
+  backgroundColor: "var(--shell-panel-strong)",
 } as const;
 
 export function NewsletterEditor({ mode, tenant, newsletter, groups }: NewsletterEditorProps) {
@@ -175,8 +175,8 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
       <div
         className="inline-flex rounded-xl border p-1"
         style={{
-          borderColor: "var(--surface-border)",
-          backgroundColor: "var(--surface-main)",
+          borderColor: "var(--shell-border)",
+          backgroundColor: "var(--shell-panel-strong)",
         }}
       >
         {(["edit", "preview"] as const).map((t) => {
@@ -209,8 +209,8 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
           <div
             className="space-y-3 rounded-2xl border p-4 sm:p-6 lg:col-span-2"
             style={{
-              backgroundColor: "var(--surface-main)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-strong)",
+              borderColor: "var(--shell-border)",
             }}
           >
             <Field label="Titel (wordt het onderwerp van de e-mail)">
@@ -277,7 +277,7 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
                   onClick={remove}
                   disabled={pending}
                   className="inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium disabled:opacity-50"
-                  style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                  style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                 >
                   <Trash2 className="h-4 w-4" /> Verwijder concept
                 </button>
@@ -290,8 +290,8 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
             <div
               className="rounded-2xl border p-4 sm:p-5"
               style={{
-                backgroundColor: "var(--surface-main)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-strong)",
+                borderColor: "var(--shell-border)",
               }}
             >
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -319,7 +319,7 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
               </div>
 
               {audienceType === "groups" && (
-                <div className="mt-3 space-y-1.5 rounded-xl border p-2" style={{ borderColor: "var(--surface-border)" }}>
+                <div className="mt-3 space-y-1.5 rounded-xl border p-2" style={{ borderColor: "var(--shell-border)" }}>
                   {groups.length === 0 ? (
                     <p className="px-1 py-2 text-xs" style={{ color: "var(--text-secondary)" }}>
                       Er zijn nog geen groepen aangemaakt.
@@ -353,8 +353,8 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
             <div
               className="rounded-2xl border p-4 sm:p-5"
               style={{
-                backgroundColor: "var(--surface-main)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-strong)",
+                borderColor: "var(--shell-border)",
               }}
             >
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -377,7 +377,7 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
                 disabled={pending || !testTo || mode === "create"}
                 className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold disabled:opacity-50"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               >
@@ -400,8 +400,8 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
             <div
               className="rounded-2xl border p-4 sm:p-5"
               style={{
-                backgroundColor: "var(--surface-main)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-strong)",
+                borderColor: "var(--shell-border)",
               }}
             >
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -442,7 +442,7 @@ export function NewsletterEditor({ mode, tenant, newsletter, groups }: Newslette
                       onClick={() => setConfirmSend(false)}
                       disabled={pending}
                       className="inline-flex h-10 items-center justify-center rounded-xl border px-3 text-sm font-medium disabled:opacity-50"
-                      style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                      style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                     >
                       Annuleer
                     </button>
@@ -517,7 +517,7 @@ function RadioRow({
     <label
       className="flex cursor-pointer items-start gap-2 rounded-xl border p-2.5 transition-colors hover:bg-black/5"
       style={{
-        borderColor: checked ? "var(--accent)" : "var(--surface-border)",
+        borderColor: checked ? "var(--accent)" : "var(--shell-border)",
         backgroundColor: checked ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
       }}
     >

@@ -48,7 +48,7 @@ export function ArchiveButton({
         disabled={pending}
         className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold disabled:opacity-50"
         style={{
-          borderColor: archived ? "transparent" : "var(--surface-border)",
+          borderColor: archived ? "transparent" : "var(--shell-border)",
           backgroundColor: archived ? "#b6d83b" : "transparent",
           color: archived ? "#111" : "var(--text-primary)",
         }}

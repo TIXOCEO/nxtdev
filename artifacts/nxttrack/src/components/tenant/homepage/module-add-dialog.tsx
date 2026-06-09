@@ -45,11 +45,11 @@ export function ModuleAddDialog({ catalog, pending = false, onClose, onAdd }: Pr
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div
         className="flex w-full max-w-2xl max-h-[92vh] flex-col overflow-hidden rounded-2xl border"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <div
           className="flex items-center justify-between border-b px-5 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          style={{ borderColor: "var(--shell-border)" }}
         >
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             Module toevoegen
@@ -79,8 +79,8 @@ export function ModuleAddDialog({ catalog, pending = false, onClose, onAdd }: Pr
                     onClick={() => selectModule(c.key)}
                     className="rounded-lg border px-3 py-2 text-left text-xs"
                     style={{
-                      borderColor: active ? "var(--accent)" : "var(--surface-border)",
-                      backgroundColor: active ? "var(--surface-soft)" : "transparent",
+                      borderColor: active ? "var(--accent)" : "var(--shell-border)",
+                      backgroundColor: active ? "var(--shell-panel-muted)" : "transparent",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -117,8 +117,8 @@ export function ModuleAddDialog({ catalog, pending = false, onClose, onAdd }: Pr
                     onClick={() => setSize(opt.value)}
                     className="rounded-lg border px-3 py-2 text-center text-xs disabled:opacity-40"
                     style={{
-                      borderColor: active ? "var(--accent)" : "var(--surface-border)",
-                      backgroundColor: active ? "var(--surface-soft)" : "transparent",
+                      borderColor: active ? "var(--accent)" : "var(--shell-border)",
+                      backgroundColor: active ? "var(--shell-panel-muted)" : "transparent",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -135,7 +135,7 @@ export function ModuleAddDialog({ catalog, pending = false, onClose, onAdd }: Pr
 
         <div
           className="flex items-center justify-end gap-2 border-t px-5 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          style={{ borderColor: "var(--shell-border)" }}
         >
           <button
             type="button"

@@ -35,8 +35,8 @@ export default async function PaymentMethodsPage() {
       <div
         className="rounded-2xl border p-2 sm:p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <PaymentMethodsManager tenantId={result.tenant.id} initial={methods} />

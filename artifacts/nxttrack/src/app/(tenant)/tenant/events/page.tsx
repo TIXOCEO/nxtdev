@@ -56,7 +56,7 @@ export default async function TenantEventsListPage() {
 
       <div
         className="rounded-2xl border p-4 sm:p-5"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <PublicShowSessionsToggle
           tenantId={result.tenant.id}
@@ -82,11 +82,11 @@ export default async function TenantEventsListPage() {
       ) : (
         <div
           className="overflow-hidden rounded-2xl border"
-          style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+          style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead style={{ backgroundColor: "var(--surface-soft)", color: "var(--text-secondary)" }}>
+              <thead style={{ backgroundColor: "var(--shell-panel-muted)", color: "var(--text-secondary)" }}>
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide">
                   <th className="px-5 py-3">Titel</th>
                   <th className="px-5 py-3">Start</th>
@@ -95,7 +95,7 @@ export default async function TenantEventsListPage() {
                   <th className="px-5 py-3 text-right">Acties</th>
                 </tr>
               </thead>
-              <tbody className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+              <tbody className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
                 {events.map((e) => (
                   <tr key={e.id} style={{ color: "var(--text-primary)" }}>
                     <td className="px-5 py-3 font-medium">{e.title}</td>

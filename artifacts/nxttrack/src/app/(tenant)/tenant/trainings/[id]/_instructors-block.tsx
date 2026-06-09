@@ -106,15 +106,15 @@ export function SessionInstructorsBlock({
 
   const inputCls = "h-9 w-full rounded-lg border bg-transparent px-2 text-xs outline-none";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   return (
     <section
       className="rounded-2xl border p-4 sm:p-6"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -123,7 +123,7 @@ export function SessionInstructorsBlock({
         {!isExplicitMode && (
           <span
             className="rounded-full px-2 py-0.5 text-[10px]"
-            style={{ backgroundColor: "var(--surface-soft)", color: "var(--text-secondary)" }}
+            style={{ backgroundColor: "var(--shell-panel-muted)", color: "var(--text-secondary)" }}
           >
             impliciet (alle {labels.plural.toLowerCase()} van de groep)
           </span>
@@ -138,7 +138,7 @@ export function SessionInstructorsBlock({
               <li
                 key={row.member_id}
                 className="flex items-center justify-between rounded-lg border px-3 py-1.5"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 <span style={{ color: "var(--text-primary)" }}>
                   <strong>{row.full_name}</strong>{" "}
@@ -165,7 +165,7 @@ export function SessionInstructorsBlock({
         </ul>
       )}
 
-      <form onSubmit={onAdd} className="grid gap-2 border-t pt-3" style={{ borderColor: "var(--surface-border)" }}>
+      <form onSubmit={onAdd} className="grid gap-2 border-t pt-3" style={{ borderColor: "var(--shell-border)" }}>
         <div className="grid gap-2 sm:grid-cols-3">
           <select
             value={memberId}

@@ -83,7 +83,7 @@ export function MembershipPlansTab({ tenantId, programId, assigned, available }:
     <div className="grid gap-4">
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Gekoppelde lidmaatschapsplannen ({assigned.length})
@@ -101,7 +101,7 @@ export function MembershipPlansTab({ tenantId, programId, assigned, available }:
               <li
                 key={p.membership_plan_id}
                 className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 truncate font-medium" style={{ color: "var(--text-primary)" }}>
@@ -131,7 +131,7 @@ export function MembershipPlansTab({ tenantId, programId, assigned, available }:
                       onClick={() => onSetDefault(p.membership_plan_id)}
                       disabled={pending}
                       className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] disabled:opacity-50"
-                      style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                      style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                     >
                       <Star className="h-3 w-3" /> Maak standaard
                     </button>
@@ -141,7 +141,7 @@ export function MembershipPlansTab({ tenantId, programId, assigned, available }:
                     onClick={() => onRemove(p.membership_plan_id)}
                     disabled={pending}
                     className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-red-600 disabled:opacity-50"
-                    style={{ borderColor: "var(--surface-border)" }}
+                    style={{ borderColor: "var(--shell-border)" }}
                     aria-label={`Ontkoppel ${p.plan_name}`}
                   >
                     <Trash2 className="h-3 w-3" /> Ontkoppelen
@@ -155,7 +155,7 @@ export function MembershipPlansTab({ tenantId, programId, assigned, available }:
 
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Plan koppelen
@@ -171,9 +171,9 @@ export function MembershipPlansTab({ tenantId, programId, assigned, available }:
               onChange={(e) => setPickPlan(e.target.value)}
               className="h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             >
               {available.map((p) => (

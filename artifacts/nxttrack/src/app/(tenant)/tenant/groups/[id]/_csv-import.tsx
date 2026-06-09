@@ -90,7 +90,7 @@ export function CsvImport({ tenantId, groupId }: CsvImportProps) {
         <label
           className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold"
           style={{
-            borderColor: "var(--surface-border)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-primary)",
           }}
         >
@@ -126,14 +126,14 @@ export function CsvImport({ tenantId, groupId }: CsvImportProps) {
         <div
           className="overflow-hidden rounded-xl border text-xs"
           style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-strong)",
+            borderColor: "var(--shell-border)",
           }}
         >
           <div
             className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
             style={{
-              backgroundColor: "var(--surface-soft)",
+              backgroundColor: "var(--shell-panel-muted)",
               color: "var(--text-secondary)",
             }}
           >
@@ -164,7 +164,7 @@ export function CsvImport({ tenantId, groupId }: CsvImportProps) {
               </thead>
               <tbody
                 className="divide-y"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 {preview.rows.map((r, i) => (
                   <tr key={i} style={{ color: "var(--text-primary)" }}>

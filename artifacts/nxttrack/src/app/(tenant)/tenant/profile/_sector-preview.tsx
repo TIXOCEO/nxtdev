@@ -21,7 +21,7 @@ export function SectorPreview({
   return (
     <div
       className="space-y-4 rounded-2xl border p-4 sm:p-6"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <div>
         <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
@@ -49,7 +49,7 @@ export function SectorPreview({
             <div
               key={k}
               className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <span style={{ color: "var(--text-secondary)" }}>{TERMINOLOGY_KEY_LABELS[k]}</span>
               <span className="flex items-center gap-2">

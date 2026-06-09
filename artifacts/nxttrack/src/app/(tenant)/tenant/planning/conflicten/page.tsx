@@ -65,14 +65,14 @@ export default async function ConflictenPage({
               name="days"
               defaultValue={String(days)}
               className="h-9 rounded-lg border bg-transparent px-2 text-xs"
-              style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+              style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
             >
               <option value="7">7 dagen</option>
               <option value="14">14 dagen</option>
               <option value="30">30 dagen</option>
               <option value="90">90 dagen</option>
             </select>
-            <button type="submit" className="rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}>
+            <button type="submit" className="rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}>
               Toon
             </button>
           </form>
@@ -91,7 +91,7 @@ export default async function ConflictenPage({
             <li
               key={`${c.session_id}-${c.member_id ?? "x"}-${i}`}
               className="rounded-2xl border p-3"
-              style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+              style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

@@ -125,8 +125,8 @@ export function TrainerBioManager({ tenantId, sections, fields }: Props) {
           className="rounded-2xl border p-4 text-xs"
           style={{
             color: "var(--text-secondary)",
-            borderColor: "var(--surface-border)",
-            backgroundColor: "var(--surface-main)",
+            borderColor: "var(--shell-border)",
+            backgroundColor: "var(--shell-panel-strong)",
           }}
         >
           Nog geen secties. Voeg er één toe om te starten.
@@ -224,8 +224,8 @@ function SectionCard({
     <section
       className="rounded-2xl border p-4"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -233,13 +233,13 @@ function SectionCard({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           className="flex-1 rounded-lg border bg-transparent px-3 py-1.5 text-sm font-semibold outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         />
         <button
           type="button"
           onClick={() => setActive((v) => !v)}
           className="inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-semibold"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
           title={active ? "Sectie staat aan" : "Sectie staat uit"}
         >
           {active ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
@@ -288,20 +288,20 @@ function SectionCard({
 
       <div
         className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2"
-        style={{ borderColor: "var(--surface-border)" }}
+        style={{ borderColor: "var(--shell-border)" }}
       >
         <input
           value={newFieldLabel}
           onChange={(e) => setNewFieldLabel(e.target.value)}
           placeholder="Nieuwe vraag toevoegen…"
           className="flex-1 min-w-[180px] rounded-lg border bg-transparent px-3 py-1.5 text-xs outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         />
         <select
           value={newFieldType}
           onChange={(e) => setNewFieldType(e.target.value as TrainerBioFieldType)}
           className="rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         >
           {Object.entries(TYPE_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
@@ -370,21 +370,21 @@ function FieldRow({
     <li
       className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2"
       style={{
-        borderColor: "var(--surface-border)",
-        backgroundColor: "var(--surface-soft)",
+        borderColor: "var(--shell-border)",
+        backgroundColor: "var(--shell-panel-muted)",
       }}
     >
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         className="flex-1 min-w-[160px] rounded-lg border bg-transparent px-3 py-1.5 text-xs outline-none"
-        style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+        style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
       />
       <select
         value={type}
         onChange={(e) => setType(e.target.value as TrainerBioFieldType)}
         className="rounded-lg border bg-transparent px-2 py-1.5 text-xs outline-none"
-        style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+        style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
       >
         {Object.entries(TYPE_LABEL).map(([k, v]) => (
           <option key={k} value={k}>
@@ -396,7 +396,7 @@ function FieldRow({
         type="button"
         onClick={() => setActive((v) => !v)}
         className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold"
-        style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+        style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
       >
         {active ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
         {active ? "Actief" : "Uit"}
@@ -443,7 +443,7 @@ function IconBtn({
       aria-label={label}
       className="inline-flex h-7 w-7 items-center justify-center rounded-lg border disabled:opacity-40"
       style={{
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
         color: "var(--text-primary)",
       }}
     >

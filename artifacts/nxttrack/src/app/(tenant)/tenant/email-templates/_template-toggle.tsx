@@ -33,7 +33,7 @@ export function TemplateToggle({ tenantId, id, isEnabled }: TemplateToggleProps)
       aria-pressed={isEnabled}
       className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium uppercase tracking-wide disabled:opacity-50"
       style={{
-        backgroundColor: isEnabled ? "var(--accent)" : "var(--surface-soft)",
+        backgroundColor: isEnabled ? "var(--accent)" : "var(--shell-panel-muted)",
         color: isEnabled ? "var(--text-primary)" : "var(--text-secondary)",
       }}
     >

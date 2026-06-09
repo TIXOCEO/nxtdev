@@ -32,7 +32,7 @@ export function PlanToggle({ tenantId, id, isActive }: PlanToggleProps) {
       disabled={pending}
       className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium uppercase tracking-wide disabled:opacity-50"
       style={{
-        backgroundColor: isActive ? "var(--accent)" : "var(--surface-soft)",
+        backgroundColor: isActive ? "var(--accent)" : "var(--shell-panel-muted)",
         color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
       }}
       aria-pressed={isActive}

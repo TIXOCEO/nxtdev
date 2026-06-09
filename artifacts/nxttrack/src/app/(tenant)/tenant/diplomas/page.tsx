@@ -45,7 +45,7 @@ export default async function TenantDiplomasPage() {
       <PageHeading title="Diploma's" description="Ken behaalde diploma's toe aan leden." />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
-        <div className="rounded-2xl border" style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-card)" }}>
+        <div className="rounded-2xl border" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-card)" }}>
           {diplomas.length === 0 ? (
             <div className="p-6">
               <EmptyState icon={Award} title="Nog geen diploma's toegekend" description="Voeg hieronder het eerste diploma toe." />
@@ -53,7 +53,7 @@ export default async function TenantDiplomasPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wider" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+                <tr className="border-b text-left text-xs uppercase tracking-wider" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
                   <th className="px-4 py-2">Diploma</th>
                   <th className="px-4 py-2">Lid</th>
                   <th className="px-4 py-2">Niveau</th>
@@ -62,7 +62,7 @@ export default async function TenantDiplomasPage() {
               </thead>
               <tbody>
                 {diplomas.map((d) => (
-                  <tr key={d.id} className="border-b last:border-b-0" style={{ borderColor: "var(--surface-border)" }}>
+                  <tr key={d.id} className="border-b last:border-b-0" style={{ borderColor: "var(--shell-border)" }}>
                     <td className="px-4 py-2.5 font-medium" style={{ color: "var(--text-primary)" }}>
                       {d.diploma_name}
                     </td>

@@ -13,9 +13,9 @@ import { generateMinorLinkCode } from "@/lib/actions/tenant/invites";
 const inputCls =
   "h-9 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
 const inputStyle = {
-  borderColor: "var(--surface-border)",
+  borderColor: "var(--shell-border)",
   color: "var(--text-primary)",
-  backgroundColor: "var(--surface-main)",
+  backgroundColor: "var(--shell-panel-strong)",
 } as const;
 const btnCls =
   "inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:opacity-50";
@@ -154,7 +154,7 @@ export function GenerateMinorCodeButton({
         onClick={generate}
         disabled={pending}
         className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-transparent px-2.5 text-xs font-medium"
-        style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+        style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
       >
         <KeyRound className="h-3.5 w-3.5" />
         {pending ? "Bezig…" : `Genereer koppelcode voor ${childName}`}
@@ -163,7 +163,7 @@ export function GenerateMinorCodeButton({
         <span
           className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-xs"
           style={{
-            backgroundColor: "var(--surface-soft)",
+            backgroundColor: "var(--shell-panel-muted)",
             color: "var(--text-primary)",
           }}
         >

@@ -16,7 +16,7 @@ interface Props {
 }
 
 const inputClass = "w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none";
-const inputStyle = { borderColor: "var(--surface-border)", color: "var(--text-primary)" } as const;
+const inputStyle = { borderColor: "var(--shell-border)", color: "var(--text-primary)" } as const;
 
 export function MediaWallManager({ tenantId, initial }: Props) {
   const router = useRouter();
@@ -83,7 +83,7 @@ export function MediaWallManager({ tenantId, initial }: Props) {
         <form
           onSubmit={submit}
           className="space-y-3 rounded-lg border p-4"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
@@ -135,7 +135,7 @@ export function MediaWallManager({ tenantId, initial }: Props) {
       )}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
           Nog geen items.
         </p>
       ) : (
@@ -144,9 +144,9 @@ export function MediaWallManager({ tenantId, initial }: Props) {
             <li
               key={it.id}
               className="overflow-hidden rounded-lg border"
-              style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-main)" }}
+              style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}
             >
-              <div className="aspect-square w-full" style={{ backgroundColor: "var(--surface-soft)" }}>
+              <div className="aspect-square w-full" style={{ backgroundColor: "var(--shell-panel-muted)" }}>
                 {it.media_type === "video" ? (
                   <video src={it.media_url} muted playsInline className="h-full w-full object-cover" />
                 ) : (
@@ -167,7 +167,7 @@ export function MediaWallManager({ tenantId, initial }: Props) {
                   type="button"
                   onClick={() => toggle(it)}
                   className="rounded border px-2 py-1 text-[10px] font-semibold"
-                  style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                  style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
                 >
                   {it.is_active ? "Uit" : "Aan"}
                 </button>

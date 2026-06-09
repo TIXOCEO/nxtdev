@@ -80,7 +80,7 @@ export function IntakeSettingsForm({
   }
 
   const cardStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     backgroundColor: "var(--surface-bg, transparent)",
   } as const;
   const labelStyle = { color: "var(--text-secondary)" } as const;
@@ -150,9 +150,9 @@ export function IntakeSettingsForm({
                 disabled={pending}
                 className="h-9 rounded-xl border bg-transparent px-2 text-sm"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
-                  backgroundColor: "var(--surface-main)",
+                  backgroundColor: "var(--shell-panel-strong)",
                 }}
               >
                 <option value="default">Volg standaard</option>
@@ -216,9 +216,9 @@ export function IntakeSettingsForm({
                   disabled={pending}
                   className="h-9 rounded-xl border bg-transparent px-2 text-sm"
                   style={{
-                    borderColor: "var(--surface-border)",
+                    borderColor: "var(--shell-border)",
                     color: "var(--text-primary)",
-                    backgroundColor: "var(--surface-main)",
+                    backgroundColor: "var(--shell-panel-strong)",
                   }}
                 >
                   <option value="default">Volg standaard / doelgroep</option>

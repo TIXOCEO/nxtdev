@@ -74,7 +74,7 @@ export function TerminologyForm({
   return (
     <div
       className="space-y-5 rounded-2xl border p-4 sm:p-6"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -92,7 +92,7 @@ export function TerminologyForm({
           onClick={onResetOverrides}
           disabled={pending || dirtyCount === 0}
           className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs disabled:opacity-50"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
         >
           <RotateCcw className="h-3 w-3" /> Wis alle overrides
         </button>
@@ -107,7 +107,7 @@ export function TerminologyForm({
                 placeholder={inheritedTerminology[k] ?? ""}
                 onChange={(e) => setOverrides({ ...overrides, [k]: e.target.value })}
                 className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
-                style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
               />
               <span
                 className="truncate text-[11px]"

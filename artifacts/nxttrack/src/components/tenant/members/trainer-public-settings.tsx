@@ -73,7 +73,7 @@ export function TrainerPublicSettings({
           maxLength={80}
           placeholder="Bv. Hoofdinstructeur"
           className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         />
       </Field>
 
@@ -84,7 +84,7 @@ export function TrainerPublicSettings({
           onChange={(e) => setPhotoUrl(e.target.value)}
           placeholder="https://…"
           className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         />
       </Field>
 
@@ -94,7 +94,7 @@ export function TrainerPublicSettings({
           value={position}
           onChange={(e) => setPosition(e.target.value)}
           className="w-32 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         />
       </Field>
 
@@ -104,7 +104,7 @@ export function TrainerPublicSettings({
           onChange={(e) => setBio(e.target.value)}
           rows={4}
           className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         />
       </Field>
 

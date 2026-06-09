@@ -152,8 +152,8 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
         <div
           className="rounded-xl border px-3 py-2 text-xs"
           style={{
-            backgroundColor: "var(--surface-soft)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-secondary)",
           }}
         >
@@ -163,7 +163,7 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
 
       <div
         className="inline-flex rounded-lg border p-1"
-        style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+        style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
       >
         {(["admin", "usershell"] as TenantRoleScope[]).map((s) => (
           <button
@@ -202,8 +202,8 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
             key={r.id}
             className="flex items-start gap-3 rounded-2xl border p-4 transition-colors hover:bg-black/[0.02]"
             style={{
-              backgroundColor: "var(--surface-main)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-strong)",
+              borderColor: "var(--shell-border)",
             }}
           >
             <div
@@ -212,8 +212,8 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
                 backgroundColor: r.is_super_admin
                   ? "var(--accent)"
                   : r.is_system
-                    ? "var(--surface-soft)"
-                    : "var(--surface-soft)",
+                    ? "var(--shell-panel-muted)"
+                    : "var(--shell-panel-muted)",
                 color: "var(--text-primary)",
               }}
             >
@@ -235,7 +235,7 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
                 {r.is_system && (
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                    style={{ backgroundColor: "var(--surface-soft)", color: "var(--text-secondary)" }}
+                    style={{ backgroundColor: "var(--shell-panel-muted)", color: "var(--text-secondary)" }}
                   >
                     systeem
                   </span>
@@ -281,7 +281,7 @@ export function RolesManager({ tenantId, roles: initialRoles }: Props) {
         {visibleRoles.length === 0 && (
           <li
             className="rounded-2xl border p-6 text-center text-xs"
-            style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+            style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
           >
             Nog geen rollen in deze categorie.
           </li>
@@ -364,13 +364,13 @@ function RoleEditor({
       <div
         className="flex w-full max-w-3xl max-h-[92vh] flex-col gap-3 overflow-hidden rounded-2xl border"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <div
           className="flex items-center justify-between border-b px-5 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          style={{ borderColor: "var(--shell-border)" }}
         >
           <div>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -413,8 +413,8 @@ function RoleEditor({
                 placeholder="Bv. Hoofdtrainer, Bestuur, …"
                 className="w-full rounded-lg border px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{
-                  backgroundColor: "var(--surface-soft)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               />
@@ -432,8 +432,8 @@ function RoleEditor({
                 disabled={isSuperAdmin}
                 className="w-full rounded-lg border px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{
-                  backgroundColor: "var(--surface-soft)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               />
@@ -458,8 +458,8 @@ function RoleEditor({
                   }}
                   className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
                   style={{
-                    backgroundColor: "var(--surface-soft)",
-                    borderColor: "var(--surface-border)",
+                    backgroundColor: "var(--shell-panel-muted)",
+                    borderColor: "var(--shell-border)",
                     color: "var(--text-primary)",
                   }}
                 >
@@ -475,8 +475,8 @@ function RoleEditor({
                   <span
                     className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
                     style={{
-                      backgroundColor: "var(--surface-soft)",
-                      borderColor: "var(--surface-border)",
+                      backgroundColor: "var(--shell-panel-muted)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -505,8 +505,8 @@ function RoleEditor({
               rows={2}
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
               style={{
-                backgroundColor: "var(--surface-soft)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-muted)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -515,13 +515,13 @@ function RoleEditor({
           <div
             className="rounded-2xl border"
             style={{
-              backgroundColor: "var(--surface-soft)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-muted)",
+              borderColor: "var(--shell-border)",
             }}
           >
             <div
               className="flex items-center justify-between border-b px-3 py-2"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
                 Permissies
@@ -560,8 +560,8 @@ function RoleEditor({
                     key={g.id}
                     className="rounded-xl border"
                     style={{
-                      backgroundColor: "var(--surface-main)",
-                      borderColor: "var(--surface-border)",
+                      backgroundColor: "var(--shell-panel-strong)",
+                      borderColor: "var(--shell-border)",
                     }}
                   >
                     <div className="flex items-center gap-2 px-3 py-2">
@@ -588,7 +588,7 @@ function RoleEditor({
                         disabled={permsLocked}
                         className="rounded-md px-2 py-1 text-[10px] font-semibold disabled:opacity-50"
                         style={{
-                          backgroundColor: allOn ? "var(--accent)" : "var(--surface-soft)",
+                          backgroundColor: allOn ? "var(--accent)" : "var(--shell-panel-muted)",
                           color: "var(--text-primary)",
                         }}
                       >
@@ -597,7 +597,7 @@ function RoleEditor({
                     </div>
                     {open && (
                       <div className="grid grid-cols-1 gap-1 border-t px-3 py-2 sm:grid-cols-2"
-                        style={{ borderColor: "var(--surface-border)" }}>
+                        style={{ borderColor: "var(--shell-border)" }}>
                         {g.permissions.map((p) => {
                           const checked = permsLocked || editor.permissions.has(p.key);
                           return (
@@ -632,7 +632,7 @@ function RoleEditor({
 
         <div
           className="flex items-center justify-end gap-2 border-t px-5 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          style={{ borderColor: "var(--shell-border)" }}
         >
           <button
             type="button"

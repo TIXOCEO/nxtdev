@@ -35,7 +35,7 @@ export default async function NotificationsPage() {
             className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium shadow-xs"
             style={{
               backgroundColor: "var(--accent)",
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           >
@@ -46,7 +46,7 @@ export default async function NotificationsPage() {
 
       <div
         className="rounded-2xl border"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         {items.length === 0 ? (
           <div
@@ -64,7 +64,7 @@ export default async function NotificationsPage() {
             </Link>
           </div>
         ) : (
-          <ul className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+          <ul className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
             {items.map((n) => (
               <li key={n.id} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="min-w-0">
@@ -79,7 +79,7 @@ export default async function NotificationsPage() {
                     {n.source && n.source !== "manual" && (
                       <span
                         className="ml-2 rounded-full border px-1.5 py-0.5 text-[10px] uppercase tracking-wider"
-                        style={{ borderColor: "var(--surface-border)" }}
+                        style={{ borderColor: "var(--shell-border)" }}
                       >
                         {n.source.replace(/_/g, " ")}
                       </span>

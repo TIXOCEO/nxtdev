@@ -28,7 +28,7 @@ export default async function TenantDocumentenPage() {
       <PageHeading title="Trainer-documenten" description="Handleidingen, protocollen en formulieren delen met trainers." />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-2xl border" style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-card)" }}>
+        <div className="rounded-2xl border" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-card)" }}>
           {docs.length === 0 ? (
             <div className="p-6">
               <EmptyState icon={FileText} title="Nog geen documenten" description="Voeg hieronder het eerste document toe." />
@@ -36,7 +36,7 @@ export default async function TenantDocumentenPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wider" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+                <tr className="border-b text-left text-xs uppercase tracking-wider" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
                   <th className="px-4 py-2">Titel</th>
                   <th className="px-4 py-2">Categorie</th>
                   <th className="px-4 py-2">Status</th>

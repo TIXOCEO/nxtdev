@@ -118,8 +118,8 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
         onClick={() => setOpen(true)}
         className="inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors"
         style={{
-          borderColor: "var(--surface-border)",
-          backgroundColor: "var(--surface-soft)",
+          borderColor: "var(--shell-border)",
+          backgroundColor: "var(--shell-panel-muted)",
           color: "var(--text-primary)",
         }}
       >
@@ -131,7 +131,7 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
         <SheetContent
           side="right"
           className="w-full overflow-y-auto sm:max-w-md"
-          style={{ backgroundColor: "var(--surface-main)" }}
+          style={{ backgroundColor: "var(--shell-panel-strong)" }}
         >
           <SheetHeader>
             <SheetTitle style={{ color: "var(--text-primary)" }}>
@@ -151,8 +151,8 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
                 placeholder="Naam of e-mail"
                 className="h-9 w-full rounded-lg border px-2 text-sm"
                 style={{
-                  borderColor: "var(--surface-border)",
-                  backgroundColor: "var(--surface-soft)",
+                  borderColor: "var(--shell-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
                   color: "var(--text-primary)",
                 }}
               />
@@ -190,8 +190,8 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
                 onChange={(e) => setGroupId(e.target.value)}
                 className="h-9 w-full rounded-lg border px-2 text-sm"
                 style={{
-                  borderColor: "var(--surface-border)",
-                  backgroundColor: "var(--surface-soft)",
+                  borderColor: "var(--shell-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
                   color: "var(--text-primary)",
                 }}
               >
@@ -210,8 +210,8 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
                 onChange={(e) => setPlanId(e.target.value)}
                 className="h-9 w-full rounded-lg border px-2 text-sm"
                 style={{
-                  borderColor: "var(--surface-border)",
-                  backgroundColor: "var(--surface-soft)",
+                  borderColor: "var(--shell-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
                   color: "var(--text-primary)",
                 }}
               >
@@ -232,8 +232,8 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
                   onChange={(e) => setSinceFrom(e.target.value)}
                   className="h-9 w-full rounded-lg border px-2 text-sm"
                   style={{
-                    borderColor: "var(--surface-border)",
-                    backgroundColor: "var(--surface-soft)",
+                    borderColor: "var(--shell-border)",
+                    backgroundColor: "var(--shell-panel-muted)",
                     color: "var(--text-primary)",
                   }}
                 />
@@ -245,8 +245,8 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
                   onChange={(e) => setSinceTo(e.target.value)}
                   className="h-9 w-full rounded-lg border px-2 text-sm"
                   style={{
-                    borderColor: "var(--surface-border)",
-                    backgroundColor: "var(--surface-soft)",
+                    borderColor: "var(--shell-border)",
+                    backgroundColor: "var(--shell-panel-muted)",
                     color: "var(--text-primary)",
                   }}
                 />
@@ -267,7 +267,7 @@ export function MembersFilterSheet({ groups, plans }: FilterSheetProps) {
                 onClick={apply}
                 className="h-9 rounded-lg border px-4 text-xs font-semibold"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   backgroundColor: "var(--accent)",
                   color: "var(--text-primary)",
                 }}
@@ -312,11 +312,11 @@ function Chip({
       className="rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
       style={{
         borderColor: active
-          ? "color-mix(in srgb, var(--accent) 60%, var(--surface-border))"
-          : "var(--surface-border)",
+          ? "color-mix(in srgb, var(--accent) 60%, var(--shell-border))"
+          : "var(--shell-border)",
         backgroundColor: active
-          ? "color-mix(in srgb, var(--accent) 20%, var(--surface-soft))"
-          : "var(--surface-soft)",
+          ? "color-mix(in srgb, var(--accent) 20%, var(--shell-panel-muted))"
+          : "var(--shell-panel-muted)",
         color: "var(--text-primary)",
       }}
     >
@@ -436,8 +436,8 @@ export function ActiveFiltersStrip({
           onClick={c.remove}
           className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-black/5"
           style={{
-            borderColor: "var(--surface-border)",
-            backgroundColor: "var(--surface-soft)",
+            borderColor: "var(--shell-border)",
+            backgroundColor: "var(--shell-panel-muted)",
             color: "var(--text-primary)",
           }}
         >

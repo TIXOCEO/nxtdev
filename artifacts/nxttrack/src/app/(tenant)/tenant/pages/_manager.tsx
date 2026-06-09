@@ -207,8 +207,8 @@ export function CustomPagesManager({ tenantId, pages: initialPages }: Props) {
         <div
           className="rounded-xl border px-3 py-2 text-xs"
           style={{
-            backgroundColor: "var(--surface-soft)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-secondary)",
           }}
         >
@@ -233,8 +233,8 @@ export function CustomPagesManager({ tenantId, pages: initialPages }: Props) {
       <div
         className="overflow-hidden rounded-2xl border"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <SortableLevel
@@ -371,7 +371,7 @@ function SortableRow({
         className="flex items-center gap-2 px-3 py-2.5"
         style={{
           paddingLeft: `${12 + depth * 20}px`,
-          borderColor: "var(--surface-border)",
+          borderColor: "var(--shell-border)",
           opacity: page.is_enabled ? 1 : 0.55,
         }}
       >
@@ -483,13 +483,13 @@ function PageEditor({
       <div
         className="flex w-full max-w-2xl max-h-[90vh] flex-col gap-4 overflow-hidden rounded-2xl border"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <div
           className="flex items-center justify-between border-b px-5 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          style={{ borderColor: "var(--shell-border)" }}
         >
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             {editor.id ? "Pagina bewerken" : "Nieuwe pagina"}
@@ -510,8 +510,8 @@ function PageEditor({
               onChange={(e) => onChange({ ...editor, title: e.target.value })}
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
               style={{
-                backgroundColor: "var(--surface-soft)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-muted)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -527,8 +527,8 @@ function PageEditor({
               }
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
               style={{
-                backgroundColor: "var(--surface-soft)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-muted)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -541,8 +541,8 @@ function PageEditor({
               }
               className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
               style={{
-                backgroundColor: "var(--surface-soft)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-muted)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             >
@@ -580,7 +580,7 @@ function PageEditor({
         </div>
         <div
           className="flex items-center justify-end gap-2 border-t px-5 py-3"
-          style={{ borderColor: "var(--surface-border)" }}
+          style={{ borderColor: "var(--shell-border)" }}
         >
           <button
             type="button"
@@ -644,8 +644,8 @@ function Toggle({
       onClick={() => onChange(!value)}
       className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
       style={{
-        backgroundColor: value ? "var(--accent)" : "var(--surface-soft)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: value ? "var(--accent)" : "var(--shell-panel-muted)",
+        borderColor: "var(--shell-border)",
         color: value ? "var(--text-primary)" : "var(--text-secondary)",
       }}
     >
@@ -654,7 +654,7 @@ function Toggle({
         className="ml-2 h-3.5 w-3.5 rounded-full border"
         style={{
           backgroundColor: value ? "var(--text-primary)" : "transparent",
-          borderColor: value ? "var(--text-primary)" : "var(--surface-border)",
+          borderColor: value ? "var(--text-primary)" : "var(--shell-border)",
         }}
       />
     </button>

@@ -47,7 +47,7 @@ export function DocumentRow({
   }
 
   return (
-    <tr className="border-b last:border-b-0" style={{ borderColor: "var(--surface-border)", opacity: doc.is_archived ? 0.55 : 1 }}>
+    <tr className="border-b last:border-b-0" style={{ borderColor: "var(--shell-border)", opacity: doc.is_archived ? 0.55 : 1 }}>
       <td className="px-4 py-2.5">
         <a
           href={doc.file_url}

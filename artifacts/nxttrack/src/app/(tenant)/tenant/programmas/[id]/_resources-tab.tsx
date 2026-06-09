@@ -66,7 +66,7 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
     <div className="grid gap-4">
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Default-resources ({assigned.length})
@@ -84,7 +84,7 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
               <li
                 key={r.resource_id}
                 className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 <div className="min-w-0">
                   <div className="truncate font-medium" style={{ color: "var(--text-primary)" }}>
@@ -101,7 +101,7 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
                   onClick={() => onRemove(r.resource_id)}
                   disabled={pending}
                   className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-red-600 disabled:opacity-50"
-                  style={{ borderColor: "var(--surface-border)" }}
+                  style={{ borderColor: "var(--shell-border)" }}
                   aria-label={`Verwijder ${r.resource_name}`}
                 >
                   <Trash2 className="h-3 w-3" /> Verwijderen
@@ -114,7 +114,7 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
 
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Resource toevoegen
@@ -130,9 +130,9 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
               onChange={(e) => setPickResource(e.target.value)}
               className="h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             >
               {available.map((r) => (
@@ -151,9 +151,9 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
               onChange={(e) => setPickMaxParticipants(e.target.value)}
               className="h-10 w-32 rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             />
             <input
@@ -164,9 +164,9 @@ export function ResourcesTab({ tenantId, programId, assigned, available }: Props
               maxLength={500}
               className="h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             />
             <button

@@ -50,8 +50,8 @@ function StatTile({ label, value }: { label: string; value: number }) {
     <div
       className="rounded-2xl border px-4 py-3"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <p
@@ -120,10 +120,10 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                 style={{
                   backgroundColor: p.is_hidden
                     ? "rgba(220,38,38,0.06)"
-                    : "var(--surface-main)",
+                    : "var(--shell-panel-strong)",
                   borderColor: p.is_hidden
                     ? "rgba(220,38,38,0.3)"
-                    : "var(--surface-border)",
+                    : "var(--shell-border)",
                 }}
               >
                 <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -139,7 +139,7 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px]"
                     style={{
-                      backgroundColor: "var(--surface-soft)",
+                      backgroundColor: "var(--shell-panel-muted)",
                       color: "var(--text-secondary)",
                     }}
                   >
@@ -180,7 +180,7 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                     }
                     className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold"
                     style={{
-                      backgroundColor: "var(--surface-soft)",
+                      backgroundColor: "var(--shell-panel-muted)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -208,7 +208,7 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                     }
                     className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold"
                     style={{
-                      backgroundColor: "var(--surface-soft)",
+                      backgroundColor: "var(--shell-panel-muted)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -236,7 +236,7 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                     }
                     className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold"
                     style={{
-                      backgroundColor: "var(--surface-soft)",
+                      backgroundColor: "var(--shell-panel-muted)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -297,8 +297,8 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                 key={m.id}
                 className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
                 style={{
-                  backgroundColor: "var(--surface-main)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-strong)",
+                  borderColor: "var(--shell-border)",
                 }}
               >
                 <div className="min-w-0">
@@ -330,7 +330,7 @@ export function ModerationManager({ tenantId, stats, posts, mutes }: Props) {
                   }
                   className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold"
                   style={{
-                    backgroundColor: "var(--surface-soft)",
+                    backgroundColor: "var(--shell-panel-muted)",
                     color: "var(--text-primary)",
                   }}
                 >

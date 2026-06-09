@@ -61,13 +61,13 @@ export default async function TenantCapacityPage() {
 
       <div
         className="mb-4 flex flex-wrap gap-2 rounded-2xl border p-3"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         {counts.map((c) => (
           <div
             key={c.status}
             className="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px]"
-            style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+            style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
           >
             <span
               className="inline-block h-2 w-2 rounded-full"
@@ -97,8 +97,8 @@ export default async function TenantCapacityPage() {
                   key={r.session_id}
                   className="overflow-hidden rounded-2xl border"
                   style={{
-                    backgroundColor: "var(--surface-main)",
-                    borderColor: "var(--surface-border)",
+                    backgroundColor: "var(--shell-panel-strong)",
+                    borderColor: "var(--shell-border)",
                   }}
                 >
                   <div

@@ -106,8 +106,8 @@ function RegistrationCard({
     <li
       className="rounded-2xl border p-4 sm:p-5"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -135,7 +135,7 @@ function RegistrationCard({
             <span
               className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-secondary)",
               }}
             >
@@ -216,8 +216,8 @@ function RegistrationCard({
         <div
           className="mt-3 rounded-lg border p-3"
           style={{
-            borderColor: "var(--surface-border)",
-            backgroundColor: "var(--surface-soft)",
+            borderColor: "var(--shell-border)",
+            backgroundColor: "var(--shell-panel-muted)",
           }}
         >
           <p
@@ -244,7 +244,7 @@ function RegistrationCard({
 
       <div
         className="mt-3 flex justify-end border-t pt-3"
-        style={{ borderColor: "var(--surface-border)" }}
+        style={{ borderColor: "var(--shell-border)" }}
       >
         <ConvertRegistrationButton
           tenantId={tenantId}
@@ -257,8 +257,8 @@ function RegistrationCard({
         <div
           className="mt-3 flex gap-2 rounded-lg border p-3 text-sm"
           style={{
-            borderColor: "var(--surface-border)",
-            backgroundColor: "var(--surface-soft)",
+            borderColor: "var(--shell-border)",
+            backgroundColor: "var(--shell-panel-muted)",
           }}
         >
           <MessageSquare className="h-4 w-4 shrink-0" style={{ color: "var(--text-secondary)" }} />

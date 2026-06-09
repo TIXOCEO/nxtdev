@@ -35,7 +35,7 @@ export default async function NewNotificationPage() {
       />
       <div
         className="rounded-2xl border p-4 sm:p-6"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <NotificationForm
           tenantId={result.tenant.id}

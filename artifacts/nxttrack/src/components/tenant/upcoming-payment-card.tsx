@@ -1,9 +1,9 @@
-import { CalendarClock, AlertCircle } from "lucide-react";
+import { AlertCircle, CalendarClock } from "lucide-react";
 import type { UpcomingPayment } from "@/lib/payments/upcoming";
 
 function fmtPrice(p: number | null | undefined): string {
-  if (p === null || p === undefined || Number.isNaN(p)) return "—";
-  return `€ ${p.toFixed(2).replace(".", ",")}`;
+  if (p === null || p === undefined || Number.isNaN(p)) return "-";
+  return `EUR ${p.toFixed(2).replace(".", ",")}`;
 }
 
 function fmtDate(iso: string): string {
@@ -21,40 +21,48 @@ function daysUntil(iso: string): number {
 export function UpcomingPaymentCard({ upcoming }: { upcoming: UpcomingPayment }) {
   const days = daysUntil(upcoming.due_date);
   const overdue = days < 0;
+  const tone = upcoming.is_restant ? "var(--shell-warning)" : overdue ? "var(--shell-danger)" : "var(--shell-info)";
+  const Icon = upcoming.is_restant ? AlertCircle : CalendarClock;
+
   return (
     <div
-      className="rounded-2xl border p-4"
+      className="nxt-shell-hover rounded-[20px] border p-4"
       style={{
-        backgroundColor: upcoming.is_restant
-          ? "color-mix(in oklab, #fb923c 20%, var(--surface-main))"
-          : overdue
-            ? "color-mix(in oklab, #ef4444 18%, var(--surface-main))"
-            : "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        background:
+          "linear-gradient(180deg, color-mix(in srgb, var(--shell-panel-strong) 82%, transparent), var(--shell-panel-bg))",
+        borderColor: overdue || upcoming.is_restant ? tone : "var(--shell-border)",
+        boxShadow: "var(--shell-shadow-card)",
       }}
     >
-      <p
-        className="inline-flex items-center gap-2 text-sm font-semibold"
-        style={{ color: "var(--text-primary)" }}
-      >
-        {upcoming.is_restant ? (
-          <AlertCircle className="h-4 w-4" />
-        ) : (
-          <CalendarClock className="h-4 w-4" />
-        )}
-        {upcoming.is_restant ? "Openstaand restant" : "Aankomende betaling"}
-      </p>
-      <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-        {upcoming.plan_name ?? "Abonnement"}
-      </p>
-      <div className="mt-3 grid gap-1 text-sm" style={{ color: "var(--text-primary)" }}>
-        <p>
-          <span className="font-medium">{fmtPrice(upcoming.amount)}</span>{" "}
-          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            verwacht {fmtDate(upcoming.due_date)}
-          </span>
+      <div className="flex items-start gap-3">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border"
+          style={{
+            borderColor: "var(--shell-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            color: tone,
+          }}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>
+            {upcoming.is_restant ? "Openstaand restant" : "Aankomende betaling"}
+          </p>
+          <p className="mt-1 truncate text-xs" style={{ color: "var(--text-secondary)" }}>
+            {upcoming.plan_name ?? "Abonnement"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border px-3 py-2" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
+        <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>
+          {fmtPrice(upcoming.amount)}
         </p>
-        <p className="text-xs" style={{ color: overdue ? "#b91c1c" : "var(--text-secondary)" }}>
+        <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
+          Verwacht {fmtDate(upcoming.due_date)}
+        </p>
+        <p className="mt-1 text-xs font-bold" style={{ color: tone }}>
           {overdue
             ? `${Math.abs(days)} dagen achterstallig`
             : days === 0
@@ -62,7 +70,7 @@ export function UpcomingPaymentCard({ upcoming }: { upcoming: UpcomingPayment })
               : `Over ${days} ${days === 1 ? "dag" : "dagen"}`}
         </p>
         {upcoming.payment_method_name && (
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
             Methode: {upcoming.payment_method_name}
           </p>
         )}

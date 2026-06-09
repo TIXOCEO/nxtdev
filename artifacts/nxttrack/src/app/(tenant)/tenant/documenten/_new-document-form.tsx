@@ -49,7 +49,7 @@ export function NewDocumentForm({ tenantId }: { tenantId: string }) {
     <form
       onSubmit={submit}
       className="flex flex-col gap-3 rounded-2xl border p-4"
-      style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-card)" }}
+      style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-card)" }}
     >
       <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         Nieuw document
@@ -63,7 +63,7 @@ export function NewDocumentForm({ tenantId }: { tenantId: string }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         />
       </label>
 
@@ -75,7 +75,7 @@ export function NewDocumentForm({ tenantId }: { tenantId: string }) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         />
       </label>
 
@@ -87,7 +87,7 @@ export function NewDocumentForm({ tenantId }: { tenantId: string }) {
           onChange={(e) => setFileUrl(e.target.value)}
           placeholder="https://… of /uploads/…"
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         />
       </label>
 
@@ -99,7 +99,7 @@ export function NewDocumentForm({ tenantId }: { tenantId: string }) {
             onChange={(e) => setFileType(e.target.value)}
             maxLength={80}
             className="rounded-lg border px-3 py-2 text-sm"
-            style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+            style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
           />
         </label>
         <label className="flex flex-col gap-1 text-xs">
@@ -108,7 +108,7 @@ export function NewDocumentForm({ tenantId }: { tenantId: string }) {
             value={category}
             onChange={(e) => setCategory(e.target.value as (typeof CATEGORIES)[number]["v"])}
             className="rounded-lg border px-3 py-2 text-sm"
-            style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+            style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
           >
             {CATEGORIES.map((c) => (
               <option key={c.v} value={c.v}>

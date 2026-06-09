@@ -97,9 +97,9 @@ export function MemberRolesChips({
             key={r}
             className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
             style={{
-              backgroundColor: "var(--surface-soft)",
+              backgroundColor: "var(--shell-panel-muted)",
               color: "var(--text-primary)",
-              border: "1px solid var(--surface-border)",
+              border: "1px solid var(--shell-border)",
             }}
           >
             {ROLE_LABEL[r]}
@@ -127,9 +127,9 @@ export function MemberRolesChips({
             disabled={pending}
             className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-black/5 disabled:opacity-50"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
           >
             <Plus className="h-3 w-3" />
@@ -139,8 +139,8 @@ export function MemberRolesChips({
             <div
               className="absolute left-0 z-30 mt-1 min-w-40 rounded-xl border p-1 shadow-lg"
               style={{
-                backgroundColor: "var(--surface-main)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-strong)",
+                borderColor: "var(--shell-border)",
               }}
             >
               {remaining.map((r) => (

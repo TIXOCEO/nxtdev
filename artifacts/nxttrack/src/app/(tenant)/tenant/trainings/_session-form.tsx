@@ -42,9 +42,9 @@ export function TrainingSessionForm({ tenantId, groups, programs = [] }: Trainin
   const inputCls =
     "h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -124,7 +124,7 @@ export function TrainingSessionForm({ tenantId, groups, programs = [] }: Trainin
           {selectedProgram && selectedProgram.plans.length > 0 && (
             <div
               className="mt-2 rounded-xl border p-2.5"
-              style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-main)" }}
+              style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}
             >
               <p className="mb-1 text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>
                 Gekoppelde lidmaatschapsplannen ({selectedProgram.plans.length})

@@ -66,7 +66,7 @@ export function GroupsTab({ tenantId, programId, linked, available }: Props) {
     <div className="grid gap-4">
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Gekoppelde groepen ({linked.length})
@@ -81,7 +81,7 @@ export function GroupsTab({ tenantId, programId, linked, available }: Props) {
               <li
                 key={g.group_id}
                 className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {g.is_primary && (
@@ -109,7 +109,7 @@ export function GroupsTab({ tenantId, programId, linked, available }: Props) {
                       onClick={() => onSetPrimary(g.group_id)}
                       disabled={pending}
                       className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] disabled:opacity-50"
-                      style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                      style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                     >
                       <Star className="h-3 w-3" /> Maak primair
                     </button>
@@ -119,7 +119,7 @@ export function GroupsTab({ tenantId, programId, linked, available }: Props) {
                     onClick={() => onUnlink(g.group_id)}
                     disabled={pending}
                     className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-red-600 disabled:opacity-50"
-                    style={{ borderColor: "var(--surface-border)" }}
+                    style={{ borderColor: "var(--shell-border)" }}
                     aria-label={`Ontkoppel ${g.group_name}`}
                   >
                     <Trash2 className="h-3 w-3" /> Ontkoppelen
@@ -133,7 +133,7 @@ export function GroupsTab({ tenantId, programId, linked, available }: Props) {
 
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Groep koppelen
@@ -149,9 +149,9 @@ export function GroupsTab({ tenantId, programId, linked, available }: Props) {
               onChange={(e) => setPickGroup(e.target.value)}
               className="h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             >
               {available.map((g) => (

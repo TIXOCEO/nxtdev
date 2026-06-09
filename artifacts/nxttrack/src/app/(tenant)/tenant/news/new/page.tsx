@@ -25,7 +25,7 @@ export default async function NewNewsPostPage() {
       <PageHeading title="New post" description="Write a new announcement." />
       <div
         className="rounded-2xl border p-4 sm:p-6"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <PostForm mode="create" tenantId={result.tenant.id} categories={categories} />
       </div>

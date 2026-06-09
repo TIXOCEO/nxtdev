@@ -77,9 +77,9 @@ export function GroupSelector({
               key={g.id}
               className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             >
               {g.name}
@@ -105,9 +105,9 @@ export function GroupSelector({
             disabled={pending}
             className="h-9 flex-1 rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
           >
             <option value="">— Kies groep —</option>

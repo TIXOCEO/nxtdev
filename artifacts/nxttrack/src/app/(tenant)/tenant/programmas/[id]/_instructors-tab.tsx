@@ -84,7 +84,7 @@ export function InstructorsTab({
     <div className="grid gap-4">
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Default-instructeurs ({assigned.length})
@@ -102,7 +102,7 @@ export function InstructorsTab({
               <li
                 key={a.member_id}
                 className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 <div className="min-w-0 truncate font-medium" style={{ color: "var(--text-primary)" }}>
                   {a.member_name}
@@ -116,9 +116,9 @@ export function InstructorsTab({
                     disabled={pending}
                     className="h-7 rounded-md border bg-transparent px-2 text-[11px]"
                     style={{
-                      borderColor: "var(--surface-border)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-primary)",
-                      backgroundColor: "var(--surface-main)",
+                      backgroundColor: "var(--shell-panel-strong)",
                     }}
                   >
                     <option value="primary">{leadLabel}</option>
@@ -129,7 +129,7 @@ export function InstructorsTab({
                     onClick={() => onRemove(a.member_id)}
                     disabled={pending}
                     className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-red-600 disabled:opacity-50"
-                    style={{ borderColor: "var(--surface-border)" }}
+                    style={{ borderColor: "var(--shell-border)" }}
                     aria-label={`Verwijder ${a.member_name}`}
                   >
                     <Trash2 className="h-3 w-3" /> Verwijderen
@@ -143,7 +143,7 @@ export function InstructorsTab({
 
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Instructeur toevoegen
@@ -159,9 +159,9 @@ export function InstructorsTab({
               onChange={(e) => setPickMember(e.target.value)}
               className="h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             >
               {available.map((m) => (
@@ -173,9 +173,9 @@ export function InstructorsTab({
               onChange={(e) => setPickType(e.target.value as "primary" | "assistant")}
               className="h-10 rounded-xl border bg-transparent px-3 text-sm outline-none"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
-                backgroundColor: "var(--surface-main)",
+                backgroundColor: "var(--shell-panel-strong)",
               }}
             >
               <option value="primary">{leadLabel}</option>

@@ -47,7 +47,7 @@ export function TrainingStatusActions({
           onClick={() => update("cancelled")}
           disabled={pending}
           className={btnCls}
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         >
           Annuleren
         </button>
@@ -58,7 +58,7 @@ export function TrainingStatusActions({
           onClick={() => update("completed")}
           disabled={pending}
           className={btnCls}
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         >
           Markeer afgerond
         </button>
@@ -69,7 +69,7 @@ export function TrainingStatusActions({
           onClick={() => update("scheduled")}
           disabled={pending}
           className={btnCls}
-          style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+          style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
         >
           Heractiveer
         </button>

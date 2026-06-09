@@ -187,7 +187,7 @@ export function HomepageBuilder({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border" style={{ borderColor: "var(--surface-border)" }}>
+        <div className="inline-flex rounded-lg border" style={{ borderColor: "var(--shell-border)" }}>
           <button
             type="button"
             onClick={() => setPreviewMobile(false)}
@@ -242,7 +242,7 @@ export function HomepageBuilder({
       )}
 
       {modules.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
           Nog geen modules. Voeg de eerste module toe om je homepage te bouwen.
         </p>
       ) : previewMobile ? (
@@ -265,7 +265,7 @@ export function HomepageBuilder({
       ) : (
         <div
           className="rounded-lg border p-2"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
         >
           <GridLayout
             className="layout"
@@ -362,13 +362,13 @@ function ModuleCard({
     <div
       className="flex h-full flex-col overflow-hidden rounded-lg border"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <div
         className="module-drag-handle flex cursor-grab items-center gap-2 border-b px-3 py-2"
-        style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+        style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
       >
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -449,7 +449,7 @@ function ModuleCard({
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={() => persist({ title })}
                 className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none"
-                style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
               />
             </label>
             <label className="block">
@@ -465,7 +465,7 @@ function ModuleCard({
                 }}
                 disabled={module.module_key === "personal_dashboard"}
                 className="w-full rounded-lg border bg-transparent px-3 py-1.5 text-sm outline-none disabled:opacity-50"
-                style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
               >
                 <option value="public">Iedereen</option>
                 <option value="logged_in">Alleen ingelogd</option>
@@ -481,7 +481,7 @@ function ModuleCard({
               >
                 Formaat
               </p>
-              <div className="inline-flex flex-wrap gap-1 rounded-lg border p-1" style={{ borderColor: "var(--surface-border)" }}>
+              <div className="inline-flex flex-wrap gap-1 rounded-lg border p-1" style={{ borderColor: "var(--shell-border)" }}>
                 {(["1x1", "1x2", "2x1", "2x2"] as ModuleSize[]).map((s) => {
                   const allowed = allowedSizes.includes(s);
                   const active = s === currentSize;
@@ -509,7 +509,7 @@ function ModuleCard({
             </div>
           )}
 
-          <div className="rounded-lg border p-3" style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}>
+          <div className="rounded-lg border p-3" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
             <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
               <Settings2 className="h-3 w-3" /> Configuratie
             </p>

@@ -128,7 +128,7 @@ export function AddMemberPopover({
       aria-label={label}
       className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-xs disabled:opacity-40"
       style={{
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
         color: "var(--text-primary)",
       }}
     >
@@ -153,8 +153,8 @@ export function AddMemberPopover({
         align="end"
         className="w-80 p-3"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <div className="relative">
@@ -170,9 +170,9 @@ export function AddMemberPopover({
             placeholder="Zoek op naam of e-mail…"
             className="h-9 w-full rounded-xl border bg-transparent pl-7 pr-3 text-sm outline-none"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-soft)",
+              backgroundColor: "var(--shell-panel-muted)",
             }}
           />
           {searching && (
@@ -199,7 +199,7 @@ export function AddMemberPopover({
               Geen resultaten.
             </p>
           ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+            <ul className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
               {hits.map((h) => (
                 <li
                   key={h.id}
@@ -219,7 +219,7 @@ export function AddMemberPopover({
                       {h.athlete_code && (
                         <span
                           className="mr-1 rounded px-1 font-mono"
-                          style={{ backgroundColor: "var(--surface-soft)" }}
+                          style={{ backgroundColor: "var(--shell-panel-muted)" }}
                         >
                           {h.athlete_code}
                         </span>

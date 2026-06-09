@@ -90,8 +90,8 @@ export function RetentionForm({ tenantId, currentMonths }: RetentionFormProps) {
       onSubmit={onSubmit}
       className="flex flex-wrap items-end gap-3 rounded-2xl border p-4"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <div className="flex flex-col gap-1">
@@ -108,7 +108,7 @@ export function RetentionForm({ tenantId, currentMonths }: RetentionFormProps) {
           onChange={(e) => setPreset(e.target.value)}
           className="h-9 min-w-[12rem] rounded-md border bg-transparent px-2 text-sm"
           style={{
-            borderColor: "var(--surface-border)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-primary)",
           }}
         >
@@ -138,7 +138,7 @@ export function RetentionForm({ tenantId, currentMonths }: RetentionFormProps) {
             onChange={(e) => setCustomMonths(e.target.value)}
             className="h-9 w-32 rounded-md border bg-transparent px-2 text-sm"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           />
