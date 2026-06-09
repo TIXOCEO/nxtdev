@@ -72,8 +72,8 @@ export function SocialSettingsForm({ tenantId, initial }: Props) {
             key={f.key}
             className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2"
             style={{
-              backgroundColor: "var(--surface-main)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-strong)",
+              borderColor: "var(--shell-border)",
             }}
           >
             <div className="min-w-0">
@@ -102,7 +102,7 @@ export function SocialSettingsForm({ tenantId, initial }: Props) {
                 style={{
                   backgroundColor: state[f.key]
                     ? "var(--accent)"
-                    : "var(--surface-border)",
+                    : "var(--shell-border)",
                 }}
               />
               <span

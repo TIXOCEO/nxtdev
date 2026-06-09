@@ -64,7 +64,7 @@ export function NewDiplomaForm({
     <form
       onSubmit={submit}
       className="flex flex-col gap-3 rounded-2xl border p-4"
-      style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-card)" }}
+      style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-card)" }}
     >
       <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         Diploma toekennen
@@ -76,7 +76,7 @@ export function NewDiplomaForm({
           value={memberId}
           onChange={(e) => setMemberId(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         >
           {members.length === 0 && <option value="">Geen leden</option>}
           {members.map((m) => (
@@ -95,7 +95,7 @@ export function NewDiplomaForm({
           value={diplomaName}
           onChange={(e) => setDiplomaName(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         />
       </label>
 
@@ -107,7 +107,7 @@ export function NewDiplomaForm({
             value={level}
             onChange={(e) => setLevel(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm"
-            style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+            style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
           />
         </label>
         <label className="flex flex-col gap-1 text-xs">
@@ -118,7 +118,7 @@ export function NewDiplomaForm({
             value={awardedOn}
             onChange={(e) => setAwardedOn(e.target.value)}
             className="rounded-lg border px-3 py-2 text-sm"
-            style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+            style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
           />
         </label>
       </div>
@@ -130,7 +130,7 @@ export function NewDiplomaForm({
           onChange={(e) => setCertificateUrl(e.target.value)}
           placeholder="https://… of /uploads/…"
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         />
       </label>
 
@@ -142,7 +142,7 @@ export function NewDiplomaForm({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-input)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-input)" }}
         />
       </label>
 

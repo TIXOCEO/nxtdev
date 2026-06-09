@@ -111,8 +111,8 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
         <div
           className="rounded-xl border px-3 py-2 text-xs"
           style={{
-            backgroundColor: "var(--surface-soft)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-secondary)",
           }}
         >
@@ -123,8 +123,8 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
       <section
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -142,7 +142,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               placeholder="Bijv. Voetbalschool Houtrust"
               className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -157,7 +157,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               placeholder="%s | %tenant%"
               className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -168,7 +168,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               onChange={(e) => setD({ ...d, og_site_name: e.target.value })}
               className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -180,7 +180,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               placeholder="@voorbeeld"
               className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -192,7 +192,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               rows={2}
               className="w-full rounded-lg border bg-transparent px-2 py-1.5 text-sm"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -204,7 +204,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               placeholder="https://..."
               className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
@@ -227,8 +227,8 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
       <section
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <div className="mb-3 flex items-end justify-between gap-3">
@@ -245,7 +245,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
             type="button"
             onClick={addOverride}
             className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs"
-            style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+            style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
           >
             <Plus className="h-3 w-3" /> Toevoegen
           </button>
@@ -261,7 +261,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
               <li
                 key={o.id ?? `new-${idx}`}
                 className="rounded-xl border p-3"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Field label="Pagina-pad (na /t/{slug}/)">
@@ -272,7 +272,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
                       placeholder="bv. nieuws"
                       className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
                       style={{
-                        borderColor: "var(--surface-border)",
+                        borderColor: "var(--shell-border)",
                         color: "var(--text-primary)",
                       }}
                     />
@@ -290,7 +290,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
                       onChange={(e) => updateOverride(idx, { title: e.target.value })}
                       className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
                       style={{
-                        borderColor: "var(--surface-border)",
+                        borderColor: "var(--shell-border)",
                         color: "var(--text-primary)",
                       }}
                     />
@@ -302,7 +302,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
                       rows={2}
                       className="w-full rounded-lg border bg-transparent px-2 py-1.5 text-sm"
                       style={{
-                        borderColor: "var(--surface-border)",
+                        borderColor: "var(--shell-border)",
                         color: "var(--text-primary)",
                       }}
                     />
@@ -314,7 +314,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
                       placeholder="https://..."
                       className="h-9 w-full rounded-lg border bg-transparent px-2 text-sm"
                       style={{
-                        borderColor: "var(--surface-border)",
+                        borderColor: "var(--shell-border)",
                         color: "var(--text-primary)",
                       }}
                     />
@@ -335,7 +335,7 @@ export function TenantSeoForm({ tenantId, defaults: d0, overrides: o0 }: Props) 
                     type="button"
                     onClick={() => removeOverride(idx)}
                     className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs"
-                    style={{ borderColor: "var(--surface-border)", color: "#b91c1c" }}
+                    style={{ borderColor: "var(--shell-border)", color: "#b91c1c" }}
                   >
                     <Trash2 className="h-3 w-3" /> Verwijder
                   </button>

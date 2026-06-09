@@ -29,7 +29,7 @@ export function BrandedEmailPreview({ tenant, innerHtml, preheader }: Props) {
       className="rounded-2xl border p-4 sm:p-6"
       style={{
         background: "#f4f4f6",
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
       }}
     >
       {preheader && (

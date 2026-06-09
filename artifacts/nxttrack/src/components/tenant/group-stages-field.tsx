@@ -133,7 +133,7 @@ export function GroupStagesField({
             key={s.id}
             className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
             style={{
-              backgroundColor: s.color ?? "var(--surface-soft)",
+              backgroundColor: s.color ?? "var(--shell-panel-muted)",
               color: s.color ? "white" : "var(--text-primary)",
             }}
           >
@@ -158,9 +158,9 @@ export function GroupStagesField({
             disabled={pending}
             className="h-7 rounded-lg border bg-transparent px-2 text-[11px] outline-none"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
             aria-label="Stage selecteren om toe te voegen"
           >

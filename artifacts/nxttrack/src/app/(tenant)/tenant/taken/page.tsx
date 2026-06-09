@@ -81,7 +81,7 @@ export default async function TenantTakenPage() {
       <PageHeading title="Trainer-taken" description="Wijs taken toe aan trainers." />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-2xl border" style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-card)" }}>
+        <div className="rounded-2xl border" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--surface-card)" }}>
           {tasks.length === 0 ? (
             <div className="p-6">
               <EmptyState
@@ -93,7 +93,7 @@ export default async function TenantTakenPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-xs uppercase tracking-wider" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+                <tr className="border-b text-left text-xs uppercase tracking-wider" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
                   <th className="px-4 py-2">Titel</th>
                   <th className="px-4 py-2">Toegewezen aan</th>
                   <th className="px-4 py-2">Deadline</th>
@@ -104,7 +104,7 @@ export default async function TenantTakenPage() {
                 {tasks.map((t) => {
                   const tone = STATUS_TONE[t.status] ?? STATUS_TONE.open;
                   return (
-                    <tr key={t.id} className="border-b last:border-b-0" style={{ borderColor: "var(--surface-border)" }}>
+                    <tr key={t.id} className="border-b last:border-b-0" style={{ borderColor: "var(--shell-border)" }}>
                       <td className="px-4 py-2.5">
                         <div className="font-medium" style={{ color: "var(--text-primary)" }}>{t.title}</div>
                         {t.body && <div className="text-xs" style={{ color: "var(--text-secondary)" }}>{t.body}</div>}

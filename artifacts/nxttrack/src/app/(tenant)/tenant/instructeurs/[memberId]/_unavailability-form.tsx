@@ -11,9 +11,9 @@ export function UnavailabilityForm({ tenantId, memberId }: { tenantId: string; m
 
   const inputCls = "h-9 w-full rounded-lg border bg-transparent px-2 text-xs outline-none";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -49,7 +49,7 @@ export function UnavailabilityForm({ tenantId, memberId }: { tenantId: string; m
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-2 border-t pt-3" style={{ borderColor: "var(--surface-border)" }}>
+    <form onSubmit={onSubmit} className="grid gap-2 border-t pt-3" style={{ borderColor: "var(--shell-border)" }}>
       <div className="grid grid-cols-2 gap-2">
         <input type="date" name="start_date" required disabled={pending} className={inputCls} style={inputStyle} />
         <input type="time" name="start_time" defaultValue="00:00" disabled={pending} className={inputCls} style={inputStyle} />

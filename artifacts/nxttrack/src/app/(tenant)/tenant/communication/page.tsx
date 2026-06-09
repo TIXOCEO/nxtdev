@@ -45,8 +45,8 @@ export default function TenantCommunicationHubPage() {
             href={t.href}
             className="group flex items-start gap-3 rounded-[var(--radius-nxt-lg)] border p-4 transition-shadow hover:shadow-md"
             style={{
-              backgroundColor: "var(--surface-main)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-strong)",
+              borderColor: "var(--shell-border)",
               boxShadow: "var(--shadow-app)",
             }}
           >

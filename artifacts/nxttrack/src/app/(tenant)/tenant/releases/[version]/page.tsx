@@ -61,7 +61,7 @@ export default async function TenantReleaseDetailPage({
 
       <article
         className="rounded-2xl border p-5"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <header className="flex flex-wrap items-center gap-2">
           <span

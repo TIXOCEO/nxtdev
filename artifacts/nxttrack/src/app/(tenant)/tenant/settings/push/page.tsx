@@ -32,8 +32,8 @@ export default async function TenantPushSettingsPage() {
       <div
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         {!platform?.vapid_public_key ? (

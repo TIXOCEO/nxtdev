@@ -17,7 +17,7 @@ export function TenantSelection({ tenants }: TenantSelectionProps) {
     >
       <div
         className="w-full max-w-xl rounded-2xl border p-6 shadow-sm sm:p-8"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <div className="mb-5 flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
@@ -46,12 +46,12 @@ export function TenantSelection({ tenants }: TenantSelectionProps) {
                   <button
                     type="submit"
                     className="flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors hover:bg-black/5"
-                    style={{ borderColor: "var(--surface-border)" }}
+                    style={{ borderColor: "var(--shell-border)" }}
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div
                         className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg"
-                        style={{ backgroundColor: t.primary_color || "var(--surface-soft)" }}
+                        style={{ backgroundColor: t.primary_color || "var(--shell-panel-muted)" }}
                       >
                         {t.logo_url ? (
                           // eslint-disable-next-line @next/next/no-img-element

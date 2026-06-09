@@ -30,8 +30,8 @@ export default async function TenantEmailSettingsPage() {
       <div
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <EmailSettingsForm
@@ -43,8 +43,8 @@ export default async function TenantEmailSettingsPage() {
       <div
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2

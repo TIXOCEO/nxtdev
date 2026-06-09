@@ -86,9 +86,9 @@ export function ProfilePicturesManager({
   const inputCls =
     "h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   return (
@@ -96,8 +96,8 @@ export function ProfilePicturesManager({
       <section
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -137,7 +137,7 @@ export function ProfilePicturesManager({
               <li
                 key={t.id}
                 className="flex items-center gap-3 rounded-xl border p-2"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={t.image_url} alt={t.name} className="h-12 w-12 rounded-lg object-cover" />
@@ -165,8 +165,8 @@ export function ProfilePicturesManager({
       <section
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>

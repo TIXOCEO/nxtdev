@@ -54,9 +54,9 @@ export function OverviewForm({
   const inputCls =
     "h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
   const labelCls = "mb-1 block text-xs font-medium";
   const labelStyle = { color: "var(--text-secondary)" } as const;
@@ -110,7 +110,7 @@ export function OverviewForm({
       {/* Visibility-segmented */}
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Zichtbaarheid
@@ -125,7 +125,7 @@ export function OverviewForm({
             onClick={() => changeVisibility("internal")}
             className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-medium disabled:opacity-50"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               backgroundColor: program.visibility === "internal" ? "var(--accent)" : "transparent",
               color: "var(--text-primary)",
             }}
@@ -139,7 +139,7 @@ export function OverviewForm({
             title={!publicSlug ? "Vul eerst een publieke slug in." : undefined}
             className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-medium disabled:opacity-50"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               backgroundColor: isPublic ? "var(--accent)" : "transparent",
               color: "var(--text-primary)",
             }}
@@ -152,7 +152,7 @@ export function OverviewForm({
             onClick={() => changeVisibility("archived")}
             className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-medium disabled:opacity-50"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               backgroundColor: program.visibility === "archived" ? "var(--accent)" : "transparent",
               color: "var(--text-primary)",
             }}
@@ -165,7 +165,7 @@ export function OverviewForm({
       {/* Basis */}
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Basis</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -196,7 +196,7 @@ export function OverviewForm({
       {/* Capaciteit-defaults */}
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Capaciteit-defaults</h2>
         <p className="mb-3 text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -240,8 +240,8 @@ export function OverviewForm({
       <section
         className="rounded-2xl border p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
           opacity: isPublic ? 1 : 0.7,
         }}
       >
@@ -283,7 +283,7 @@ export function OverviewForm({
       {/* Wachtrij-indicator (Sprint 75) */}
       <section
         className="rounded-2xl border p-4"
-        style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+        style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
       >
         <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           Wachtrij-indicator

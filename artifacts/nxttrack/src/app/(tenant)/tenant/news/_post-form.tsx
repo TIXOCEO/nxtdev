@@ -144,9 +144,9 @@ export function PostForm({ mode, tenantId, categories, initial, onDelete }: Post
             rows={2}
             className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
             placeholder="Short summary…"
           />
@@ -157,9 +157,9 @@ export function PostForm({ mode, tenantId, categories, initial, onDelete }: Post
             {...register("category_id")}
             className="h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
           >
             <option value="">— None —</option>
@@ -179,19 +179,19 @@ export function PostForm({ mode, tenantId, categories, initial, onDelete }: Post
                 src={coverUrl}
                 alt=""
                 className="h-12 w-12 rounded-lg object-cover"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               />
             ) : (
               <div
                 className="flex h-12 w-12 items-center justify-center rounded-lg border"
-                style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+                style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
               >
                 <Upload className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
               </div>
             )}
             <label
               className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-black/5"
-              style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+              style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
             >
               <Upload className="h-3.5 w-3.5" />
               {uploading ? "Uploading…" : coverUrl ? "Replace" : "Upload"}
@@ -276,7 +276,7 @@ export function PostForm({ mode, tenantId, categories, initial, onDelete }: Post
             disabled={pending}
             onClick={() => onSubmit("draft")}
             className="rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
-            style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+            style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
           >
             Save draft
           </button>
@@ -330,9 +330,9 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       {...props}
       className="h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none focus:border-[var(--accent)]"
       style={{
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
         color: "var(--text-primary)",
-        backgroundColor: "var(--surface-main)",
+        backgroundColor: "var(--shell-panel-strong)",
       }}
     />
   );

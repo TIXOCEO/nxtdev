@@ -187,9 +187,9 @@ function initialState(): FormState {
 const inputCls =
   "h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50";
 const inputStyle = {
-  borderColor: "var(--surface-border)",
+  borderColor: "var(--shell-border)",
   color: "var(--text-primary)",
-  backgroundColor: "var(--surface-main)",
+  backgroundColor: "var(--shell-panel-strong)",
 } as const;
 
 export interface AddMemberWizardProps {
@@ -434,16 +434,16 @@ export function AddMemberWizard({
                   }}
                   className="flex items-start gap-3 rounded-xl border p-3 text-left transition-colors"
                   style={{
-                    borderColor: active ? accentColor : "var(--surface-border)",
+                    borderColor: active ? accentColor : "var(--shell-border)",
                     backgroundColor: active
                       ? "color-mix(in srgb, var(--accent) 8%, transparent)"
-                      : "var(--surface-main)",
+                      : "var(--shell-panel-strong)",
                   }}
                 >
                   <span
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                     style={{
-                      backgroundColor: "var(--surface-soft)",
+                      backgroundColor: "var(--shell-panel-muted)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -804,7 +804,7 @@ export function AddMemberWizard({
         >
           <dl
             className="divide-y rounded-xl border text-sm"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           >
             <ReviewRow label="Type" value={ACCOUNT_TYPE_LABEL[state.account_type]} />
             <ReviewRow
@@ -970,16 +970,16 @@ function MethodOption({
       disabled={disabled}
       className="flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors disabled:opacity-50"
       style={{
-        borderColor: selected ? "var(--accent)" : "var(--surface-border)",
+        borderColor: selected ? "var(--accent)" : "var(--shell-border)",
         backgroundColor: selected
           ? "color-mix(in srgb, var(--accent) 8%, transparent)"
-          : "var(--surface-main)",
+          : "var(--shell-panel-strong)",
       }}
     >
       <span
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
         style={{
-          backgroundColor: "var(--surface-soft)",
+          backgroundColor: "var(--shell-panel-muted)",
           color: "var(--text-primary)",
         }}
       >

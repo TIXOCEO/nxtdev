@@ -85,7 +85,7 @@ async function BeschikbaarheidTab({ tenantId, memberId, singular }: { tenantId: 
   return (
     <section
       className="rounded-2xl border p-4"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         Wekelijkse beschikbaarheid
@@ -123,7 +123,7 @@ async function UitzonderingenTab({ tenantId, memberId, singular }: { tenantId: s
   return (
     <section
       className="rounded-2xl border p-4"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         Afwezigheid (datum-specifiek)
@@ -159,7 +159,7 @@ async function GroepenTab({ tenantId, memberId }: { tenantId: string; memberId: 
   return (
     <section
       className="rounded-2xl border p-4"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         Groepen ({groups.length})
@@ -174,7 +174,7 @@ async function GroepenTab({ tenantId, memberId }: { tenantId: string; memberId: 
             <li
               key={g.group_id}
               className="flex items-center justify-between rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <Link
                 href={`/tenant/groups/${g.group_id}`}
@@ -211,7 +211,7 @@ async function AgendaTab({
   return (
     <section
       className="rounded-2xl border p-4"
-      style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+      style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
     >
       <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         Aankomende sessies (90 dagen)
@@ -226,7 +226,7 @@ async function AgendaTab({
             <li
               key={`${s.session_id}-${s.assignment_type}`}
               className="rounded-xl border px-3 py-2"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -244,7 +244,7 @@ async function AgendaTab({
                 <span
                   className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium"
                   style={{
-                    backgroundColor: s.is_explicit ? "var(--accent)" : "var(--surface-soft)",
+                    backgroundColor: s.is_explicit ? "var(--accent)" : "var(--shell-panel-muted)",
                     color: s.is_explicit ? "var(--text-primary)" : "var(--text-secondary)",
                   }}
                 >

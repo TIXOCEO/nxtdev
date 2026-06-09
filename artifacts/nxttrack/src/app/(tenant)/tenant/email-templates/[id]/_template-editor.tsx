@@ -20,9 +20,9 @@ export interface TemplateEditorProps {
 const inputCls =
   "w-full rounded-xl border bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50";
 const inputStyle = {
-  borderColor: "var(--surface-border)",
+  borderColor: "var(--shell-border)",
   color: "var(--text-primary)",
-  backgroundColor: "var(--surface-main)",
+  backgroundColor: "var(--shell-panel-strong)",
 } as const;
 
 export function TemplateEditor({ template, tenant }: TemplateEditorProps) {
@@ -94,8 +94,8 @@ export function TemplateEditor({ template, tenant }: TemplateEditorProps) {
       <div
         className="inline-flex rounded-xl border p-1"
         style={{
-          borderColor: "var(--surface-border)",
-          backgroundColor: "var(--surface-main)",
+          borderColor: "var(--shell-border)",
+          backgroundColor: "var(--shell-panel-strong)",
         }}
       >
         {(["edit", "preview"] as const).map((t) => {
@@ -129,8 +129,8 @@ export function TemplateEditor({ template, tenant }: TemplateEditorProps) {
         <div
           className="rounded-2xl border p-4 sm:p-6"
           style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-strong)",
+            borderColor: "var(--shell-border)",
           }}
         >
           <div className="space-y-3">
@@ -180,7 +180,7 @@ export function TemplateEditor({ template, tenant }: TemplateEditorProps) {
                     onClick={() => insertVar(v)}
                     className="rounded-md border px-1.5 py-0.5 font-mono text-[11px]"
                     style={{
-                      borderColor: "var(--surface-border)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-secondary)",
                     }}
                   >
@@ -253,8 +253,8 @@ export function TemplateEditor({ template, tenant }: TemplateEditorProps) {
       <div
         className="rounded-2xl border p-4 sm:p-6"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h3

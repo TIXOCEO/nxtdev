@@ -116,9 +116,9 @@ export function EventForm({ mode, tenantId, initial, onDelete }: EventFormProps)
             rows={4}
             className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
             placeholder="Wat staat er op het programma?"
           />
@@ -198,7 +198,7 @@ export function EventForm({ mode, tenantId, initial, onDelete }: EventFormProps)
             disabled={pending}
             onClick={() => onSubmit("draft")}
             className="rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
-            style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+            style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
           >
             Concept opslaan
           </button>
@@ -252,9 +252,9 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       {...props}
       className="h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none focus:border-[var(--accent)]"
       style={{
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
         color: "var(--text-primary)",
-        backgroundColor: "var(--surface-main)",
+        backgroundColor: "var(--shell-panel-strong)",
       }}
     />
   );

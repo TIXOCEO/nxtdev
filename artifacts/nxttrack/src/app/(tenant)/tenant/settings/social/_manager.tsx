@@ -90,8 +90,8 @@ export function SocialLinksManager({
         <div
           className="rounded-xl border px-3 py-2 text-xs"
           style={{
-            backgroundColor: "var(--surface-soft)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-secondary)",
           }}
         >
@@ -101,8 +101,8 @@ export function SocialLinksManager({
       <ul
         className="overflow-hidden rounded-2xl border"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         {SOCIAL_PLATFORMS.map((p) => {
@@ -111,12 +111,12 @@ export function SocialLinksManager({
             <li
               key={p.key}
               className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b px-3 py-3 last:border-b-0"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               <div
                 className="flex h-9 w-9 items-center justify-center rounded-full"
                 style={{
-                  backgroundColor: r.is_active && r.url ? "var(--accent)" : "var(--surface-soft)",
+                  backgroundColor: r.is_active && r.url ? "var(--accent)" : "var(--shell-panel-muted)",
                   color: "var(--text-primary)",
                   opacity: r.is_active && r.url ? 1 : 0.55,
                 }}
@@ -133,8 +133,8 @@ export function SocialLinksManager({
                   placeholder={p.hint}
                   className="mt-1 w-full rounded-lg border px-2 py-1 text-xs outline-none"
                   style={{
-                    backgroundColor: "var(--surface-soft)",
-                    borderColor: "var(--surface-border)",
+                    backgroundColor: "var(--shell-panel-muted)",
+                    borderColor: "var(--shell-border)",
                     color: "var(--text-primary)",
                   }}
                 />
@@ -149,7 +149,7 @@ export function SocialLinksManager({
                 onClick={() => update(p.key, { is_active: !r.is_active })}
                 className="rounded-lg px-3 py-1.5 text-[11px] font-semibold"
                 style={{
-                  backgroundColor: r.is_active ? "var(--accent)" : "var(--surface-soft)",
+                  backgroundColor: r.is_active ? "var(--accent)" : "var(--shell-panel-muted)",
                   color: r.is_active ? "var(--text-primary)" : "var(--text-secondary)",
                 }}
                 title={r.is_active ? "Actief" : "Niet actief"}
@@ -164,7 +164,7 @@ export function SocialLinksManager({
                 style={{
                   backgroundColor: r.dirty ? "var(--accent)" : "transparent",
                   color: "var(--text-primary)",
-                  border: r.dirty ? "none" : "1px solid var(--surface-border)",
+                  border: r.dirty ? "none" : "1px solid var(--shell-border)",
                 }}
               >
                 <Save className="h-3 w-3" />

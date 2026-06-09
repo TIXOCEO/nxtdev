@@ -18,7 +18,7 @@ interface Props {
 const inputClass =
   "w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none";
 const inputStyle = {
-  borderColor: "var(--surface-border)",
+  borderColor: "var(--shell-border)",
   color: "var(--text-primary)",
 } as const;
 
@@ -94,7 +94,7 @@ export function AlertsManager({ tenantId, initial }: Props) {
         <form
           onSubmit={submit}
           className="space-y-3 rounded-lg border p-4"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
@@ -176,7 +176,7 @@ export function AlertsManager({ tenantId, initial }: Props) {
       )}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
           Nog geen meldingen.
         </p>
       ) : (
@@ -189,8 +189,8 @@ export function AlertsManager({ tenantId, initial }: Props) {
                 key={a.id}
                 className="flex items-start gap-3 rounded-lg border p-3"
                 style={{
-                  backgroundColor: "var(--surface-main)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-strong)",
+                  borderColor: "var(--shell-border)",
                 }}
               >
                 <Icon
@@ -216,7 +216,7 @@ export function AlertsManager({ tenantId, initial }: Props) {
                   type="button"
                   onClick={() => toggle(a)}
                   className="rounded border px-2 py-1 text-[11px] font-semibold"
-                  style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                  style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
                 >
                   {a.is_active ? "Uit" : "Aan"}
                 </button>

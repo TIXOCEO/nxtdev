@@ -16,7 +16,7 @@ interface Props {
 }
 
 const inputClass = "w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none";
-const inputStyle = { borderColor: "var(--surface-border)", color: "var(--text-primary)" } as const;
+const inputStyle = { borderColor: "var(--shell-border)", color: "var(--text-primary)" } as const;
 
 export function SponsorsManager({ tenantId, initial }: Props) {
   const router = useRouter();
@@ -83,7 +83,7 @@ export function SponsorsManager({ tenantId, initial }: Props) {
         <form
           onSubmit={submit}
           className="space-y-3 rounded-lg border p-4"
-          style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+          style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
         >
           <input
             required
@@ -132,7 +132,7 @@ export function SponsorsManager({ tenantId, initial }: Props) {
       )}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+        <p className="rounded-lg border p-6 text-center text-sm" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
           Nog geen sponsoren.
         </p>
       ) : (
@@ -141,11 +141,11 @@ export function SponsorsManager({ tenantId, initial }: Props) {
             <li
               key={s.id}
               className="flex items-center gap-3 rounded-lg border p-3"
-              style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+              style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
             >
               <div
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border"
-                style={{ borderColor: "var(--surface-border)", backgroundColor: "var(--surface-soft)" }}
+                style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}
               >
                 {s.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -173,7 +173,7 @@ export function SponsorsManager({ tenantId, initial }: Props) {
                 type="button"
                 onClick={() => toggle(s)}
                 className="rounded border px-2 py-1 text-[11px] font-semibold"
-                style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
               >
                 {s.is_active ? "Uit" : "Aan"}
               </button>

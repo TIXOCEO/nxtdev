@@ -35,7 +35,7 @@ export function ReminderButton({ tenantId, sessionId }: ReminderButtonProps) {
         onClick={send}
         disabled={pending}
         className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-        style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+        style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
       >
         <Bell className="h-3.5 w-3.5" />
         {pending ? "Bezig…" : "Stuur herinnering"}

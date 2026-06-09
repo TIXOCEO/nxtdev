@@ -178,8 +178,8 @@ export function StagesTab({
       <section
         className="rounded-2xl border p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <div className="flex flex-wrap items-center gap-3">
@@ -203,8 +203,8 @@ export function StagesTab({
       <section
         className="rounded-2xl border p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -220,7 +220,7 @@ export function StagesTab({
               <li
                 key={s.id}
                 className="rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--surface-border)" }}
+                style={{ borderColor: "var(--shell-border)" }}
               >
                 {editingId === s.id ? (
                   <div className="grid gap-2 sm:grid-cols-[1fr_120px_80px_auto]">
@@ -230,7 +230,7 @@ export function StagesTab({
                       onChange={(e) => setEditName(e.target.value)}
                       maxLength={64}
                       className="h-8 rounded-md border bg-transparent px-2 text-xs"
-                      style={{ borderColor: "var(--surface-border)" }}
+                      style={{ borderColor: "var(--shell-border)" }}
                       aria-label="Stagenaam"
                     />
                     <input
@@ -239,7 +239,7 @@ export function StagesTab({
                       onChange={(e) => setEditColor(e.target.value)}
                       placeholder="#rrggbb"
                       className="h-8 rounded-md border bg-transparent px-2 text-xs"
-                      style={{ borderColor: "var(--surface-border)" }}
+                      style={{ borderColor: "var(--shell-border)" }}
                       aria-label="Kleur"
                     />
                     <input
@@ -248,7 +248,7 @@ export function StagesTab({
                       value={editSort}
                       onChange={(e) => setEditSort(e.target.value)}
                       className="h-8 rounded-md border bg-transparent px-2 text-xs"
-                      style={{ borderColor: "var(--surface-border)" }}
+                      style={{ borderColor: "var(--shell-border)" }}
                       aria-label="Volgorde"
                     />
                     <div className="flex items-center gap-1">
@@ -266,7 +266,7 @@ export function StagesTab({
                         onClick={() => setEditingId(null)}
                         disabled={pending}
                         className="rounded-md border px-2 py-1 text-[11px]"
-                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                       >
                         Annuleren
                       </button>
@@ -277,7 +277,7 @@ export function StagesTab({
                       placeholder="Beschrijving (optioneel)"
                       maxLength={500}
                       className="sm:col-span-4 h-16 rounded-md border bg-transparent px-2 py-1 text-xs"
-                      style={{ borderColor: "var(--surface-border)" }}
+                      style={{ borderColor: "var(--shell-border)" }}
                     />
                   </div>
                 ) : (
@@ -285,7 +285,7 @@ export function StagesTab({
                     <div className="flex min-w-0 items-start gap-2">
                       <span
                         className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-full"
-                        style={{ backgroundColor: s.color ?? "var(--surface-soft)" }}
+                        style={{ backgroundColor: s.color ?? "var(--shell-panel-muted)" }}
                         aria-hidden
                       />
                       <div className="min-w-0">
@@ -337,7 +337,7 @@ export function StagesTab({
                         onClick={() => onMove(s.id, -1)}
                         disabled={pending}
                         className="inline-flex items-center rounded-md border px-1.5 py-1 text-[11px] disabled:opacity-40"
-                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                         aria-label="Omhoog"
                         title="Omhoog"
                       >
@@ -348,7 +348,7 @@ export function StagesTab({
                         onClick={() => onMove(s.id, 1)}
                         disabled={pending}
                         className="inline-flex items-center rounded-md border px-1.5 py-1 text-[11px] disabled:opacity-40"
-                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                         aria-label="Omlaag"
                         title="Omlaag"
                       >
@@ -359,7 +359,7 @@ export function StagesTab({
                         onClick={() => beginEdit(s)}
                         disabled={pending}
                         className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
-                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                       >
                         <Pencil className="h-3 w-3" /> Wijzig
                       </button>
@@ -368,7 +368,7 @@ export function StagesTab({
                         onClick={() => onArchive(s.id, true)}
                         disabled={pending}
                         className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
-                        style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                        style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                       >
                         <Archive className="h-3 w-3" /> Archiveer
                       </button>
@@ -384,8 +384,8 @@ export function StagesTab({
       <section
         className="rounded-2xl border p-4"
         style={{
-          backgroundColor: "var(--surface-main)",
-          borderColor: "var(--surface-border)",
+          backgroundColor: "var(--shell-panel-strong)",
+          borderColor: "var(--shell-border)",
         }}
       >
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -399,7 +399,7 @@ export function StagesTab({
             placeholder="Naam (bv. Watergewenning)"
             maxLength={64}
             className="h-8 rounded-md border bg-transparent px-2 text-xs"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
             aria-label="Stagenaam"
           />
           <input
@@ -408,7 +408,7 @@ export function StagesTab({
             onChange={(e) => setNewColor(e.target.value)}
             placeholder="#rrggbb"
             className="h-8 rounded-md border bg-transparent px-2 text-xs"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
             aria-label="Kleur"
           />
           <input
@@ -417,7 +417,7 @@ export function StagesTab({
             value={newSort}
             onChange={(e) => setNewSort(e.target.value)}
             className="h-8 rounded-md border bg-transparent px-2 text-xs"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
             aria-label="Volgorde"
           />
           <button
@@ -434,7 +434,7 @@ export function StagesTab({
             placeholder="Beschrijving (optioneel)"
             maxLength={500}
             className="sm:col-span-4 h-16 rounded-md border bg-transparent px-2 py-1 text-xs"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           />
         </form>
       </section>
@@ -443,8 +443,8 @@ export function StagesTab({
         <section
           className="rounded-2xl border p-4"
           style={{
-            backgroundColor: "var(--surface-main)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-strong)",
+            borderColor: "var(--shell-border)",
           }}
         >
           <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -455,12 +455,12 @@ export function StagesTab({
               <li
                 key={s.id}
                 className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--surface-border)", opacity: 0.7 }}
+                style={{ borderColor: "var(--shell-border)", opacity: 0.7 }}
               >
                 <div className="flex items-center gap-2">
                   <span
                     className="inline-block h-3 w-3 rounded-full"
-                    style={{ backgroundColor: s.color ?? "var(--surface-soft)" }}
+                    style={{ backgroundColor: s.color ?? "var(--shell-panel-muted)" }}
                   />
                   <span style={{ color: "var(--text-secondary)" }}>{s.name}</span>
                 </div>
@@ -469,7 +469,7 @@ export function StagesTab({
                   onClick={() => onArchive(s.id, false)}
                   disabled={pending}
                   className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
-                  style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                  style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                 >
                   <ArchiveRestore className="h-3 w-3" /> Activeer
                 </button>

@@ -74,8 +74,8 @@ function RenderStylePanel({
     <section
       className="rounded-2xl border p-4 sm:p-6"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -89,7 +89,7 @@ function RenderStylePanel({
           <label
             key={rs}
             className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm"
-            style={{ borderColor: "var(--surface-border)" }}
+            style={{ borderColor: "var(--shell-border)" }}
           >
             <input
               type="radio"
@@ -216,17 +216,17 @@ function LabelsPanel({
 
   const cell = "h-9 rounded-md border bg-transparent px-2 text-sm w-full";
   const cellStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   return (
     <section
       className="rounded-2xl border p-4 sm:p-6"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <div className="flex items-baseline justify-between">
@@ -262,7 +262,7 @@ function LabelsPanel({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t" style={{ borderColor: "var(--surface-border)" }}>
+                <tr key={r.id} className="border-t" style={{ borderColor: "var(--shell-border)" }}>
                   <td className="py-2 pr-2 w-16">
                     <input
                       type="number"
@@ -338,7 +338,7 @@ function LabelsPanel({
                       onClick={() => removeRow(r)}
                       disabled={pending}
                       className="rounded-md border px-3 py-1 text-xs disabled:opacity-60"
-                      style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                      style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                     >
                       Verwijder
                     </button>
@@ -352,7 +352,7 @@ function LabelsPanel({
 
       <div
         className="mt-6 rounded-xl border p-3"
-        style={{ borderColor: "var(--surface-border)" }}
+        style={{ borderColor: "var(--shell-border)" }}
       >
         <h3 className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
           Nieuw label

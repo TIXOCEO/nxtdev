@@ -71,7 +71,7 @@ export function TriggerMatrix({ tenantId, triggers, templates }: TriggerMatrixPr
 
   return (
     <div className="space-y-2">
-      <ul className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+      <ul className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
         {TRIGGER_EVENTS.map((evt) => {
           const cur = state[evt] ?? { template_key: "", enabled: true };
           return (
@@ -101,9 +101,9 @@ export function TriggerMatrix({ tenantId, triggers, templates }: TriggerMatrixPr
                 }}
                 className="h-9 w-full rounded-xl border bg-transparent px-3 text-sm outline-none disabled:opacity-50"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
-                  backgroundColor: "var(--surface-main)",
+                  backgroundColor: "var(--shell-panel-strong)",
                 }}
               >
                 <option value="">— Geen template —</option>

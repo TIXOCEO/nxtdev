@@ -48,7 +48,7 @@ export default async function OnbemandPage({
         title="Onbemande sessies"
         description={`Sessies met minder dan vereiste primary-${instrPlural} in de komende ${days} dagen.`}
       />
-      <div className="mb-3 rounded-xl border px-3 py-2 text-xs" style={{ backgroundColor: "var(--surface-soft)", borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+      <div className="mb-3 rounded-xl border px-3 py-2 text-xs" style={{ backgroundColor: "var(--shell-panel-muted)", borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
         Stel een minimum in per groep (Groepen → bewerken) of overschrijf het per sessie.
       </div>
       {rows.length === 0 ? (
@@ -63,7 +63,7 @@ export default async function OnbemandPage({
             <li
               key={r.session_id}
               className="rounded-2xl border p-3"
-              style={{ backgroundColor: "var(--surface-main)", borderColor: "var(--surface-border)" }}
+              style={{ backgroundColor: "var(--shell-panel-strong)", borderColor: "var(--shell-border)" }}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

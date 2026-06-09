@@ -231,7 +231,7 @@ export function FamilyTab({
                     href={`/tenant/members/${p.id}`}
                     className="rounded-full border px-3 py-1 text-xs hover:bg-black/5"
                     style={{
-                      borderColor: "var(--surface-border)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -270,7 +270,7 @@ export function FamilyTab({
                     href={`/tenant/members/${c.id}`}
                     className="self-start rounded-full border px-3 py-1 text-xs hover:bg-black/5"
                     style={{
-                      borderColor: "var(--surface-border)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -449,7 +449,7 @@ export function CommunicationTab({ logs }: { logs: EmailLog[] }) {
               <th className="py-2 pr-3">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
+          <tbody className="divide-y" style={{ borderColor: "var(--shell-border)" }}>
             {logs.map((l) => (
               <tr key={l.id} style={{ color: "var(--text-primary)" }}>
                 <td className="py-2 pr-3 text-xs whitespace-nowrap">
@@ -465,8 +465,8 @@ export function CommunicationTab({ logs }: { logs: EmailLog[] }) {
                     style={{
                       backgroundColor:
                         l.status === "sent"
-                          ? "color-mix(in oklab, #16a34a 18%, var(--surface-soft))"
-                          : "color-mix(in oklab, #dc2626 22%, var(--surface-soft))",
+                          ? "color-mix(in oklab, #16a34a 18%, var(--shell-panel-muted))"
+                          : "color-mix(in oklab, #dc2626 22%, var(--shell-panel-muted))",
                       color: "var(--text-primary)",
                     }}
                   >
@@ -525,8 +525,8 @@ export function AuditTab({ logs }: { logs: AuditLogRow[] }) {
             key={l.id}
             className="rounded-xl border p-3 text-sm"
             style={{
-              backgroundColor: "var(--surface-soft)",
-              borderColor: "var(--surface-border)",
+              backgroundColor: "var(--shell-panel-muted)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
             }}
           >
@@ -567,8 +567,8 @@ function Card({
     <section
       className="rounded-2xl border p-4 sm:p-6"
       style={{
-        backgroundColor: "var(--surface-main)",
-        borderColor: "var(--surface-border)",
+        backgroundColor: "var(--shell-panel-strong)",
+        borderColor: "var(--shell-border)",
       }}
     >
       <h2

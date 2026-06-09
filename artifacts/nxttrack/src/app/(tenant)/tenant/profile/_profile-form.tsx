@@ -119,7 +119,7 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
       </div>
 
       {/* ── Sprint 78b — Welkom-kaart ──────────────────────────────────── */}
-      <fieldset className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--surface-border)" }}>
+      <fieldset className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--shell-border)" }}>
         <legend className="px-1 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
           Welkom-kaart (publieke homepage)
         </legend>
@@ -133,9 +133,9 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
             maxLength={2000}
             className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
             style={{
-              borderColor: "var(--surface-border)",
+              borderColor: "var(--shell-border)",
               color: "var(--text-primary)",
-              backgroundColor: "var(--surface-main)",
+              backgroundColor: "var(--shell-panel-strong)",
             }}
           />
         </Field>
@@ -148,7 +148,7 @@ export function ProfileForm({ tenant }: ProfileFormProps) {
       </fieldset>
 
       {/* ── Sprint 78b — Locatie-kaart ─────────────────────────────────── */}
-      <fieldset className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--surface-border)" }}>
+      <fieldset className="space-y-3 rounded-xl border p-4" style={{ borderColor: "var(--shell-border)" }}>
         <legend className="px-1 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
           Locatie-kaart (publieke homepage)
         </legend>
@@ -248,9 +248,9 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       {...props}
       className="h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none focus:border-[var(--accent)]"
       style={{
-        borderColor: "var(--surface-border)",
+        borderColor: "var(--shell-border)",
         color: "var(--text-primary)",
-        backgroundColor: "var(--surface-main)",
+        backgroundColor: "var(--shell-panel-strong)",
       }}
     />
   );

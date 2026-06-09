@@ -69,8 +69,8 @@ export default async function TenantInvitesPage() {
                 key={inv.id}
                 className="rounded-2xl border p-4 sm:p-5"
                 style={{
-                  backgroundColor: "var(--surface-main)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-strong)",
+                  borderColor: "var(--shell-border)",
                 }}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -89,7 +89,7 @@ export default async function TenantInvitesPage() {
                       <span
                         className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px]"
                         style={{
-                          borderColor: "var(--surface-border)",
+                          borderColor: "var(--shell-border)",
                           color: "var(--text-secondary)",
                         }}
                       >

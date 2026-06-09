@@ -83,7 +83,7 @@ export function GroupMemberRow({
               href={`/tenant/members/${memberId}`}
               className="inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs font-medium"
               style={{
-                borderColor: "var(--surface-border)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             >
@@ -117,7 +117,7 @@ export function GroupMemberRow({
                 disabled={pending}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border disabled:opacity-50"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-secondary)",
                 }}
                 aria-label="Verwijderen uit groep"
@@ -152,7 +152,7 @@ export function GroupMemberRow({
         href={`/tenant/members/${memberId}`}
         className="inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs font-medium"
         style={{
-          borderColor: "var(--surface-border)",
+          borderColor: "var(--shell-border)",
           color: "var(--text-primary)",
         }}
       >

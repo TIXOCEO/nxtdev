@@ -469,7 +469,7 @@ export function PaymentsTable({
                             type="button"
                             onClick={() => openRestant(p)}
                             className="inline-flex h-7 items-center gap-1 rounded-lg border px-2 text-[11px]"
-                            style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+                            style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
                           >
                             <Receipt className="h-3 w-3" /> Restant
                           </button>
@@ -478,7 +478,7 @@ export function PaymentsTable({
                           type="button"
                           onClick={() => openEdit(p)}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-lg border"
-                          style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}
+                          style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}
                           aria-label="Bewerk"
                         >
                           <Pencil className="h-3 w-3" />
@@ -490,7 +490,7 @@ export function PaymentsTable({
                             setDeleteNote("");
                           }}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-lg border"
-                          style={{ borderColor: "var(--surface-border)", color: "#b91c1c" }}
+                          style={{ borderColor: "var(--shell-border)", color: "#b91c1c" }}
                           aria-label="Verwijder"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -509,8 +509,8 @@ export function PaymentsTable({
         <div
           className="rounded-xl border p-3"
           style={{
-            borderColor: "var(--surface-border)",
-            backgroundColor: "color-mix(in oklab, #ef4444 12%, var(--surface-main))",
+            borderColor: "var(--shell-border)",
+            backgroundColor: "color-mix(in oklab, #ef4444 12%, var(--shell-panel-strong))",
           }}
         >
           <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -536,7 +536,7 @@ export function PaymentsTable({
                 setErr(null);
               }}
               className="inline-flex h-8 items-center rounded-lg border px-3 text-xs"
-              style={{ borderColor: "var(--surface-border)", color: "var(--text-primary)" }}
+              style={{ borderColor: "var(--shell-border)", color: "var(--text-primary)" }}
             >
               Annuleer
             </button>

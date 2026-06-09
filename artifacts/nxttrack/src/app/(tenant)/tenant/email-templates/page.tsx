@@ -38,8 +38,8 @@ export default async function TenantEmailTemplatesPage() {
               key={t.id}
               className="rounded-2xl border p-4"
               style={{
-                backgroundColor: "var(--surface-main)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-strong)",
+                borderColor: "var(--shell-border)",
               }}
             >
               <div className="flex items-start justify-between gap-3">

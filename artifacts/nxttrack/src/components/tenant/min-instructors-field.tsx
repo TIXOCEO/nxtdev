@@ -54,9 +54,9 @@ export function MinInstructorsField({
 
   const inputCls = "h-8 w-20 rounded-lg border bg-transparent px-2 text-xs outline-none";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   return (
@@ -79,7 +79,7 @@ export function MinInstructorsField({
           <button type="button" onClick={onSave} disabled={pending} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50" style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}>
             <Check className="h-3 w-3" /> Opslaan
           </button>
-          <button type="button" onClick={() => { setEditing(false); setDraft(initialValue == null ? "" : String(initialValue)); setErr(null); }} disabled={pending} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+          <button type="button" onClick={() => { setEditing(false); setDraft(initialValue == null ? "" : String(initialValue)); setErr(null); }} disabled={pending} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
             <X className="h-3 w-3" /> Annuleren
           </button>
           {err && <span className="text-red-600">{err}</span>}
@@ -89,7 +89,7 @@ export function MinInstructorsField({
           <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
             {initialValue == null ? "—" : initialValue}
           </span>
-          <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+          <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
             <Pencil className="h-3 w-3" /> Wijzigen
           </button>
           {helpText && <span style={{ color: "var(--text-secondary)" }}>· {helpText}</span>}

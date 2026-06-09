@@ -76,7 +76,7 @@ export function TenantPushForm({ tenantId, eventKeys, initial }: TenantPushFormP
                 key={k}
                 className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
                 style={{
-                  borderColor: "var(--surface-border)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               >

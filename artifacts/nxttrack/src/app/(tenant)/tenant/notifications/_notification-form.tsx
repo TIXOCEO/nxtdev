@@ -117,8 +117,8 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
           placeholder="Bijv. Training afgelast vrijdag"
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
           style={{
-            backgroundColor: "var(--surface-soft)",
-            borderColor: "var(--surface-border)",
+            backgroundColor: "var(--shell-panel-muted)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-primary)",
           }}
         />
@@ -155,12 +155,12 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
                 mode === m
                   ? {
                       backgroundColor: "var(--accent)",
-                      borderColor: "var(--surface-border)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-primary)",
                     }
                   : {
-                      backgroundColor: "var(--surface-soft)",
-                      borderColor: "var(--surface-border)",
+                      backgroundColor: "var(--shell-panel-muted)",
+                      borderColor: "var(--shell-border)",
                       color: "var(--text-secondary)",
                     }
               }
@@ -191,14 +191,14 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
               placeholder="Zoek lid..."
               className="w-full rounded-md border px-3 py-1.5 text-sm"
               style={{
-                backgroundColor: "var(--surface-soft)",
-                borderColor: "var(--surface-border)",
+                backgroundColor: "var(--shell-panel-muted)",
+                borderColor: "var(--shell-border)",
                 color: "var(--text-primary)",
               }}
             />
             <div
               className="max-h-56 overflow-y-auto rounded-md border"
-              style={{ borderColor: "var(--surface-border)" }}
+              style={{ borderColor: "var(--shell-border)" }}
             >
               {filteredMembers.length === 0 ? (
                 <p className="px-3 py-4 text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -209,7 +209,7 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
                   <label
                     key={m.id}
                     className="flex cursor-pointer items-center gap-2 border-b px-3 py-2 text-sm last:border-b-0"
-                    style={{ borderColor: "var(--surface-border)" }}
+                    style={{ borderColor: "var(--shell-border)" }}
                   >
                     <input
                       type="checkbox"
@@ -239,8 +239,8 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
                 key={g.id}
                 className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm"
                 style={{
-                  backgroundColor: "var(--surface-soft)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               >
@@ -262,8 +262,8 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
                 key={r.value}
                 className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm"
                 style={{
-                  backgroundColor: "var(--surface-soft)",
-                  borderColor: "var(--surface-border)",
+                  backgroundColor: "var(--shell-panel-muted)",
+                  borderColor: "var(--shell-border)",
                   color: "var(--text-primary)",
                 }}
               >
@@ -323,7 +323,7 @@ export function NotificationForm({ tenantId, members, groups }: NotificationForm
           className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold disabled:opacity-60"
           style={{
             backgroundColor: "var(--accent)",
-            borderColor: "var(--surface-border)",
+            borderColor: "var(--shell-border)",
             color: "var(--text-primary)",
           }}
         >

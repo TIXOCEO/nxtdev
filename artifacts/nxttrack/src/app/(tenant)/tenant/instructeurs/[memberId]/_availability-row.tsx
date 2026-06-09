@@ -39,9 +39,9 @@ export function AvailabilityRow({
 
   const inputCls = "h-8 rounded-lg border bg-transparent px-2 text-xs outline-none";
   const inputStyle = {
-    borderColor: "var(--surface-border)",
+    borderColor: "var(--shell-border)",
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-main)",
+    backgroundColor: "var(--shell-panel-strong)",
   } as const;
 
   function onSave(e: React.FormEvent<HTMLFormElement>) {
@@ -78,7 +78,7 @@ export function AvailabilityRow({
     return (
       <li
         className="rounded-lg border p-2 text-xs"
-        style={{ borderColor: "var(--surface-border)" }}
+        style={{ borderColor: "var(--shell-border)" }}
       >
         <form onSubmit={onSave} className="grid gap-2">
           <div className="grid grid-cols-2 gap-2">
@@ -101,7 +101,7 @@ export function AvailabilityRow({
             <button type="submit" disabled={pending} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold disabled:opacity-50" style={{ backgroundColor: "var(--accent)", color: "var(--text-primary)" }}>
               <Check className="h-3 w-3" /> Opslaan
             </button>
-            <button type="button" onClick={() => { setEditing(false); setErr(null); }} disabled={pending} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium" style={{ borderColor: "var(--surface-border)", color: "var(--text-secondary)" }}>
+            <button type="button" onClick={() => { setEditing(false); setErr(null); }} disabled={pending} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium" style={{ borderColor: "var(--shell-border)", color: "var(--text-secondary)" }}>
               <X className="h-3 w-3" /> Annuleren
             </button>
           </div>
@@ -113,7 +113,7 @@ export function AvailabilityRow({
   return (
     <li
       className="flex items-center justify-between rounded-lg border px-3 py-1.5 text-xs"
-      style={{ borderColor: "var(--surface-border)" }}
+      style={{ borderColor: "var(--shell-border)" }}
     >
       <span style={{ color: "var(--text-primary)" }}>
         <strong>{DAY_LABELS[row.day_of_week]}</strong>{" "}
