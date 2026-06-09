@@ -1,6 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Award, CalendarDays, CalendarPlus, CheckCircle2, ClipboardList, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Award,
+  Bell,
+  BookOpen,
+  CalendarDays,
+  CalendarPlus,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  GraduationCap,
+  Home,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getPublicTenantHomeData } from "@/lib/db/public-tenant";
 import {
@@ -178,54 +194,74 @@ function MarketingHero({
     welcome_text?: string | null;
   };
 }) {
+  const trustItems = [
+    { label: "Slimme intake", icon: ClipboardList },
+    { label: "Voortgang per kind", icon: Trophy },
+    { label: "Diploma downloads", icon: GraduationCap },
+  ];
+  const journey = [
+    { label: "Water", complete: true },
+    { label: "Drijven", complete: true },
+    { label: "Diploma A", complete: true, active: true },
+    { label: "Diploma B", complete: false },
+    { label: "Diploma C", complete: false },
+  ];
+  const quickActions = [
+    { label: "Lessen", icon: BookOpen },
+    { label: "Voortgang", icon: Trophy },
+    { label: "Berichten", icon: MessageCircle },
+  ];
+
   return (
-    <section className="nxt-shell-surface relative overflow-hidden rounded-[24px] p-5 sm:p-7 lg:p-8">
+    <section className="nxt-shell-surface relative overflow-hidden rounded-[28px] p-0">
       <div
         aria-hidden
-        className="absolute -right-20 -top-20 h-72 w-72 rounded-full blur-3xl"
-        style={{ backgroundColor: "color-mix(in srgb, var(--tenant-accent) 34%, transparent)" }}
-      />
-      <div
-        aria-hidden
-        className="absolute bottom-0 right-8 hidden h-40 w-72 rounded-t-full lg:block"
+        className="absolute inset-x-0 top-0 h-32"
         style={{
           background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--shell-info) 18%, transparent), transparent)",
+            "linear-gradient(90deg, color-mix(in srgb, var(--tenant-accent) 16%, transparent), color-mix(in srgb, var(--shell-info) 12%, transparent), transparent)",
         }}
       />
-      <div className="relative grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-primary)" }}>
-            <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--shell-info)" }} />
-            Zwemschool platform
+      <div
+        aria-hidden
+        className="absolute -right-24 top-16 hidden h-96 w-96 rounded-full blur-3xl lg:block"
+        style={{
+          background: "color-mix(in srgb, var(--tenant-accent) 28%, transparent)",
+        }}
+      />
+      <div className="relative grid min-h-[560px] gap-8 p-5 sm:p-7 lg:grid-cols-[0.88fr_1.12fr] lg:items-stretch lg:p-8">
+        <div className="flex flex-col justify-between gap-8 py-1">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-primary)" }}>
+              <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--shell-info)" }} />
+              Zwemschool platform
+            </div>
+            <h1 className="mt-5 max-w-[12ch] text-4xl font-black tracking-tight sm:text-5xl lg:text-[56px] lg:leading-[0.96]" style={{ color: "var(--text-primary)" }}>
+              Welkom bij {tenant.name}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 sm:text-lg" style={{ color: "var(--text-secondary)" }}>
+              {tenant.welcome_text?.trim() ||
+                "Een moderne zwemschoolervaring voor ouders, leerlingen en trainers: van proefles en intake tot badges, voortgang en diploma's."}
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link href={`/t/${tenant.slug}/inschrijven`} className="nxt-focus-ring nxt-shell-primary-button inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold">
+                Start inschrijving
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href={`/t/${tenant.slug}/proefles`} className="nxt-focus-ring nxt-shell-soft-button inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold">
+                Plan proefles
+                <CalendarPlus className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl" style={{ color: "var(--text-primary)" }}>
-            Welkom bij {tenant.name}
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-7" style={{ color: "var(--text-secondary)" }}>
-            {tenant.welcome_text?.trim() ||
-              "Slim inschrijven, duidelijk plannen en stap voor stap groeien naar badges en diploma's."}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href={`/t/${tenant.slug}/inschrijven`} className="nxt-focus-ring nxt-shell-primary-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold">
-              Inschrijven
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href={`/t/${tenant.slug}/proefles`} className="nxt-focus-ring nxt-shell-soft-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold">
-              Proefles plannen
-              <CalendarPlus className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[
-              { label: "Slimme intake", icon: ClipboardList },
-              { label: "Mooie voortgang", icon: Award },
-              { label: "Veilig portaal", icon: ShieldCheck },
-            ].map((item) => {
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            {trustItems.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.label} className="rounded-2xl border px-3 py-3 text-sm font-semibold" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)", color: "var(--text-primary)" }}>
-                  <Icon className="mb-2 h-4 w-4" style={{ color: "var(--shell-info)" }} />
+                <div key={item.label} className="nxt-shell-card flex min-h-20 items-center gap-3 px-3 py-3 text-sm font-bold">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl" style={{ backgroundColor: "color-mix(in srgb, var(--tenant-accent) 16%, var(--shell-panel-muted))", color: "var(--shell-info)" }}>
+                    <Icon className="h-4 w-4" />
+                  </span>
                   {item.label}
                 </div>
               );
@@ -233,8 +269,16 @@ function MarketingHero({
           </div>
         </div>
 
-        <div className="relative">
-          <div className="nxt-shell-card p-4 sm:p-5">
+        <div className="relative grid min-h-[500px] items-end lg:grid-cols-[minmax(0,1fr)_245px] lg:gap-5">
+          <div className="nxt-shell-card relative overflow-hidden p-4 sm:p-5 lg:mb-8">
+            <div
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-28"
+              style={{
+                background:
+                  "linear-gradient(120deg, color-mix(in srgb, var(--shell-info) 14%, transparent), color-mix(in srgb, var(--tenant-accent) 16%, transparent), transparent)",
+              }}
+            />
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}>
@@ -246,41 +290,178 @@ function MarketingHero({
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Zwemreis preview</p>
-                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Van intake naar diploma</p>
+                  <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Familie Jansen</p>
+                  <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Bad 2 - Lisa</p>
                 </div>
               </div>
-              <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ backgroundColor: "color-mix(in srgb, var(--shell-success) 12%, var(--shell-panel-strong))", color: "var(--shell-success)" }}>
-                Live
-              </span>
+              <Bell className="h-5 w-5" style={{ color: "var(--text-secondary)" }} />
             </div>
-            <div className="mt-5 rounded-2xl p-4" style={{ background: "linear-gradient(135deg, #062b66, #0b63ff)", color: "#ffffff" }}>
-              <p className="text-sm font-semibold opacity-85">Bijna klaar voor</p>
-              <p className="mt-1 text-2xl font-bold">Diploma A</p>
-              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/25">
-                <span className="block h-full w-[78%] rounded-full bg-[#78c90f]" />
-              </div>
-              <p className="mt-2 text-xs opacity-85">Nog 2 onderdelen te gaan</p>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+
+            <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
               {[
+                { label: "Huidig niveau", value: "Diploma A", icon: Award },
                 { label: "Volgende les", value: "Wo 16:30", icon: CalendarDays },
                 { label: "Plaatsing", value: "Bevestigd", icon: CheckCircle2 },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.label} className="rounded-2xl border p-3" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
-                    <Icon className="h-4 w-4" style={{ color: "var(--shell-info)" }} />
-                    <p className="mt-2 text-[11px] font-semibold" style={{ color: "var(--text-secondary)" }}>{item.label}</p>
-                    <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{item.value}</p>
+                  <div key={item.label} className="rounded-2xl border p-3" style={{ borderColor: "var(--shell-border)", backgroundColor: "color-mix(in srgb, var(--shell-panel-strong) 78%, transparent)" }}>
+                    <Icon className="h-4 w-4" style={{ color: item.icon === CheckCircle2 ? "var(--shell-success)" : "var(--shell-info)" }} />
+                    <p className="mt-3 text-[11px] font-bold" style={{ color: "var(--text-secondary)" }}>{item.label}</p>
+                    <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>{item.value}</p>
                   </div>
                 );
               })}
             </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(190px,0.9fr)]">
+              <div className="rounded-2xl border p-4" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Sem's zwemreis</h2>
+                  <span className="text-xs font-bold" style={{ color: "var(--text-secondary)" }}>78%</span>
+                </div>
+                <div className="mt-5 grid grid-cols-5 gap-2">
+                  {journey.map((step) => (
+                    <div key={step.label} className="min-w-0 text-center">
+                      <div
+                        className="mx-auto flex h-9 w-9 items-center justify-center rounded-full border text-xs font-black"
+                        style={{
+                          borderColor: step.active ? "var(--shell-info)" : step.complete ? "var(--shell-success)" : "var(--shell-border)",
+                          backgroundColor: step.active
+                            ? "var(--shell-info)"
+                            : step.complete
+                              ? "var(--shell-success)"
+                              : "var(--shell-panel-strong)",
+                          color: step.complete || step.active ? "#ffffff" : "var(--text-secondary)",
+                        }}
+                      >
+                        {step.complete ? <CheckCircle2 className="h-4 w-4" /> : step.label.charAt(0)}
+                      </div>
+                      <p className="mt-2 truncate text-[10px] font-bold" style={{ color: step.active ? "var(--shell-info)" : "var(--text-secondary)" }}>
+                        {step.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="nxt-shell-progress mt-5 h-2">
+                  <span className="w-[78%]" />
+                </div>
+                <p className="mt-3 text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>6 van 8 onderdelen behaald</p>
+              </div>
+
+              <div className="rounded-2xl border p-4" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
+                <h2 className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Badge wall</h2>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {[ShieldCheck, Trophy, Award, Home, BookOpen, GraduationCap].map((Icon, index) => (
+                    <span
+                      key={index}
+                      className="flex aspect-square items-center justify-center rounded-2xl border"
+                      style={{
+                        borderColor: "var(--shell-border)",
+                        backgroundColor: index % 2 === 0 ? "#082c6f" : "var(--shell-info)",
+                        color: index === 1 ? "var(--tenant-accent)" : "#ffffff",
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  ))}
+                </div>
+                <Link href={`/t/${tenant.slug}/login`} className="mt-4 inline-flex items-center gap-1 text-xs font-black" style={{ color: "var(--shell-info)" }}>
+                  Bekijk badges
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="pointer-events-none absolute bottom-0 right-3 hidden h-[500px] w-[236px] rounded-[34px] border-[8px] border-slate-950 bg-white shadow-2xl lg:block">
+            <div className="absolute left-1/2 top-2 h-5 w-20 -translate-x-1/2 rounded-full bg-slate-950" />
+            <div className="h-full overflow-hidden rounded-[25px] p-4 pt-9" style={{ backgroundColor: "var(--shell-page-bg)" }}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[11px] font-bold" style={{ color: "var(--text-secondary)" }}>Hoi Sem</p>
+                  <p className="text-base font-black" style={{ color: "var(--text-primary)" }}>Vandaag</p>
+                </div>
+                <Bell className="h-4 w-4" style={{ color: "var(--text-secondary)" }} />
+              </div>
+              <div className="mt-4 rounded-2xl border p-3" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}>
+                <p className="text-[10px] font-bold" style={{ color: "var(--text-secondary)" }}>Volgende les</p>
+                <p className="mt-1 text-sm font-black" style={{ color: "var(--text-primary)" }}>Wo 22 mei - 16:30</p>
+                <p className="text-[10px]" style={{ color: "var(--text-secondary)" }}>Bad 2 - Lisa</p>
+              </div>
+              <div className="mt-3 rounded-2xl p-3" style={{ background: "linear-gradient(135deg, #062b66, #0b63ff)", color: "#ffffff" }}>
+                <p className="text-[10px] font-bold opacity-80">Bijna klaar voor</p>
+                <p className="text-lg font-black">Diploma A</p>
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/25">
+                  <span className="block h-full w-[78%] rounded-full bg-[#78c90f]" />
+                </div>
+                <p className="mt-2 text-[10px] opacity-85">Nog 2 onderdelen</p>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {quickActions.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-xl border py-2 text-center" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}>
+                      <Icon className="mx-auto h-4 w-4" style={{ color: "var(--shell-info)" }} />
+                      <p className="mt-1 text-[9px] font-bold" style={{ color: "var(--text-secondary)" }}>{item.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="absolute inset-x-4 bottom-4 grid grid-cols-4 gap-2 rounded-2xl border p-2" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-strong)" }}>
+                {[Home, BookOpen, Trophy, MessageCircle].map((Icon, index) => (
+                  <span key={index} className="flex h-8 items-center justify-center rounded-xl" style={{ color: index === 0 ? "var(--shell-info)" : "var(--text-secondary)" }}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:hidden">
+            <div className="nxt-shell-card mx-auto mt-1 max-w-[360px] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>Mobiele app-preview</p>
+                <span className="rounded-full px-2 py-1 text-[10px] font-black" style={{ backgroundColor: "color-mix(in srgb, var(--tenant-accent) 18%, var(--shell-panel-muted))", color: "var(--text-primary)" }}>78%</span>
+              </div>
+              <div className="mt-4 rounded-2xl p-4" style={{ background: "linear-gradient(135deg, #062b66, #0b63ff)", color: "#ffffff" }}>
+                <p className="text-xs font-bold opacity-80">Bijna klaar voor</p>
+                <p className="text-2xl font-black">Diploma A</p>
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/25">
+                  <span className="block h-full w-[78%] rounded-full bg-[#78c90f]" />
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {quickActions.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-2xl border p-3 text-center" style={{ borderColor: "var(--shell-border)", backgroundColor: "var(--shell-panel-muted)" }}>
+                      <Icon className="mx-auto h-4 w-4" style={{ color: "var(--shell-info)" }} />
+                      <p className="mt-2 text-[10px] font-bold" style={{ color: "var(--text-secondary)" }}>{item.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </section>
+      <div className="relative grid gap-3 border-t px-5 py-4 sm:grid-cols-3 sm:px-7 lg:px-8" style={{ borderColor: "var(--shell-border)", backgroundColor: "color-mix(in srgb, #062b66 92%, var(--shell-panel-strong))", color: "#ffffff" }}>
+        {[
+          { title: "Veilig", body: "Persoonlijk portaal voor ieder gezin." },
+          { title: "Duidelijk", body: "Lessen, badges en voortgang op een plek." },
+          { title: "Tenant-proof", body: "Kleuren en branding per zwemschool." },
+        ].map((item) => (
+          <div key={item.title} className="flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 shrink-0" style={{ color: "var(--tenant-accent)" }} />
+            <div>
+              <p className="text-xs font-black">{item.title}</p>
+              <p className="text-[11px] opacity-75">{item.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+  </section>
   );
 }
 
@@ -298,14 +479,14 @@ function CtaCard({
   href: string;
 }) {
   return (
-    <PublicCard className="flex h-full flex-col gap-3 p-5 sm:p-6">
+    <PublicCard className="nxt-shell-hover flex h-full flex-col gap-4 p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm"
           style={{
             backgroundColor:
-              "color-mix(in srgb, var(--tenant-accent) 22%, transparent)",
-            color: "var(--text-primary)",
+              "color-mix(in srgb, var(--tenant-accent) 18%, var(--shell-panel-muted))",
+            color: "var(--shell-info)",
           }}
         >
           <Icon className="h-5 w-5" />
@@ -325,11 +506,7 @@ function CtaCard({
       <div className="mt-auto pt-2">
         <Link
           href={href}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
-          style={{
-            backgroundColor: "var(--tenant-accent)",
-            color: "var(--text-primary)",
-          }}
+          className="nxt-focus-ring nxt-shell-primary-button inline-flex min-h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold transition-transform hover:-translate-y-0.5"
         >
           {ctaLabel} <ArrowRight className="h-4 w-4" />
         </Link>
