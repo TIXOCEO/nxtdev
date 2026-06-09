@@ -209,10 +209,10 @@ export default async function VoortgangPage({ params }: PageProps) {
                 icon={Sparkles}
               />
               <div className="grid gap-3 lg:grid-cols-2">
-                  {list.slice(0, 12).map((e, i) => {
-                    const score = LEVEL_SCORE[e.skill_level] ?? 0;
-                    return (
-                      <UserSurface key={i} className="p-4" interactive>
+                {list.slice(0, 12).map((e, i) => {
+                  const score = LEVEL_SCORE[e.skill_level] ?? 0;
+                  return (
+                    <UserSurface key={i} className="p-4" interactive>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium" style={{ color: "var(--text-primary)" }}>
@@ -221,26 +221,25 @@ export default async function VoortgangPage({ params }: PageProps) {
                           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
                             {new Date(e.starts_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
-                        </div>
                           <div className="nxt-shell-progress mt-3 h-1.5">
                             <span style={{ width: `${Math.max(8, (score / 4) * 100)}%` }} />
                           </div>
                         </div>
                         <UserStatusPill
-                            toneKey={
-                              e.skill_level === "mastered" || e.skill_level === "good"
-                                ? "success"
-                                : e.skill_level === "almost"
-                                  ? "warning"
-                                  : "neutral"
-                            }
-                          >
-                            {LEVEL_LABEL[e.skill_level] ?? e.skill_level}
-                          </UserStatusPill>
+                          toneKey={
+                            e.skill_level === "mastered" || e.skill_level === "good"
+                              ? "success"
+                              : e.skill_level === "almost"
+                                ? "warning"
+                                : "neutral"
+                          }
+                        >
+                          {LEVEL_LABEL[e.skill_level] ?? e.skill_level}
+                        </UserStatusPill>
                       </div>
-                      </UserSurface>
-                    );
-                  })}
+                    </UserSurface>
+                  );
+                })}
               </div>
             </div>
           ))}
